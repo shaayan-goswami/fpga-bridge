@@ -39,27 +39,30 @@ enum GlassChoice: String, CaseIterable, Identifiable {
     }
 }
 
-/// Muted accents, each with one meaning. They only colour small things (icons, dots, thin bars, command text), never
-/// large areas, and can be turned off in Settings for a fully grey app. Each has a lighter shade for dark mode.
+/// Accents, each with one meaning, in Vivado's own colours. The light values were sampled from screenshots of
+/// Vivado 2023.1 (run green #4DBD33, error #F33321, critical warning #FCA602, link blue #0072FA, message link
+/// #00A6FD, hierarchy teal #58A6BB, top-module green #3BBA6A, tool-icon navy #406294); the dark values are the same
+/// hues lightened so they read on dark backgrounds. They only colour small things (icons, dots, thin bars, command
+/// text), never large areas, and can be turned off in Settings for a fully grey app.
 enum Accent {
     static var enabled: Bool { UserDefaults.standard.object(forKey: AppearanceKey.accents) as? Bool ?? true }
 
-    /// Done, timing met.
-    static var success: Color { make(light: 0x4F8A63, dark: 0x86B596) }
-    /// Warnings, out-of-date runs, utilization over 70%.
-    static var warning: Color { make(light: 0xA87A2E, dark: 0xD4AC64) }
-    /// Errors, failed runs, failed timing.
-    static var error: Color { make(light: 0xB5504A, dark: 0xDB857F) }
-    /// Something in progress, and Tcl commands in the console.
-    static var active: Color { make(light: 0x4A6F9E, dark: 0x8CABD1) }
-    /// Work that happens on the build machine in Vivado (synthesis, implementation, bitstream).
-    static var remote: Color { make(light: 0x76689C, dark: 0xA99DCC) }
-    /// Design sources and modules.
-    static var source: Color { make(light: 0x5B7896, dark: 0x97B0CA) }
-    /// Constraint files.
-    static var constraint: Color { make(light: 0x9A6B4F, dark: 0xC69C81) }
-    /// Simulation sources.
-    static var simulation: Color { make(light: 0x4E8A86, dark: 0x86B9B4) }
+    /// Done, timing met (Vivado's top-module green).
+    static var success: Color { make(light: 0x3BBA6A, dark: 0x6FD394) }
+    /// Warnings, out-of-date runs, utilization over 70% (Vivado's critical-warning amber).
+    static var warning: Color { make(light: 0xFCA602, dark: 0xFFBE45) }
+    /// Errors, failed runs, failed timing (Vivado's error red).
+    static var error: Color { make(light: 0xF33321, dark: 0xFF6F60) }
+    /// Something in progress, and Tcl commands in the console (Vivado's link blue).
+    static var active: Color { make(light: 0x0072FA, dark: 0x5AA2FF) }
+    /// Work that happens on the build machine in Vivado: the run icons (Vivado's green play button).
+    static var remote: Color { make(light: 0x4DBD33, dark: 0x7BD566) }
+    /// Design sources and modules (Vivado's hierarchy teal).
+    static var source: Color { make(light: 0x58A6BB, dark: 0x8CC8D9) }
+    /// Constraint files (Vivado's tool-icon navy).
+    static var constraint: Color { make(light: 0x406294, dark: 0x7FA0D0) }
+    /// Simulation sources (Vivado's message-link cyan).
+    static var simulation: Color { make(light: 0x00A6FD, dark: 0x5CC8FF) }
 
     struct Entry: Identifiable {
         let name: String
