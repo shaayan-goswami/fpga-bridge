@@ -75,6 +75,9 @@ extension Remote {
         let log: (String) -> Void = captured ?? { print($0, terminator: "") }
         let sources = try project.resolveSources(in: root)
         let constraints = try project.resolveConstraints(in: root)
+        guard !sources.isEmpty else {
+            throw ProjectError.invalid("no design source files found. Add at least one .v, .sv or .vhd file")
+        }
         if let warning = project.versionWarning(vivadoPath: config.vivadoPath) { log("Warning: \(warning)\n") }
 
         // Stage everything in a temp dir named after the project so `scp -r` creates the right remote directory.

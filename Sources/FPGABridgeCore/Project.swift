@@ -14,11 +14,15 @@ public struct Project: Codable, Equatable {
     public var board: String?
     /// Vivado version this project is meant to build with, e.g. "2023.2". Different versions give different results.
     public var vivadoVersion: String?
+    /// Testbench files or directories. Never sent to synthesis; used by simulation.
+    public var simulationSources: [String]?
+    /// Target language, "Verilog" or "VHDL" (what new files are created as).
+    public var targetLanguage: String?
 
     public static let fileName = "fpga-bridge.json"
 
     public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil,
-                vivadoVersion: String? = nil) {
+                vivadoVersion: String? = nil, simulationSources: [String]? = nil, targetLanguage: String? = nil) {
         self.name = name
         self.top = top
         self.part = part
@@ -26,6 +30,8 @@ public struct Project: Codable, Equatable {
         self.constraints = constraints
         self.board = board
         self.vivadoVersion = vivadoVersion
+        self.simulationSources = simulationSources
+        self.targetLanguage = targetLanguage
     }
 
     public static func load(from directory: URL) throws -> Project {
@@ -70,7 +76,8 @@ public struct Project: Codable, Equatable {
         return path[match].split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init)
     }
 
-    private static func isPlain(_ s: String) -> Bool {
+    /// Letters, digits, '_' and '-' only. No spaces: Vivado itself misbehaves on them.
+    public static func isPlain(_ s: String) -> Bool {
         !s.isEmpty && s.unicodeScalars.allSatisfy {
             ("a"..."z").contains($0) || ("A"..."Z").contains($0) || ("0"..."9").contains($0) || $0 == "_" || $0 == "-"
         }
@@ -86,6 +93,10 @@ public struct Project: Codable, Equatable {
 
     public func resolveConstraints(in root: URL) throws -> [String] {
         try Project.expand(constraints, extensions: Project.constraintExtensions, root: root)
+    }
+
+    public func resolveSimulationSources(in root: URL) throws -> [String] {
+        try Project.expand(simulationSources ?? [], extensions: Project.sourceExtensions, root: root)
     }
 
     static func expand(_ entries: [String], extensions: Set<String>, root: URL) throws -> [String] {
