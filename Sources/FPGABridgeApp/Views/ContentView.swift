@@ -47,32 +47,43 @@ struct ContentView: View {
 struct MainWindowView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showSidebar = true
+    @State private var sidebarWidth: CGFloat = 250
+    @State private var sourcesWidth: CGFloat = 330
 
     /// Three panes like Vivado's: Flow Navigator, Sources, workspace over console. The sidebar has no background of
     /// its own, so it shows the window's Liquid Glass, the same glass as the home screen. (The system's split view
     /// draws its own sidebar on top, which never matched.) Every other pane is opaque.
     var body: some View {
-        VStack(spacing: 0) {
-            HSplitView {
-                if showSidebar {
-                    FlowNavigatorView()
-                        .frame(minWidth: 220, idealWidth: 250, maxWidth: 320)
-                }
-                SourcesPane()
-                    .frame(minWidth: 280, idealWidth: 330, maxWidth: 460)
-                    .background(Theme.surface)
-                VSplitView {
-                    WorkspaceView()
-                        .frame(minHeight: 380)
-                        .layoutPriority(1)
-                    if model.consoleVisible {
-                        ConsolePanel()
-                            .frame(minHeight: 160, idealHeight: 240, maxHeight: 420)
+        // The toolbar has no background, so the panes would otherwise extend under it and draw their edges through
+        // it. Read the toolbar's height and keep everything below it; the area above shows the window glass.
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                // Plain stacks with our own drag handles: the system's HSplitView draws its dividers through the toolbar.
+                HStack(spacing: 0) {
+                    if showSidebar {
+                        FlowNavigatorView().frame(width: sidebarWidth)
+                        PaneDivider(width: $sidebarWidth, range: 220...320)
                     }
+                    SourcesPane()
+                        .frame(width: sourcesWidth)
+                        // [] keeps the fill below the toolbar; the default would paint it up under it.
+                        .background(Theme.surface, ignoresSafeAreaEdges: [])
+                    PaneDivider(width: $sourcesWidth, range: 280...460)
+                    VSplitView {
+                        WorkspaceView()
+                            .frame(minHeight: 380)
+                            .layoutPriority(1)
+                        if model.consoleVisible {
+                            ConsolePanel()
+                                .frame(minHeight: 160, idealHeight: 240, maxHeight: 420)
+                        }
+                    }
+                    .background(Theme.window, ignoresSafeAreaEdges: [])
                 }
-                .background(Theme.window)
+                StatusBar()
             }
-            StatusBar()
+            .padding(.top, geometry.safeAreaInsets.top)
+            .ignoresSafeArea(.container, edges: .top)
         }
         .modifier(WindowGlassContainers())
         .navigationTitle(model.project?.name ?? "FPGA Bridge")
@@ -263,5 +274,36 @@ private struct WindowGlassContainers: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+/// A thin line between two panes that can be dragged to resize the pane on its left.
+private struct PaneDivider: View {
+    @Binding var width: CGFloat
+    let range: ClosedRange<CGFloat>
+    @State private var startWidth: CGFloat?
+
+    var body: some View {
+        Rectangle()
+            .fill(Color(nsColor: .separatorColor))
+            .frame(width: 1)
+            .overlay {
+                // A wider invisible strip makes the line easy to grab.
+                Color.clear
+                    .frame(width: 9)
+                    .contentShape(Rectangle())
+                    .onHover { inside in
+                        if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                            .onChanged { drag in
+                                let base = startWidth ?? width
+                                startWidth = base
+                                width = min(max(base + drag.translation.width, range.lowerBound), range.upperBound)
+                            }
+                            .onEnded { _ in startWidth = nil }
+                    )
+            }
     }
 }

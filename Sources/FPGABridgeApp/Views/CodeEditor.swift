@@ -15,7 +15,7 @@ struct CodeEditor: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    func makeNSView(context: Context) -> NSScrollView {
+    func makeNSView(context: Context) -> EditorContainer {
         let textView = CodeTextView()
         textView.language = language
         textView.delegate = context.coordinator
@@ -49,23 +49,23 @@ struct CodeEditor: NSViewRepresentable {
         scroll.drawsBackground = true
         scroll.backgroundColor = Theme.nsSurface
         scroll.contentView.postsBoundsChangedNotifications = true
+        // The window's toolbar would otherwise push the text down by its own height.
+        scroll.automaticallyAdjustsContentInsets = false
+        scroll.contentInsets = NSEdgeInsetsZero
 
-        let ruler = LineNumberRuler(scrollView: scroll, textView: textView)
-        scroll.verticalRulerView = ruler
-        scroll.hasVerticalRuler = true
-
+        let container = EditorContainer(scroll: scroll, gutter: LineNumberGutter(textView: textView, scroll: scroll))
         context.coordinator.textView = textView
-        context.coordinator.apply(settings: self, to: textView, scroll: scroll)
+        context.coordinator.apply(settings: self, to: textView, container: container)
         textView.string = text
         context.coordinator.highlight(textView)
         if focusOnAppear {
-            DispatchQueue.main.async { scroll.window?.makeFirstResponder(textView) }
+            DispatchQueue.main.async { container.window?.makeFirstResponder(textView) }
         }
-        return scroll
+        return container
     }
 
-    func updateNSView(_ scroll: NSScrollView, context: Context) {
-        guard let textView = scroll.documentView as? CodeTextView else { return }
+    func updateNSView(_ container: EditorContainer, context: Context) {
+        guard let textView = container.scroll.documentView as? CodeTextView else { return }
         context.coordinator.parent = self
         // Only replace the text when it changed from outside (not while the user is typing).
         if textView.string != text {
@@ -73,7 +73,7 @@ struct CodeEditor: NSViewRepresentable {
             textView.string = text
             textView.setSelectedRange(NSRange(location: min(selection.location, (text as NSString).length), length: 0))
         }
-        context.coordinator.apply(settings: self, to: textView, scroll: scroll)
+        context.coordinator.apply(settings: self, to: textView, container: container)
         context.coordinator.highlight(textView)
     }
 
@@ -84,10 +84,10 @@ struct CodeEditor: NSViewRepresentable {
 
         init(_ parent: CodeEditor) { self.parent = parent }
 
-        func apply(settings: CodeEditor, to textView: CodeTextView, scroll: NSScrollView) {
+        func apply(settings: CodeEditor, to textView: CodeTextView, container: EditorContainer) {
             textView.language = settings.language
-            scroll.rulersVisible = settings.showLineNumbers
-            (scroll.verticalRulerView as? LineNumberRuler)?.fontSize = settings.fontSize
+            container.showsGutter = settings.showLineNumbers
+            container.gutter.fontSize = settings.fontSize
             textView.baseFont = NSFont.monospacedSystemFont(ofSize: settings.fontSize, weight: .regular)
         }
 
@@ -178,32 +178,66 @@ final class CodeTextView: NSTextView {
     }
 }
 
-/// Line numbers in the left margin.
-final class LineNumberRuler: NSRulerView {
+/// Holds the line-number gutter next to the scroll view. A plain view rather than NSRulerView, which laid itself out
+/// above the editor, through the window's toolbar.
+final class EditorContainer: NSView {
+    let scroll: NSScrollView
+    let gutter: LineNumberGutter
+    var showsGutter = true {
+        didSet {
+            gutter.isHidden = !showsGutter
+            needsLayout = true
+        }
+    }
+
+    init(scroll: NSScrollView, gutter: LineNumberGutter) {
+        self.scroll = scroll
+        self.gutter = gutter
+        super.init(frame: .zero)
+        addSubview(gutter)
+        addSubview(scroll)
+        clipsToBounds = true
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override func layout() {
+        super.layout()
+        let width = showsGutter ? LineNumberGutter.width : 0
+        gutter.frame = NSRect(x: 0, y: 0, width: width, height: bounds.height)
+        scroll.frame = NSRect(x: width, y: 0, width: max(0, bounds.width - width), height: bounds.height)
+    }
+}
+
+/// Line numbers in the left margin. Flipped, like the text view, so a line's y position is the same in both.
+final class LineNumberGutter: NSView {
+    static let width: CGFloat = 46
+
     private weak var textView: NSTextView?
     var fontSize: CGFloat = 12.5 { didSet { if fontSize != oldValue { needsDisplay = true } } }
 
-    init(scrollView: NSScrollView, textView: NSTextView) {
+    override var isFlipped: Bool { true }
+
+    init(textView: NSTextView, scroll: NSScrollView) {
         self.textView = textView
-        super.init(scrollView: scrollView, orientation: .verticalRuler)
-        clientView = textView
-        ruleThickness = 46
+        super.init(frame: .zero)
+        clipsToBounds = true
         NotificationCenter.default.addObserver(self, selector: #selector(redraw), name: NSText.didChangeNotification, object: textView)
         NotificationCenter.default.addObserver(self, selector: #selector(redraw), name: NSView.boundsDidChangeNotification,
-                                               object: scrollView.contentView)
+                                               object: scroll.contentView)
     }
 
-    required init(coder: NSCoder) { fatalError("init(coder:) is not used") }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
     @objc private func redraw() { needsDisplay = true }
 
-    override func drawHashMarksAndLabels(in rect: NSRect) {
-        guard let textView, let layout = textView.layoutManager, let container = textView.textContainer else { return }
+    override func draw(_ dirtyRect: NSRect) {
         Theme.nsSurface.setFill()
         bounds.fill()
         NSColor.separatorColor.withAlphaComponent(0.5).setFill()
-        NSRect(x: bounds.maxX - 1, y: bounds.minY, width: 1, height: bounds.height).fill()
+        NSRect(x: bounds.maxX - 1, y: 0, width: 1, height: bounds.height).fill()
 
+        guard let textView, let layout = textView.layoutManager, let container = textView.textContainer else { return }
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: max(9, fontSize - 1.5), weight: .regular),
             .foregroundColor: NSColor.tertiaryLabelColor,
@@ -213,10 +247,11 @@ final class LineNumberRuler: NSRulerView {
         let glyphs = layout.glyphRange(forBoundingRect: visible, in: container)
         let chars = layout.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
 
-        func draw(_ number: Int, lineY: CGFloat, height: CGFloat) {
+        // A line's y in the text view, minus how far the text has scrolled, is its y here.
+        func draw(_ number: Int, fragment: NSRect) {
             let label = "\(number)" as NSString
             let size = label.size(withAttributes: attributes)
-            let y = convert(NSPoint(x: 0, y: lineY), from: textView).y + (height - size.height) / 2
+            let y = fragment.minY + textView.textContainerInset.height - visible.minY + (fragment.height - size.height) / 2
             label.draw(at: NSPoint(x: bounds.maxX - size.width - 8, y: y), withAttributes: attributes)
         }
 
@@ -228,15 +263,14 @@ final class LineNumberRuler: NSRulerView {
         while index < text.length, index <= NSMaxRange(chars) {
             let lineRange = text.lineRange(for: NSRange(location: index, length: 0))
             let glyph = layout.glyphIndexForCharacter(at: lineRange.location)
-            let fragment = layout.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
-            draw(number, lineY: fragment.minY + textView.textContainerInset.height, height: fragment.height)
+            draw(number, fragment: layout.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil))
             number += 1
             index = NSMaxRange(lineRange)
         }
         // The empty line after a final newline, or an empty file.
         if text.length == 0 || text.character(at: text.length - 1) == 10 {
             let extra = layout.extraLineFragmentRect
-            if extra.height > 0 { draw(number, lineY: extra.minY + textView.textContainerInset.height, height: extra.height) }
+            if extra.height > 0 { draw(number, fragment: extra) }
         }
     }
 }

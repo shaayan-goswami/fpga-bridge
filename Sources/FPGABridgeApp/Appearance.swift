@@ -225,7 +225,7 @@ extension View {
 /// The flat window background behind glass panels: white in light mode, near-black in dark mode.
 struct Backdrop: View {
     var body: some View {
-        Theme.window.ignoresSafeArea()
+        Theme.window
     }
 }
 
@@ -244,9 +244,9 @@ private struct BarBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         if scheme == .dark {
-            content.background(Theme.window)
+            content.background(Theme.window, ignoresSafeAreaEdges: [])
         } else {
-            content.background(.bar)
+            content.background(.bar, ignoresSafeAreaEdges: [])
         }
     }
 }
