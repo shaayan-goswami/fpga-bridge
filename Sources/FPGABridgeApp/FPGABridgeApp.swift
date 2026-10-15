@@ -14,7 +14,10 @@ struct FPGABridgeApp: App {
                 .environmentObject(model)
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
-                .task { await model.start() }
+                .task {
+                    AppDelegate.model = model
+                    await model.start()
+                }
         }
         .defaultSize(width: 1440, height: 900)
         .windowToolbarStyle(.unified(showsTitle: true))
@@ -27,6 +30,27 @@ struct FPGABridgeApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Set once the window appears, so quitting can check for unsaved edits.
+    static weak var model: AppModel?
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        MainActor.assumeIsolated {
+            guard let model = AppDelegate.model, model.hasUnsavedChanges else { return .terminateNow }
+            let count = model.drafts.count
+            let alert = NSAlert()
+            alert.messageText = count == 1 ? "Do you want to save the changes to 1 file?" : "Do you want to save the changes to \(count) files?"
+            alert.informativeText = "Your changes will be lost if you don't save them."
+            alert.addButton(withTitle: "Save All")
+            alert.addButton(withTitle: "Don't Save")
+            alert.addButton(withTitle: "Cancel")
+            switch alert.runModal() {
+            case .alertFirstButtonReturn: return model.saveAll() ? .terminateNow : .terminateCancel
+            case .alertSecondButtonReturn: return .terminateNow
+            default: return .terminateCancel
+            }
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         if Snapshot.isRequested {
             // Render off-screen without taking focus, so capturing doesn't get in the way of whoever is at the Mac.
@@ -68,9 +92,23 @@ struct AppCommands: Commands {
                     .disabled(!model.hasProject)
             }
             Divider()
+            Button("Save File") { model.saveCurrentFile() }
+                .keyboardShortcut("s")
+                .disabled(!selectedFileIsDirty)
+            Button("Save All Files") { model.saveAll() }
+                .keyboardShortcut("s", modifiers: [.command, .option])
+                .disabled(!model.hasUnsavedChanges)
+            Divider()
             Button("Add Sources…") { model.showAddSources = true }
                 .keyboardShortcut("a", modifiers: [.command, .option])
                 .disabled(!model.hasProject)
+        }
+
+        CommandGroup(after: .textEditing) {
+            Button("Toggle Comment") {
+                NSApp.sendAction(#selector(CodeTextView.toggleComment(_:)), to: nil, from: nil)
+            }
+            .keyboardShortcut("/")
         }
 
         CommandMenu("Flow") {
@@ -107,6 +145,11 @@ struct AppCommands: Commands {
                 .keyboardShortcut("j")
                 .disabled(!model.hasProject)
         }
+    }
+
+    private var selectedFileIsDirty: Bool {
+        if case .file(let path) = model.selectedTab { return model.isDirty(path) }
+        return false
     }
 
     private func report(_ name: String) -> ReportEntry? {

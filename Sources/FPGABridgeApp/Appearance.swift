@@ -76,16 +76,51 @@ enum Accent {
          Entry(name: "Constraints", color: constraint), Entry(name: "Simulation sources", color: simulation)]
     }
 
+    /// AppKit versions of the colors the code editor uses.
+    static var sourceNS: NSColor { makeNS(light: 0x58A6BB, dark: 0x8CC8D9) }
+    static var remoteNS: NSColor { makeNS(light: 0x4DBD33, dark: 0x7BD566) }
+    static var constraintNS: NSColor { makeNS(light: 0x406294, dark: 0x7FA0D0) }
+
     /// Computed each time (not cached) so turning accents off in Settings takes effect when views are rebuilt.
     private static func make(light: UInt32, dark: UInt32) -> Color {
-        let on = enabled
-        return Color(nsColor: NSColor(name: nil) { appearance in
-            guard on else { return .secondaryLabelColor }
-            let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
-            return NSColor(srgbRed: CGFloat((hex >> 16) & 0xff) / 255, green: CGFloat((hex >> 8) & 0xff) / 255,
-                           blue: CGFloat(hex & 0xff) / 255, alpha: 1)
-        })
+        Color(nsColor: makeNS(light: light, dark: dark))
     }
+
+    private static func makeNS(light: UInt32, dark: UInt32) -> NSColor {
+        let on = enabled
+        return NSColor(name: nil) { appearance in
+            guard on else { return .secondaryLabelColor }
+            let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            return NSColor(hex: isDark ? dark : light)
+        }
+    }
+}
+
+extension NSColor {
+    convenience init(hex: UInt32, alpha: CGFloat = 1) {
+        self.init(srgbRed: CGFloat((hex >> 16) & 0xff) / 255, green: CGFloat((hex >> 8) & 0xff) / 255,
+                  blue: CGFloat(hex & 0xff) / 255, alpha: alpha)
+    }
+}
+
+/// Surface colors. Light mode uses the system's; dark mode is near-black rather than the system's dark grey.
+enum Theme {
+    private static func dynamic(light: NSColor, dark: UInt32) -> NSColor {
+        NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(hex: dark) : light
+        }
+    }
+
+    /// The window and the home page.
+    static let nsWindow = dynamic(light: .windowBackgroundColor, dark: 0x0A0B0F)
+    /// Editors, the console, lists and tables: a step lighter than the window so panes read as panes.
+    static let nsSurface = dynamic(light: .textBackgroundColor, dark: 0x0E0F14)
+    /// The Flow Navigator and the Sources column.
+    static let nsSidebar = dynamic(light: .underPageBackgroundColor, dark: 0x08090C)
+
+    static let window = Color(nsColor: nsWindow)
+    static let surface = Color(nsColor: nsSurface)
+    static let sidebar = Color(nsColor: nsSidebar)
 }
 
 /// The grey tint for controls.
@@ -116,7 +151,7 @@ private struct GlassSurface<S: InsettableShape>: ViewModifier {
     func body(content: Content) -> some View {
         if glass == .off {
             content
-                .background(shape.fill(Color(nsColor: .controlBackgroundColor)))
+                .background(shape.fill(Theme.surface))
                 .overlay(shape.strokeBorder(Color(nsColor: .separatorColor).opacity(0.5)))
         } else if #available(macOS 26.0, *) {
             content.glassEffect(liquidGlass, in: shape)
@@ -173,7 +208,29 @@ extension View {
 /// The flat window background behind glass panels: white in light mode, near-black in dark mode.
 struct Backdrop: View {
     var body: some View {
-        Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
+        Theme.window.ignoresSafeArea()
+    }
+}
+
+extension View {
+    /// The background of toolbars and pane headers: the system bar material in light mode, near-black in dark mode.
+    func barBackground() -> some View { modifier(BarBackground()) }
+
+    /// Lists and tables on the app's surface color instead of the system's.
+    func surfaceBackground(_ color: Color = Theme.surface) -> some View {
+        scrollContentBackground(.hidden).background(color)
+    }
+}
+
+private struct BarBackground: ViewModifier {
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        if scheme == .dark {
+            content.background(Theme.window)
+        } else {
+            content.background(.bar)
+        }
     }
 }
 

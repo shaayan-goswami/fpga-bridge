@@ -41,6 +41,14 @@ system's **Icon & widget style** (Default, Dark, Clear, Tinted), not the window'
 Icon Composer (inside Xcode 26+). `scripts/make-app.sh` compiles it with `actool`; `scripts/render-icon.sh` refreshes
 the per-style PNGs used inside the app.
 
+## Editing sources
+
+Double-click or select a file in the Sources pane to open it in an editor tab. It has line numbers, syntax colors, undo
+and redo, find (⌘F), Toggle Comment (⌘/), auto-indent, and Tab and Shift-Tab to indent and outdent the selected lines.
+A dot on the tab marks unsaved edits. Save with ⌘S (Project > Save File, or ⌥⌘S for all files). Saving a design or
+constraint file marks synthesis and implementation out-of-date, as in Vivado; saving a testbench doesn't. Closing a
+tab, switching projects or quitting asks first if anything is unsaved.
+
 ## Commands
 
 ```sh

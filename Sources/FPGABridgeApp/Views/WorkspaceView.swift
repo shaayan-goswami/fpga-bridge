@@ -35,7 +35,7 @@ private struct WorkspaceTabBar: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
         }
-        .background(.bar)
+        .barBackground()
     }
 }
 
@@ -46,6 +46,11 @@ private struct TabButton: View {
 
     private var selected: Bool { model.selectedTab == tab }
 
+    private var isDirty: Bool {
+        if case .file(let path) = tab { return model.isDirty(path) }
+        return false
+    }
+
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: model.symbol(of: tab))
@@ -54,15 +59,22 @@ private struct TabButton: View {
             Text(model.title(of: tab))
                 .lineLimit(1)
             if tab.isCloseable {
-                Button { model.close(tab) } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .frame(width: 14, height: 14)
-                        .background(hovering ? Color.primary.opacity(0.1) : .clear, in: Circle())
+                Button { model.requestClose(tab) } label: {
+                    ZStack {
+                        // A dot instead of the close button marks a file with unsaved edits, as in Xcode.
+                        if isDirty && !hovering {
+                            Circle().fill(Color.primary.opacity(0.65)).frame(width: 7, height: 7)
+                        } else {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .bold))
+                                .background(hovering ? Color.primary.opacity(0.1) : .clear, in: Circle().inset(by: -4))
+                        }
+                    }
+                    .frame(width: 14, height: 14)
                 }
                 .buttonStyle(.plain)
-                .opacity(selected || hovering ? 1 : 0)
-                .help("Close")
+                .opacity(selected || hovering || isDirty ? 1 : 0)
+                .help(isDirty ? "Close (unsaved changes)" : "Close")
             }
         }
         .font(.callout)
@@ -265,7 +277,7 @@ struct ProjectSummaryView: View {
     }
 }
 
-// MARK: Source viewer
+// MARK: Source editor
 
 struct SourceEditorView: View {
     @EnvironmentObject private var model: AppModel
@@ -273,115 +285,32 @@ struct SourceEditorView: View {
     @AppStorage(AppearanceKey.editorLineNumbers) private var lineNumbers = true
     let path: String
 
+    private var language: HDLLanguage { HDLLanguage(fileExtension: (path as NSString).pathExtension) }
+
     var body: some View {
-        let text = model.contents(of: path)
-        let lineCount = max(1, text.components(separatedBy: "\n").count)
         VStack(spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "folder").foregroundStyle(.secondary)
                 Text(path).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
                 Spacer()
-                Text(language).font(.caption).foregroundStyle(.secondary)
-                Pill(text: "Read-only preview", color: .secondary)
+                Text(language.displayName).font(.caption).foregroundStyle(.secondary)
+                if model.isDirty(path) {
+                    Pill(text: "Edited", color: Accent.warning)
+                }
+                Button("Save") { model.saveFile(path) }
+                    .glassButton()
+                    .controlSize(.small)
+                    .disabled(!model.isDirty(path))
+                    .help("Save (⌘S)")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             Divider()
-            ScrollView([.vertical, .horizontal]) {
-                HStack(alignment: .top, spacing: 0) {
-                    if lineNumbers {
-                        Text((1...lineCount).map(String.init).joined(separator: "\n"))
-                            .foregroundStyle(.tertiary)
-                            .multilineTextAlignment(.trailing)
-                            .padding(.horizontal, 10)
-                        Divider()
-                    }
-                    Text(Highlighter.highlight(text, fileExtension: (path as NSString).pathExtension))
-                        .textSelection(.enabled)
-                        .padding(.horizontal, 12)
-                        .fixedSize()
-                    Spacer(minLength: 0)
-                }
-                .font(.system(size: fontSize, design: .monospaced))
-                .lineSpacing(3)
-                .padding(.vertical, 10)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(nsColor: .textBackgroundColor))
+            CodeEditor(
+                text: Binding(get: { model.editedText(for: path) }, set: { model.updateDraft($0, for: path) }),
+                language: language, fontSize: CGFloat(fontSize), showLineNumbers: lineNumbers)
+                .id(path)
         }
-    }
-
-    private var language: String {
-        switch (path as NSString).pathExtension.lowercased() {
-        case "sv", "svh": "SystemVerilog"
-        case "vhd", "vhdl": "VHDL"
-        case "xdc": "XDC"
-        default: "Verilog"
-        }
-    }
-}
-
-/// Small regex highlighter: keywords, numbers, strings, directives and comments.
-enum Highlighter {
-    private static let verilogKeywords = [
-        "module", "endmodule", "input", "output", "inout", "wire", "reg", "logic", "always", "always_ff", "always_comb",
-        "assign", "begin", "end", "if", "else", "case", "endcase", "default", "posedge", "negedge", "parameter",
-        "localparam", "initial", "for", "generate", "endgenerate", "genvar", "integer", "function", "endfunction",
-    ]
-    private static let vhdlKeywords = [
-        "library", "use", "entity", "is", "port", "end", "architecture", "of", "begin", "signal", "process", "if",
-        "then", "else", "elsif", "in", "out", "inout", "std_logic", "std_logic_vector", "rising_edge",
-    ]
-    private static let xdcKeywords = [
-        "set_property", "create_clock", "get_ports", "get_pins", "get_clocks", "set_input_delay", "set_output_delay",
-    ]
-
-    static func highlight(_ text: String, fileExtension: String) -> AttributedString {
-        var result = AttributedString(text)
-        let ext = fileExtension.lowercased()
-        let keywords: [String]
-        let comments: [String]
-        switch ext {
-        case "vhd", "vhdl":
-            keywords = vhdlKeywords
-            comments = ["--[^\\n]*"]
-        case "xdc":
-            keywords = xdcKeywords
-            comments = ["#[^\\n]*"]
-        default:
-            keywords = verilogKeywords
-            comments = ["//[^\\n]*", "/\\*[\\s\\S]*?\\*/"]
-        }
-        let options: NSRegularExpression.Options = ext.hasPrefix("vhd") ? [.caseInsensitive] : []
-
-        // Mostly grey: weight carries structure, with muted accents for keywords, directives and strings.
-        func paint(_ pattern: String, options: NSRegularExpression.Options = [],
-                   _ style: (inout AttributedSubstring) -> Void) {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return }
-            for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
-                guard let range = Range(match.range, in: text), let attributed = Range(range, in: result) else { continue }
-                style(&result[attributed])
-            }
-        }
-
-        result.foregroundColor = Color.primary.opacity(0.88)
-        paint("\\b(" + keywords.joined(separator: "|") + ")\\b", options: options) {
-            $0.foregroundColor = Accent.source
-            $0.inlinePresentationIntent = .stronglyEmphasized
-        }
-        paint("\\b\\d+'[bBhHdDoO][0-9a-fA-F_xXzZ]+|\\b\\d[\\d_]*(\\.\\d+)?\\b") { $0.foregroundColor = .primary }
-        paint("`\\w+|\\$\\w+") {
-            $0.foregroundColor = Accent.remote
-            $0.inlinePresentationIntent = .stronglyEmphasized
-        }
-        paint("\"[^\"\\n]*\"") { $0.foregroundColor = Accent.constraint }
-        for pattern in comments {
-            paint(pattern) {
-                $0.foregroundColor = Color.secondary.opacity(0.8)
-                $0.inlinePresentationIntent = .emphasized
-            }
-        }
-        return result
     }
 }
 
@@ -417,7 +346,7 @@ struct ReportView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Theme.surface)
             }
         } else {
             ContentUnavailableView("Report Not Available", systemImage: "doc.plaintext",

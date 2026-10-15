@@ -40,7 +40,7 @@ struct ConsolePanel: View {
             .controlSize(.small)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(.bar)
+            .barBackground()
             Divider()
 
             switch model.consoleTab {
@@ -121,7 +121,7 @@ private struct ConsoleLines: View {
                 if let last = lines.last { proxy.scrollTo(last.id, anchor: .bottom) }
             }
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(Theme.surface)
     }
 }
 
@@ -150,7 +150,7 @@ private struct TclConsoleView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(Theme.surface)
         }
     }
 }
@@ -209,6 +209,7 @@ private struct MessagesView: View {
                     }
                 }
                 .listStyle(.inset)
+                .surfaceBackground()
             }
         }
     }
@@ -253,6 +254,7 @@ private struct ReportsListView: View {
                 }
             }
             .listStyle(.inset)
+            .surfaceBackground()
         }
     }
 }
@@ -293,6 +295,7 @@ private struct DesignRunsView: View {
             TableColumn("Strategy", value: \.strategy)
         }
         .font(.callout.monospacedDigit())
+        .surfaceBackground()
     }
 
     private var rows: [DesignRunRow] {

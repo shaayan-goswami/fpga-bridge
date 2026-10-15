@@ -21,6 +21,17 @@ struct ContentView: View {
         .sheet(isPresented: $model.showAddSources) {
             AddSourcesSheet().environmentObject(model)
         }
+        .alert(model.unsavedPrompt?.title ?? "", isPresented: Binding(
+            get: { model.unsavedPrompt != nil },
+            set: { _ in }  // every button resolves the prompt itself
+        )) {
+            Button("Save") { model.resolveUnsaved(.save) }
+                .keyboardShortcut(.defaultAction)
+            Button("Don't Save", role: .destructive) { model.resolveUnsaved(.discard) }
+            Button("Cancel", role: .cancel) { model.resolveUnsaved(.cancel) }
+        } message: {
+            Text("Your changes will be lost if you don't save them.")
+        }
         .alert("FPGA Bridge", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
@@ -56,6 +67,7 @@ struct MainWindowView: View {
                     }
                 }
             }
+            .modifier(BlackContainers())
             .navigationTitle(model.project?.name ?? "FPGA Bridge")
             .navigationSubtitle(subtitle)
             .toolbar { MainToolbar(model: model) }
@@ -225,7 +237,18 @@ struct StatusBar: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
         .frame(height: 24)
-        .background(.bar)
+        .barBackground()
         .overlay(alignment: .top) { Divider() }
+    }
+}
+
+/// Gives the window the app's near-black dark color (macOS 15+); older systems keep the default.
+private struct BlackContainers: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content.containerBackground(Theme.window, for: .window)
+        } else {
+            content
+        }
     }
 }

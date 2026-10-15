@@ -22,6 +22,10 @@ final class AppModel: ObservableObject {
     @Published var showSettings = false
     @Published var showAddSources = false
     @Published var errorMessage: String?
+    @Published var unsavedPrompt: UnsavedPrompt?
+
+    // Text being edited, by project-relative path. A file is in here only while it differs from what is on disk.
+    @Published private(set) var drafts: [String: String] = [:]
 
     // Workspace and console
     @Published var openTabs: [WorkspaceTab] = [.summary]
@@ -92,6 +96,21 @@ final class AppModel: ObservableObject {
         case "file":
             openExampleProject()
             if let top = sourceTree.first?.children?.first?.path { openFile(top) }
+        case "editsave":
+            openExampleProject()
+            run(.bitstream)
+            while isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
+            if let top = sourceTree.first?.children?.first?.path {
+                openFile(top)
+                updateDraft(editedText(for: top) + "\n// saved from the editor\n", for: top)
+                saveFile(top)
+            }
+        case "edit":
+            openExampleProject()
+            if let top = sourceTree.first?.children?.first?.path {
+                openFile(top)
+                updateDraft(editedText(for: top) + "\n// added in the editor\nassign unused = 1'b0;\n", for: top)
+            }
         default: break
         }
         if let tab = env["FPGA_BRIDGE_CONSOLE_TAB"].flatMap(ConsoleTab.init(rawValue:)) {
@@ -115,10 +134,15 @@ final class AppModel: ObservableObject {
     }
 
     func openProject(at url: URL) {
+        afterResolvingUnsaved { self.loadProject(at: url) }
+    }
+
+    private func loadProject(at url: URL) {
         let directory = url.pathExtension == "json" ? url.deletingLastPathComponent() : url
         do {
             let loaded = try Project.load(from: directory)
             cancelRun()
+            drafts = [:]
             project = loaded
             projectURL = directory
             fileCache = [:]
@@ -135,8 +159,15 @@ final class AppModel: ObservableObject {
     }
 
     func closeProject() {
-        cancelRun()
-        echoTcl("close_project")
+        afterResolvingUnsaved {
+            self.cancelRun()
+            self.drafts = [:]
+            self.echoTcl("close_project")
+            self.discardProject()
+        }
+    }
+
+    private func discardProject() {
         project = nil
         projectURL = nil
         sourceTree = []
@@ -270,6 +301,74 @@ final class AppModel: ObservableObject {
             return nil
         }
         return search(sourceTree)
+    }
+
+    // MARK: Editing
+
+    var hasUnsavedChanges: Bool { !drafts.isEmpty }
+
+    func isDirty(_ path: String) -> Bool { drafts[path] != nil }
+
+    /// What the editor shows: the unsaved text if there is any, otherwise the file.
+    func editedText(for path: String) -> String { drafts[path] ?? contents(of: path) }
+
+    func updateDraft(_ text: String, for path: String) {
+        if text == contents(of: path) {
+            if drafts[path] != nil { drafts[path] = nil }
+        } else if drafts[path] != text {
+            drafts[path] = text
+        }
+    }
+
+    /// Writes an edited file back into the project. Like Vivado, changing a design or constraint source makes
+    /// finished runs out-of-date; a testbench doesn't affect synthesis. Returns false if the write failed.
+    @discardableResult
+    func saveFile(_ path: String) -> Bool {
+        guard let projectURL, let text = drafts[path] else { return true }
+        do {
+            try text.write(to: projectURL.appendingPathComponent(path), atomically: true, encoding: .utf8)
+        } catch {
+            errorMessage = "Couldn't save \((path as NSString).lastPathComponent): \(error.localizedDescription)"
+            return false
+        }
+        fileCache[path] = text
+        drafts[path] = nil
+        if !path.contains("/\(SourceSet.simulation.directoryName)/") { markOutOfDate() }
+        rebuildSourceTree()
+        lastMessage = "Saved \((path as NSString).lastPathComponent)"
+        return true
+    }
+
+    func saveCurrentFile() {
+        if case .file(let path) = selectedTab { saveFile(path) }
+    }
+
+    @discardableResult
+    func saveAll() -> Bool {
+        drafts.keys.sorted().allSatisfy { saveFile($0) }
+    }
+
+    /// Runs `action` now, or after the user has dealt with unsaved edits.
+    func afterResolvingUnsaved(_ action: @escaping () -> Void) {
+        if drafts.isEmpty {
+            action()
+        } else {
+            unsavedPrompt = UnsavedPrompt(files: drafts.keys.sorted(), proceed: action)
+        }
+    }
+
+    func resolveUnsaved(_ choice: UnsavedChoice) {
+        guard let prompt = unsavedPrompt else { return }
+        unsavedPrompt = nil
+        switch choice {
+        case .save:
+            if prompt.files.allSatisfy({ saveFile($0) }) { prompt.proceed() }
+        case .discard:
+            prompt.files.forEach { drafts[$0] = nil }
+            prompt.proceed()
+        case .cancel:
+            break
+        }
     }
 
     // MARK: Flow Navigator
@@ -499,6 +598,15 @@ final class AppModel: ObservableObject {
     func open(_ tab: WorkspaceTab) {
         if !openTabs.contains(tab) { openTabs.append(tab) }
         selectedTab = tab
+    }
+
+    /// Closes a tab, asking first if it holds unsaved edits.
+    func requestClose(_ tab: WorkspaceTab) {
+        if case .file(let path) = tab, isDirty(path) {
+            unsavedPrompt = UnsavedPrompt(files: [path]) { [weak self] in self?.close(tab) }
+        } else {
+            close(tab)
+        }
     }
 
     func close(_ tab: WorkspaceTab) {

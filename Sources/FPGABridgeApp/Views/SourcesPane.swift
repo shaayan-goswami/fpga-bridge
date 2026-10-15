@@ -69,6 +69,7 @@ struct SourcesPane: View {
                 ForEach(model.sourceTree) { SourceOutlineRow(node: $0) }
             }
             .listStyle(.inset)
+            .surfaceBackground()
         case .compileOrder:
             List(selection: $model.selectedSourceID) {
                 ForEach(compileOrder, id: \.self) { path in
@@ -76,6 +77,7 @@ struct SourcesPane: View {
                 }
             }
             .listStyle(.inset)
+            .surfaceBackground()
         case .ipSources:
             ContentUnavailableView("No IP", systemImage: "puzzlepiece.extension",
                                    description: Text("IP from the IP Catalog isn't supported yet."))
@@ -86,6 +88,7 @@ struct SourcesPane: View {
                 }
             }
             .listStyle(.inset)
+            .surfaceBackground()
         }
     }
 

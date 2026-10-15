@@ -204,6 +204,24 @@ struct SourceNode: Identifiable, Hashable {
     var children: [SourceNode]?
 }
 
+// MARK: Unsaved changes
+
+/// Asks what to do with edited files before something that would lose them (closing a tab, switching projects,
+/// quitting). `proceed` runs once the user has saved or discarded.
+struct UnsavedPrompt: Identifiable {
+    let id = UUID()
+    let files: [String]
+    let proceed: () -> Void
+
+    var title: String {
+        files.count == 1
+            ? "Do you want to save the changes you made to \((files[0] as NSString).lastPathComponent)?"
+            : "Do you want to save the changes to \(files.count) files?"
+    }
+}
+
+enum UnsavedChoice { case save, discard, cancel }
+
 // MARK: Console
 
 struct ConsoleLine: Identifiable {

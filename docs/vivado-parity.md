@@ -42,7 +42,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Project ▸ Archive… (zip with options: include run results, include config settings) | Mac | Todo |
 | Project ▸ Write Tcl… (script that recreates the project) | Mac | Todo |
 | Checkpoint ▸ Open / Write | Remote | Todo |
-| Text Editor ▸ New File, Open File, Save File, Save File As, Close File | Mac | Todo |
+| Text Editor ▸ Save File (⌘S) and Save All; close with a "save changes?" prompt | Mac | Done |
+| Text Editor ▸ New File, Open File, Save File As | Mac | Todo |
 | Add Sources… (⌥⌘A) | Mac | Done |
 | Import ▸ Import Constraints | Mac | Todo |
 | Export ▸ Export Bitstream File, Export Constraints, Export Hardware (.xsa), Export Simulation | Mac / Remote | Todo |
@@ -52,7 +53,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Item | How | Status |
 | --- | --- | --- |
-| Undo / Redo / Cut / Copy / Paste / Delete / Select All | Mac | Todo (needs the real editor) |
+| Undo / Redo / Cut / Copy / Paste / Select All, in the editor | Mac | Done |
 | Find… (objects), Find in Files…, Replace in Files… | Mac | Todo |
 
 ### Flow
@@ -117,7 +118,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Sources context menu: Set as Top, Remove File, Disable File, Open File, Replace File, Copy File Into Project, Hierarchy Update, Refresh Hierarchy | Mac | Todo |
 | Source File Properties | Mac | Done |
 | Project Summary dashboard (Overview, Settings, Board, Synthesis, Implementation, DRC, Timing, Utilization, Power, Methodology, Design Runs) | Mac + Remote data | Prototype |
-| Text editor: editing, save, undo, line numbers, syntax colors, find/replace, go to line, comment toggle, auto-indent, bracket match, linting markers from Messages | Mac | Prototype (read-only preview) |
+| Text editor: editing, save, undo, line numbers, syntax colors, find (⌘F), comment toggle (⌘/), auto-indent, Tab and Shift-Tab | Mac | Done |
+| Text editor: go to line, replace in files, bracket matching, linting markers from Messages | Mac | Todo |
 | Tcl Console (history with ↑/↓, command echo of GUI actions, clear) | Mac → Remote | Prototype (history Todo) |
 | Messages (grouped by run and ID, severity filters, search, suppress, jump to source line) | Mac | Prototype (grouping and filters) |
 | Log (per run, live) | Mac | Done |

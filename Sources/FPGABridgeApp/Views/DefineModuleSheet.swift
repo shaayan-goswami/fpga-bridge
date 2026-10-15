@@ -306,7 +306,7 @@ private struct PortTable: View {
             }
         }
         .frame(minHeight: 200)
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color(nsColor: .separatorColor)))
     }

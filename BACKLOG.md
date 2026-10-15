@@ -90,8 +90,12 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
       sampled from Vivado, Settings window (appearance, glass style, accents, font sizes), collapsible Flow Navigator
 - [x] App icon as an Icon Composer document that follows the system Icon & widget style; `scripts/make-app.sh` builds
       and ad-hoc signs `FPGA Bridge.app`
+- [x] Editable source editor: line numbers, syntax colors, undo and redo, find, comment toggle, auto-indent, ⌘S, an
+      "edited" dot on the tab, and a "save changes?" prompt when closing a tab, switching projects or quitting; saving a
+      design or constraint file marks finished runs out-of-date
+- [x] Near-black dark mode (window, sidebars, editor and console surfaces)
 - [ ] P1 Flow parity (separate runs with checkpoints, Launch Runs, completion popups, run settings and strategies)
-- [ ] P2 Projects and editing (real editor, Sources context menus, File and Edit menus; Define Module is done)
+- [ ] P2 Projects and editing (Sources context menus, File and Edit menus, Replace in Files, go to line; the editor and Define Module are done)
 - [ ] P3 Reports and analysis
 - [ ] P4 Program and debug (Hardware Manager via openFPGALoader)
 - [ ] P5 Simulation (Verilator/Icarus, waveform viewer)
