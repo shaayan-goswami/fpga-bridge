@@ -184,19 +184,25 @@ extension View {
     }
 }
 
-/// The fill for large surfaces such as the window and the sidebar: Liquid Glass (macOS 26+) that is clearer than the
-/// glass on small controls, or a thin material on older systems, or a solid color when glass is off.
+/// The fill for large surfaces such as the window and the sidebar: Liquid Glass (macOS 26+) tinted toward the window
+/// color so text stays readable over a busy desktop, or a thin material on older systems, or a solid color when glass
+/// is off. Frosted keeps the system's own, stronger blur and needs no tint.
 struct GlassFill: View {
     var solid: Color = Theme.window
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
+    @Environment(\.colorScheme) private var scheme
+
+    /// Dark glass in dark mode, light glass in light mode.
+    private var tint: Color { scheme == .dark ? Color.black.opacity(0.55) : Color.white.opacity(0.6) }
 
     var body: some View {
         if glass == .off {
             solid
         } else if #available(macOS 26.0, *) {
-            Color.clear.glassEffect(glass == .frosted ? .regular : .clear, in: Rectangle())
+            Color.clear.glassEffect(glass == .frosted ? .regular : Glass.clear.tint(tint), in: Rectangle())
         } else {
-            Rectangle().fill(glass == .frosted ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial))
+            Rectangle().fill(glass == .frosted ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.thinMaterial))
+                .overlay(tint.opacity(0.5))
         }
     }
 }
