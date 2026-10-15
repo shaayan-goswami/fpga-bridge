@@ -284,7 +284,7 @@ public enum ProjectCreator {
         return roots.sorted().first ?? declared[0]
     }
 
-    static func declaredModules(in text: String) -> [String] {
+    public static func declaredModules(in text: String) -> [String] {
         let source = stripComments(text)
         guard let regex = try? NSRegularExpression(pattern: "\\bmodule\\s+([A-Za-z_][A-Za-z0-9_$]*)") else { return [] }
         return regex.matches(in: source, range: NSRange(source.startIndex..., in: source)).compactMap {
@@ -292,7 +292,7 @@ public enum ProjectCreator {
         }
     }
 
-    static func stripComments(_ text: String) -> String {
+    public static func stripComments(_ text: String) -> String {
         var result = text
         for pattern in ["//[^\\n]*", "/\\*[\\s\\S]*?\\*/"] {
             result = result.replacingOccurrences(of: pattern, with: " ", options: .regularExpression)

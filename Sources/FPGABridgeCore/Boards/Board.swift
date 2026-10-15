@@ -1,7 +1,7 @@
 import Foundation
 
 /// A development board and the Vivado part it carries.
-public struct Board: Equatable {
+public struct Board: Equatable, Identifiable {
     /// Short id used on the command line, e.g. "basys3".
     public let id: String
     public let displayName: String

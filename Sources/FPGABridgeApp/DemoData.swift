@@ -1,21 +1,20 @@
 import FPGABridgeCore
 import Foundation
 
-/// A small simulated project, build log and reports so the app can be explored without a build machine.
+/// The example project ("Open Example Project") and the simulated runs used when no build machine is configured.
 enum DemoData {
     static let projectName = "blinky"
     static let part = "xc7a35tcpg236-1"
+    static let board = "basys3"
 
-    static let sources: [SourceFile] = [
-        SourceFile(path: "src/blinky.v", group: .design, isTop: true),
-        SourceFile(path: "src/clk_div.v", group: .design),
-        SourceFile(path: "src/debounce.v", group: .design),
-        SourceFile(path: "constraints/basys3.xdc", group: .constraints),
-        SourceFile(path: "sim/blinky_tb.v", group: .simulation),
+    /// File name -> source set, for creating the example project.
+    static let files: [(String, SourceSet)] = [
+        ("blinky.v", .design), ("clk_div.v", .design), ("debounce.v", .design),
+        ("basys3.xdc", .constraints), ("blinky_tb.v", .simulation),
     ]
 
     static let contents: [String: String] = [
-        "src/blinky.v": """
+        "blinky.v": """
         `timescale 1ns / 1ps
 
         // Counts up on the LEDs once per second (100 MHz clock).
@@ -39,7 +38,7 @@ enum DemoData {
             assign led = count;
         endmodule
         """,
-        "src/clk_div.v": """
+        "clk_div.v": """
         `timescale 1ns / 1ps
 
         // Emits a one-cycle pulse every DIVIDE clock cycles.
@@ -63,7 +62,7 @@ enum DemoData {
             end
         endmodule
         """,
-        "src/debounce.v": """
+        "debounce.v": """
         `timescale 1ns / 1ps
 
         // Ignores a button until it has been stable for about 10 ms.
@@ -83,7 +82,7 @@ enum DemoData {
             end
         endmodule
         """,
-        "constraints/basys3.xdc": """
+        "basys3.xdc": """
         ## Clock (100 MHz)
         set_property -dict { PACKAGE_PIN W5  IOSTANDARD LVCMOS33 } [get_ports clk]
         create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports clk]
@@ -97,7 +96,7 @@ enum DemoData {
         set_property -dict { PACKAGE_PIN U19 IOSTANDARD LVCMOS33 } [get_ports {led[2]}]
         set_property -dict { PACKAGE_PIN V19 IOSTANDARD LVCMOS33 } [get_ports {led[3]}]
         """,
-        "sim/blinky_tb.v": """
+        "blinky_tb.v": """
         `timescale 1ns / 1ps
 
         module blinky_tb;
@@ -181,45 +180,82 @@ enum DemoData {
     +-----------------------------+------+-------+------------+-----------+-------+
     """
 
-    static var reports: [String: String] {
-        [BuildSummary.timingReport: timingReport, BuildSummary.utilizationReport: utilizationReport]
+    /// Post-synthesis numbers are a little higher than post-implementation ones, as in real runs.
+    static var synthUtilizationReport: String {
+        utilizationReport.replacingOccurrences(of: "|   38 |", with: "|   41 |")
     }
 
-    // MARK: Build log: (seconds to wait before this line, text)
+    static func reports(for kind: RunKind) -> [ReportFile] {
+        switch kind {
+        case .synthesis:
+            [ReportFile(run: .synthesis, name: "synth_utilization.rpt", text: synthUtilizationReport)]
+        case .implementation:
+            [ReportFile(run: .implementation, name: BuildSummary.timingReport, text: timingReport),
+             ReportFile(run: .implementation, name: BuildSummary.utilizationReport, text: utilizationReport)]
+        case .bitstream:
+            []
+        }
+    }
 
-    static let buildLog: [(Double, String)] = [
-        (0.2, "Copying 5 files to buildbox...\n"),
-        (0.6, "Running Vivado... (Ctrl-C cancels)\n"),
+    // MARK: Run logs: (seconds to wait before this chunk, text)
+
+    /// The simulated log for a step. Synthesis lines are built from the real project so any project gets a
+    /// believable run.
+    static func log(for kind: RunKind, top: String, part: String, sources: [String], constraints: [String]) -> [(Double, String)] {
+        switch kind {
+        case .synthesis:
+            var lines: [(Double, String)] = [
+                (0.2, "Copying \(sources.count + constraints.count) files to buildbox...\n"),
+                (0.5, "****** Vivado v2023.2 (64-bit)\n"),
+                (0.1, "source synth.tcl\n"),
+            ]
+            for path in sources {
+                let ext = (path as NSString).pathExtension.lowercased()
+                let reader = ext.hasPrefix("vhd") ? "read_vhdl" : (ext.hasPrefix("sv") ? "read_verilog -sv" : "read_verilog")
+                lines.append((0.1, "Command: \(reader) {\(path)}\n"))
+            }
+            lines += constraints.map { (0.1, "Command: read_xdc {\($0)}\n") }
+            lines += [
+                (0.4, "Command: synth_design -top \(top) -part \(part)\n"),
+                (0.3, "INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes\n"),
+                (0.3, "INFO: [Synth 8-6157] synthesizing module '\(top)'\n"),
+                (0.3, "WARNING: [Synth 8-6014] Unused sequential element last_reg was removed.\n"),
+                (0.4, "Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:08 ; elapsed = 00:00:09\n"),
+                (0.3, "INFO: [Synth 8-6155] done synthesizing module '\(top)' (0#1)\n"),
+                (0.3, "Command: report_utilization -file synth_utilization.rpt\n"),
+                (0.2, "synth_design completed successfully\n"),
+            ]
+            return lines
+        case .implementation:
+            return implementationLog
+        case .bitstream:
+            return bitstreamLog.map { ($0.0, $0.1.replacingOccurrences(of: "blinky.bit", with: "\(top).bit")) }
+        }
+    }
+
+    static let implementationLog: [(Double, String)] = [
         (0.4, "****** Vivado v2023.2 (64-bit)\n"),
-        (0.1, "source build.tcl\n"),
-        (0.4, "Command: read_verilog {src/blinky.v}\n"),
-        (0.1, "Command: read_verilog {src/clk_div.v}\n"),
-        (0.1, "Command: read_verilog {src/debounce.v}\n"),
-        (0.1, "Command: read_xdc {constraints/basys3.xdc}\n"),
-        (0.4, "Command: synth_design -top blinky -part xc7a35tcpg236-1\n"),
-        (0.3, "INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes\n"),
-        (0.3, "INFO: [Synth 8-638] synthesizing module 'blinky' [src/blinky.v:5]\n"),
-        (0.2, "INFO: [Synth 8-638] synthesizing module 'debounce' [src/debounce.v:5]\n"),
-        (0.2, "WARNING: [Synth 8-3848] Net out in module/entity debounce does not have driver. [src/debounce.v:7]\n"),
-        (0.2, "INFO: [Synth 8-638] synthesizing module 'clk_div' [src/clk_div.v:5]\n"),
-        (0.3, "WARNING: [Synth 8-6014] Unused sequential element last_reg was removed. [src/debounce.v:12]\n"),
-        (0.4, "Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:08 ; elapsed = 00:00:09\n"),
-        (0.4, "INFO: [Synth 8-256] done synthesizing module 'blinky'\n"),
-        (0.3, "Command: opt_design\n"),
-        (0.5, "INFO: [Opt 31-49] Retargeted 0 cell(s).\n"),
+        (0.1, "source impl.tcl\n"),
+        (0.3, "Command: open_checkpoint synth.dcp\n"),
+        (0.4, "Command: opt_design\n"),
+        (0.4, "INFO: [Opt 31-49] Retargeted 0 cell(s).\n"),
         (0.3, "Command: place_design\n"),
         (0.4, "INFO: [Place 30-611] Multithreading enabled for place_design using a maximum of 2 CPUs\n"),
         (0.5, "Phase 1 Placer Initialization\nPhase 2 Global Placement\nPhase 3 Detail Placement\n"),
-        (0.4, "Command: route_design\n"),
-        (0.4, "INFO: [Route 35-254] Router estimated timing not met\n"),
+        (0.3, "Command: route_design\n"),
         (0.4, "Phase 3 Initial Routing\nPhase 4 Rip-up And Reroute\nPhase 5 Post Hold Fix\n"),
-        (0.4, "WARNING: [Timing 38-436] There are set_bus_skew constraint(s) in this design.\n"),
-        (0.4, "Command: report_timing_summary -file out/timing_summary.rpt\n"),
-        (0.3, "Command: report_utilization -file out/utilization.rpt\n"),
-        (0.3, "Command: write_bitstream -force out/blinky.bit\n"),
-        (0.5, "INFO: [Project 1-1161] Replacing the site type of  of the bitstream with the site type from the part.\n"),
-        (0.6, "Bitgen Completed Successfully.\n"),
-        (0.2, "INFO: [Common 17-206] Exiting Vivado\n"),
-        (0.3, "Results in build/\n"),
+        (0.3, "WARNING: [Timing 38-436] There are set_bus_skew constraint(s) in this design.\n"),
+        (0.3, "Command: report_timing_summary -file timing_summary.rpt\n"),
+        (0.2, "Command: report_utilization -file utilization.rpt\n"),
+        (0.2, "route_design completed successfully\n"),
+    ]
+
+    static let bitstreamLog: [(Double, String)] = [
+        (0.3, "Command: write_bitstream -force blinky.bit\n"),
+        (0.4, "INFO: [DRC 23-27] Running DRC with 2 threads\n"),
+        (0.5, "Loading data files...\nCreating bitmap...\nCreating bitstream...\n"),
+        (0.4, "Writing bitstream ./blinky.bit...\n"),
+        (0.3, "INFO: [Vivado 12-1842] Bitgen Completed Successfully.\n"),
+        (0.2, "write_bitstream completed successfully\n"),
     ]
 }

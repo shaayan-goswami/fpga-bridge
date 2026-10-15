@@ -71,7 +71,7 @@ public struct Project: Codable, Equatable {
             : "this project is pinned to Vivado \(pinned), but the build machine is set up for \(actual) (\(vivadoPath))"
     }
 
-    static func version(in path: String) -> String? {
+    public static func version(in path: String) -> String? {
         guard let match = path.range(of: #"[\\/]Vivado[\\/](\d{4}\.\d+)[\\/]"#, options: .regularExpression) else { return nil }
         return path[match].split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init)
     }
