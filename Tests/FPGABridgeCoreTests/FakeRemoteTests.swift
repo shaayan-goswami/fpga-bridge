@@ -167,12 +167,16 @@ final class FakeRemoteTests: XCTestCase {
         let (project, root) = try makeProject()
         _ = try Remote(config: config).build(project: project, root: root)
 
-        XCTAssertEqual(calls.map { String($0.prefix(3)) }, ["ssh", "scp", "ssh", "scp"], "\(calls)")
-        XCTAssertTrue(calls[0].contains("rmdir /s /q .fpga-bridge\\demo"), "stale remote job dir must be cleared first")
-        XCTAssertTrue(calls[1].contains("-r") && calls[1].contains("me@buildbox:.fpga-bridge/"), "directory upload needs -r")
-        XCTAssertTrue(calls[2].contains(#"call "\#(Self.vivadoPath)" -mode batch -nojournal -nolog -source build.tcl"#),
+        XCTAssertEqual(calls.map { String($0.prefix(3)) }, ["ssh", "ssh", "scp", "ssh", "scp", "ssh"], "\(calls)")
+        // Indexing below would crash the whole test run if the sequence is wrong, hiding every other failure.
+        guard calls.count == 6 else { return }
+        XCTAssertTrue(calls[0].contains("mkdir .fpga-bridge\\lock"), "lock is taken first")
+        XCTAssertTrue(calls[1].contains("rmdir /s /q .fpga-bridge\\demo"), "stale remote job dir must be cleared")
+        XCTAssertTrue(calls[2].contains("-r") && calls[2].contains("me@buildbox:.fpga-bridge/"), "directory upload needs -r")
+        XCTAssertTrue(calls[3].contains(#"call "\#(Self.vivadoPath)" -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-"#),
                       "the Vivado path has spaces and must stay quoted")
-        XCTAssertTrue(calls[3].contains("-r") && calls[3].contains("me@buildbox:.fpga-bridge/demo/out"))
+        XCTAssertTrue(calls[4].contains("-r") && calls[4].contains("me@buildbox:.fpga-bridge/demo/out"))
+        XCTAssertTrue(calls[5].contains("rmdir /s /q .fpga-bridge\\lock"), "lock is released last")
     }
 
     func testBuildFailureReturnsExitStatusAndFetchesNothing() throws {
@@ -211,6 +215,7 @@ final class FakeRemoteTests: XCTestCase {
             XCTAssertTrue("\(error)".contains("SSH failed"), "\(error)")
         }
         XCTAssertFalse(calls.contains { $0.contains("-source build.tcl") }, "Vivado must not run after a failed copy")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: remoteFile(".fpga-bridge/lock").path), "lock must be released")
     }
 
     func testBuildThrowsWhenSSHIsRejected() throws {
@@ -224,8 +229,172 @@ final class FakeRemoteTests: XCTestCase {
         let keyed = BridgeConfig(host: "buildbox", user: "me", vivadoPath: Self.vivadoPath, sshKeyPath: "/keys/id_test")
         let (project, root) = try makeProject()
         _ = try Remote(config: keyed).build(project: project, root: root)
-        XCTAssertEqual(calls.count, 4)
+        XCTAssertEqual(calls.count, 6)
         XCTAssertTrue(calls.allSatisfy { $0.contains("-i /keys/id_test") }, "\(calls)")
+    }
+
+    // MARK: Lock
+
+    private func holdLock(owner: String?) throws {
+        let dir = remoteFile(".fpga-bridge/lock")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        if let owner { try owner.write(to: dir.appendingPathComponent("owner.txt"), atomically: true, encoding: .utf8) }
+    }
+
+    var lockExists: Bool { FileManager.default.fileExists(atPath: remoteFile(".fpga-bridge/lock").path) }
+
+    func testBuildFailsWithOwnerWhenMachineIsBusyAndLeavesTheirLockAlone() throws {
+        try holdLock(owner: "alice@laptop building other since 2026-10-15T10:00:00Z")
+        let (project, root) = try makeProject()
+
+        XCTAssertThrowsError(try Remote(config: config).build(project: project, root: root)) { error in
+            XCTAssertEqual(error as? RemoteError, .busy(owner: "alice@laptop building other since 2026-10-15T10:00:00Z"))
+            XCTAssertTrue("\(error)".contains("alice@laptop"))
+            XCTAssertTrue("\(error)".contains("fpga-bridge unlock"))
+        }
+        XCTAssertTrue(lockExists, "must not release a lock we did not take")
+        XCTAssertFalse(calls.contains { $0.hasPrefix("scp") }, "nothing may be copied while busy")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: remoteFile(".fpga-bridge/demo").path))
+    }
+
+    func testBusyWithoutOwnerFile() throws {
+        try holdLock(owner: nil)
+        let (project, root) = try makeProject()
+        XCTAssertThrowsError(try Remote(config: config).build(project: project, root: root)) { error in
+            XCTAssertEqual(error as? RemoteError, .busy(owner: nil))
+        }
+        XCTAssertTrue(lockExists)
+    }
+
+    func testLockIsHeldDuringTheBuildAndReleasedAfterwards() throws {
+        // The fake Vivado fails the run if the lock directory is missing while it runs.
+        let (project, root) = try makeProject()
+        XCTAssertEqual(try Remote(config: config).build(project: project, root: root), 0)
+        XCTAssertFalse(lockExists)
+    }
+
+    func testLockIsReleasedAfterVivadoFails() throws {
+        setenv("FAKE_VIVADO_MODE", "fail", 1)
+        let (project, root) = try makeProject()
+        XCTAssertEqual(try Remote(config: config).build(project: project, root: root), 1)
+        XCTAssertFalse(lockExists)
+    }
+
+    func testSecondBuildSucceedsAfterTheFirstFinished() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        XCTAssertEqual(try remote.build(project: project, root: root), 0)
+        XCTAssertEqual(try remote.build(project: project, root: root), 0)
+    }
+
+    func testUnlockRemovesStaleLockAndIsHarmlessWhenNoneExists() throws {
+        try holdLock(owner: "crashed@laptop building demo since 2026-10-14T09:00:00Z")
+        try Remote(config: config).unlock()
+        XCTAssertFalse(lockExists)
+        XCTAssertNoThrow(try Remote(config: config).unlock())
+    }
+
+    func testOwnerLineIsPlainTextEndingInALetter() {
+        let line = Remote.ownerLine(project: "demo", date: Date(timeIntervalSince1970: 0),
+                                    machine: "Mac Book!?.local", user: "me")
+        XCTAssertEqual(line, "me@Mac Book__.local building demo since 1970-01-01T00:00:00Z")
+        XCTAssertNil(line.range(of: "[^A-Za-z0-9@._: -]", options: .regularExpression), "cmd.exe metacharacter in \(line)")
+        XCTAssertTrue(line.last?.isLetter == true, "a trailing digit before > would redirect a file handle")
+    }
+
+    // MARK: Cancel and connection loss
+
+    func testCtrlCStopsRemoteVivadoReleasesLockAndSkipsFetch() throws {
+        setenv("FAKE_VIVADO_MODE", "hang", 1)
+        let (project, root) = try makeProject()
+        let log = self.log!
+
+        // Press "Ctrl-C" once the fake Vivado has been started.
+        Thread {
+            for _ in 0..<200 {
+                if let text = try? String(contentsOf: log, encoding: .utf8), text.contains("-tclargs") { break }
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+            Thread.sleep(forTimeInterval: 0.3)
+            kill(getpid(), SIGINT)
+        }.start()
+
+        let started = Date()
+        let status = try Remote(config: config).build(project: project, root: root)
+
+        XCTAssertEqual(status, Shell.interruptedStatus)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 20, "cancelling should not wait for Vivado to finish")
+
+        let run = try XCTUnwrap(calls.first { $0.contains("-tclargs") })
+        let token = try XCTUnwrap(run.range(of: "fpgabridge-[a-f0-9]{8}", options: .regularExpression)
+            .map { String(run[$0].dropFirst("fpgabridge-".count)) })
+        let cancel = try XCTUnwrap(calls.first { $0.contains("taskkill") }, "no cancel command was sent: \(calls)")
+        XCTAssertTrue(cancel.contains("'\(token)*'"), "cancel must target this job: \(cancel)")
+        XCTAssertFalse(cancel.contains("fpgabridge-\(token)"), "the cancel command must not match itself")
+        XCTAssertEqual(try String(contentsOf: remoteFile(".cancelled"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines), token)
+
+        XCTAssertFalse(lockExists, "lock must be released after cancelling")
+        XCTAssertEqual(calls.filter { $0.hasPrefix("scp") }.count, 1, "no results fetch after cancelling")
+    }
+
+    func testSignalHandlersAreRestoredAfterStream() throws {
+        _ = try Shell.stream("true", [], onInterrupt: {})
+        var action = sigaction()
+        sigaction(SIGINT, nil, &action)
+        // SIG_DFL is the null handler.
+        XCTAssertEqual(unsafeBitCast(action.__sigaction_u.__sa_handler, to: Int.self), 0, "SIGINT must go back to its default behavior")
+    }
+
+    func testDroppedConnectionIsReportedWithTheJobDirectory() throws {
+        setenv("FAKE_VIVADO_MODE", "lost", 1)
+        let (project, root) = try makeProject()
+        XCTAssertThrowsError(try Remote(config: config).build(project: project, root: root)) { error in
+            XCTAssertEqual(error as? RemoteError, .connectionLost(jobDir: ".fpga-bridge\\demo"))
+            XCTAssertTrue("\(error)".contains("fpga-bridge unlock"))
+        }
+        XCTAssertFalse(calls.filter { $0.hasPrefix("scp") }.count > 1, "no fetch after a lost connection")
+    }
+
+    func testKeepaliveOptionsAreSetOnEveryConnection() throws {
+        let (project, root) = try makeProject()
+        _ = try Remote(config: config).build(project: project, root: root)
+        XCTAssertTrue(calls.allSatisfy { $0.contains("ServerAliveInterval=15") && $0.contains("ServerAliveCountMax=4") }, "\(calls)")
+    }
+
+    func testJobCommandsCarryTheMarkerOnlyWhereIntended() {
+        let build = Remote.buildCommand(vivadoPath: Self.vivadoPath, jobDir: #".fpga-bridge\demo"#, token: "a1b2c3d4")
+        XCTAssertTrue(build.hasSuffix("-tclargs fpgabridge-a1b2c3d4"))
+        let cancel = Remote.cancelCommand(token: "a1b2c3d4")
+        XCTAssertTrue(cancel.contains("taskkill /F /T"))
+        XCTAssertTrue(cancel.contains("$_.ProcessId -ne $PID"))
+        XCTAssertFalse(cancel.contains("fpgabridge-a1b2c3d4"))
+    }
+
+    // MARK: Vivado version pin
+
+    func testVersionPinWarnings() {
+        func project(_ version: String?) -> Project {
+            Project(name: "p", top: "t", part: "x", sources: ["s"], constraints: [], vivadoVersion: version)
+        }
+        let path = #"C:\Program Files\Xilinx\Vivado\2023.2\bin\vivado.bat"#
+        XCTAssertNil(project(nil).versionWarning(vivadoPath: path))
+        XCTAssertNil(project("2023.2").versionWarning(vivadoPath: path))
+        XCTAssertNil(project("2023.2").versionWarning(vivadoPath: "/opt/Xilinx/Vivado/2023.2/bin/vivado"))
+
+        let mismatch = project("2024.1").versionWarning(vivadoPath: path)
+        XCTAssertTrue(mismatch?.contains("pinned to Vivado 2024.1") == true && mismatch?.contains("2023.2") == true, "\(String(describing: mismatch))")
+        XCTAssertTrue(project("2023.2").versionWarning(vivadoPath: #"C:\tools\vivado.bat"#)?.contains("can't be read") == true)
+    }
+
+    func testVersionPinValidation() {
+        func validate(_ v: String) throws {
+            try Project(name: "p", top: "t", part: "x", sources: ["s"], constraints: [], vivadoVersion: v).validate()
+        }
+        XCTAssertNoThrow(try validate("2023.2"))
+        XCTAssertNoThrow(try validate("2024.1"))
+        XCTAssertThrowsError(try validate("23.2"))
+        XCTAssertThrowsError(try validate("latest"))
+        XCTAssertThrowsError(try validate("2023.2; calc"))
     }
 
     // MARK: Tcl

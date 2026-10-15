@@ -6,7 +6,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Report.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Report.self, Unlock.self]
     )
 }
 
@@ -78,6 +78,8 @@ struct New: ParsableCommand {
     @Option(parsing: .upToNextOption, help: "Source files or directories.") var sources: [String] = ["."]
     @Option(parsing: .upToNextOption, help: "Constraint (.xdc) files or directories.") var constraints: [String] = ["."]
     @Option(help: "Project name (default: directory name).") var name: String?
+    @Option(help: "Pin the Vivado version this project builds with, e.g. 2023.2. Builds warn if the build machine differs.")
+    var vivadoVersion: String?
 
     func validate() throws {
         if listBoards { return }
@@ -104,7 +106,8 @@ struct New: ParsableCommand {
         let dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let derived = dir.lastPathComponent.map { $0.isLetter || $0.isNumber || $0 == "-" ? $0 : "_" }
         let project = Project(name: name ?? String(derived), top: top ?? "", part: resolvedBoard?.part ?? part ?? "",
-                              sources: sources, constraints: constraints, board: resolvedBoard?.id)
+                              sources: sources, constraints: constraints, board: resolvedBoard?.id,
+                              vivadoVersion: vivadoVersion)
         try project.validate()
         if FileManager.default.fileExists(atPath: dir.appendingPathComponent(Project.fileName).path) {
             throw ValidationError("\(Project.fileName) already exists here.")
@@ -126,6 +129,17 @@ struct Build: ParsableCommand {
         if status != 0 { throw ExitCode(status) }
         print("")
         print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+    }
+}
+
+struct Unlock: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Release the build lock on the Windows machine.",
+        discussion: "Only one build runs on the build machine at a time. Use this if a build was lost (crash, dropped connection) and left the lock behind.")
+
+    func run() throws {
+        try Remote(config: try BridgeConfig.load()).unlock()
+        print("Build lock released.")
     }
 }
 

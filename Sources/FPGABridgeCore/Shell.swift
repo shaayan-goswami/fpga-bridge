@@ -56,11 +56,51 @@ public enum Shell {
     }
 
     /// Runs a command with stdin/stdout/stderr attached to the terminal and returns its exit status.
-    public static func stream(_ executable: String, _ arguments: [String]) throws -> Int32 {
+    ///
+    /// With `onInterrupt`, Ctrl-C (SIGINT) and SIGTERM are caught instead of killing this process: the child is
+    /// terminated, `onInterrupt` runs after it has exited (so cleanup can talk to the same remote), and the result
+    /// is `Shell.interruptedStatus`.
+    public static func stream(
+        _ executable: String, _ arguments: [String], onInterrupt: (() -> Void)? = nil
+    ) throws -> Int32 {
         let process = makeProcess(executable, arguments)
+        guard let onInterrupt else {
+            do { try process.run() } catch { throw ShellError.launchFailed(executable, error) }
+            process.waitUntilExit()
+            return process.terminationStatus
+        }
+
+        let signals = [SIGINT, SIGTERM]
+        let flag = InterruptFlag()
+        let previous = signals.map { signal($0, SIG_IGN) }
+        let sources = signals.map { sig -> DispatchSourceSignal in
+            let source = DispatchSource.makeSignalSource(signal: sig, queue: .global())
+            source.setEventHandler { flag.set(); process.terminate() }
+            source.resume()
+            return source
+        }
+        defer {
+            sources.forEach { $0.cancel() }
+            for (sig, old) in zip(signals, previous) { signal(sig, old) }
+        }
+
         do { try process.run() } catch { throw ShellError.launchFailed(executable, error) }
         process.waitUntilExit()
+        if flag.isSet {
+            onInterrupt()
+            return interruptedStatus
+        }
         return process.terminationStatus
+    }
+
+    /// Conventional exit status for "terminated by Ctrl-C" (128 + SIGINT).
+    public static let interruptedStatus: Int32 = 130
+
+    private final class InterruptFlag {
+        private let lock = NSLock()
+        private var value = false
+        var isSet: Bool { lock.lock(); defer { lock.unlock() }; return value }
+        func set() { lock.lock(); value = true; lock.unlock() }
     }
 
     private static func makeProcess(_ executable: String, _ arguments: [String]) -> Process {

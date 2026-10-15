@@ -12,16 +12,20 @@ public struct Project: Codable, Equatable {
     public var constraints: [String]
     /// Board id from `BoardCatalog`, recorded when the project was created with `new --board`.
     public var board: String?
+    /// Vivado version this project is meant to build with, e.g. "2023.2". Different versions give different results.
+    public var vivadoVersion: String?
 
     public static let fileName = "fpga-bridge.json"
 
-    public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil) {
+    public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil,
+                vivadoVersion: String? = nil) {
         self.name = name
         self.top = top
         self.part = part
         self.sources = sources
         self.constraints = constraints
         self.board = board
+        self.vivadoVersion = vivadoVersion
     }
 
     public static func load(from directory: URL) throws -> Project {
@@ -45,6 +49,25 @@ public struct Project: Codable, Equatable {
         guard Project.isPlain(top) else { throw ProjectError.invalid("top must use only letters, digits, '_' and '-'") }
         guard Project.isPlain(part) else { throw ProjectError.invalid("part must use only letters, digits, '_' and '-'") }
         guard !sources.isEmpty else { throw ProjectError.invalid("sources must list at least one file or directory") }
+        if let vivadoVersion, Project.version(in: "/Vivado/\(vivadoVersion)/") == nil {
+            throw ProjectError.invalid("vivadoVersion must look like 2023.2")
+        }
+    }
+
+    /// Warns when the project pins a Vivado version and the configured install is a different one. The version is
+    /// read from the install path (`...\Vivado\2023.2\bin\vivado.bat`), which is how AMD lays installs out.
+    public func versionWarning(vivadoPath: String) -> String? {
+        guard let pinned = vivadoVersion else { return nil }
+        guard let actual = Project.version(in: vivadoPath) else {
+            return "this project is pinned to Vivado \(pinned), but the version can't be read from \(vivadoPath)"
+        }
+        return actual == pinned ? nil
+            : "this project is pinned to Vivado \(pinned), but the build machine is set up for \(actual) (\(vivadoPath))"
+    }
+
+    static func version(in path: String) -> String? {
+        guard let match = path.range(of: #"[\\/]Vivado[\\/](\d{4}\.\d+)[\\/]"#, options: .regularExpression) else { return nil }
+        return path[match].split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init)
     }
 
     private static func isPlain(_ s: String) -> Bool {

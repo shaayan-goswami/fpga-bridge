@@ -29,6 +29,7 @@ Legend: `[x]` done, `[ ]` todo. Order within a milestone is roughly the order to
 - [ ] Handle Microsoft-account usernames and domain accounts in the setup script's printed `--user`
 - [x] CI: build and test on macOS via GitHub Actions, plus a syntax check of `windows/setup.ps1` (workflow written; not yet seen running on GitHub)
 - [x] Fake build machine for tests: stub `ssh`/`scp` that only accept the exact commands we should send; covers `doctor`, `build`, `tcl`
+- [ ] Confirm the new `windows-cmd-lines` CI job passes on GitHub (runs the lock/prep/unlock/cancel command lines through a real cmd.exe); fix whatever it finds
 - [ ] Run the manual `windows-setup-smoke` CI job (Actions tab > CI > Run workflow) and fix whatever it finds in `setup.ps1`
 
 ## M1: Remote builds (CLI)
@@ -50,10 +51,13 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 - [ ] Show the worst failing paths (needs `report_timing -max_paths` in `build.tcl`)
 - [ ] `build --strict`: exit non-zero when timing is not met
 - [ ] Incremental behavior: skip copying unchanged files; optional `--clean`
-- [ ] Cancel a running build cleanly (Ctrl-C kills the remote Vivado process)
-- [ ] Handle dropped SSH connection mid-build (keepalive, reattach to the log, or fail clearly)
-- [ ] Lock/queue so two builds don't collide on the same build machine
-- [ ] Vivado version check and warning when it differs from the project's pinned version
+- [x] Cancel a running build cleanly: Ctrl-C kills the remote Vivado process tree (found by a per-run marker on its command line), releases the lock, exits 130
+- [x] Dropped SSH connection mid-build: keepalives, and a clear error naming the job directory and `fpga-bridge unlock`
+- [ ] Reattach after a lost connection: keep Vivado's log in a file on the build machine and add `fpga-bridge fetch` to collect results from a build that finished without us
+- [x] Build lock so two builds don't collide on the same build machine (shows the owner when busy; `fpga-bridge unlock` clears a stale one)
+- [ ] Queue instead of failing when busy (`build --wait`), and expire locks left by a crashed build
+- [x] Vivado version pin (`new --vivado-version`) with a warning when the build machine's configured install differs (version read from the install path)
+- [ ] Check the real version with `vivado -version` instead of trusting the path
 - [ ] Linux build machine support (if decided above)
 
 ## M2: Flashing

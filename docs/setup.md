@@ -27,7 +27,21 @@ fpga-bridge new --list-boards           # supported Digilent boards (see boards.
 fpga-bridge new --board basys3 --top top --sources src --constraints constraints
 fpga-bridge build                       # copy, run Vivado, fetch results into build/, print summary
 fpga-bridge report                      # re-print the timing/utilization summary from build/
+fpga-bridge unlock                      # release the build lock on the Windows machine (see below)
 ```
+
+## Build safety
+
+- **One build at a time.** `build` takes a lock on the Windows machine. If someone else's build holds it you get
+  `The build machine is busy: alice@laptop building demo since ...` and nothing is copied. If a build was lost (crash,
+  dropped connection) and left the lock behind, run `fpga-bridge unlock`.
+- **Ctrl-C cancels cleanly.** It stops the local session, kills Vivado on the Windows machine (found by a per-run marker
+  on its command line), and releases the lock. Press it once and wait a moment.
+- **Dropped connection.** SSH keepalives make a dead connection fail in about a minute, with a message that names the job
+  directory on the build machine. Vivado may still be running there; the lock stays held until you `unlock`.
+- **Pin the Vivado version.** `fpga-bridge new ... --vivado-version 2023.2` records it in `fpga-bridge.json`, and `build`
+  warns if the build machine is set up for a different version. The version is read from the install path
+  (`...\Vivado\2023.2\bin\vivado.bat`).
 
 `build` prints something like:
 
@@ -51,7 +65,7 @@ swift build
 swift test
 ```
 
-The tests run `build`, `doctor` and `tcl` against stub `ssh`/`scp` scripts in `Tests/FPGABridgeCoreTests/FakeRemote/`
+The tests run `build`, `doctor`, `tcl` and the lock/cancel paths against stub `ssh`/`scp` scripts in `Tests/FPGABridgeCoreTests/FakeRemote/`
 that act as a Windows machine. They accept only the exact command lines fpga-bridge should send, so if you change a
 remote command, update the stub in the same commit.
 

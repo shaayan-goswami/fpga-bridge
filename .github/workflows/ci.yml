@@ -41,6 +41,110 @@ jobs:
           }
           Write-Host 'windows/setup.ps1 parses cleanly'
 
+  # The Swift tests use stub ssh/scp, so they can't tell whether Windows' cmd.exe reads our command lines the way we
+  # think (for example, text after `&` on an `if` line belongs to that `if`). This job runs the exact command lines
+  # through a real cmd.exe. Keep them identical to Remote.swift: CIWorkflowTests fails if they drift.
+  windows-cmd-lines:
+    name: Run remote command lines through real cmd.exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lock, prep and unlock
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'fake-profile'
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          Set-Location $dir
+
+          # Runs one line the way sshd does (through cmd.exe). A batch file avoids PowerShell's argument quoting.
+          function Invoke-Cmd([string]$line) {
+            Set-Content -Path "$dir\line.cmd" -Value @('@echo off', $line) -Encoding ascii
+            & cmd.exe /c "$dir\line.cmd" 2>&1 | Out-String | Write-Host
+            return $LASTEXITCODE
+          }
+
+          $acquire = @'
+          (if not exist .fpga-bridge mkdir .fpga-bridge) & mkdir .fpga-bridge\lock && echo ci@runner building demo since 2026-10-15T10:00:00Z> .fpga-bridge\lock\owner.txt
+          '@
+          $acquireOther = @'
+          (if not exist .fpga-bridge mkdir .fpga-bridge) & mkdir .fpga-bridge\lock && echo other@runner building demo since 2026-10-15T11:00:00Z> .fpga-bridge\lock\owner.txt
+          '@
+          $readOwner = @'
+          type .fpga-bridge\lock\owner.txt
+          '@
+          $prep = @'
+          (if not exist .fpga-bridge mkdir .fpga-bridge) & (if exist .fpga-bridge\demo rmdir /s /q .fpga-bridge\demo)
+          '@
+          $release = @'
+          rmdir /s /q .fpga-bridge\lock
+          '@
+          $unlock = @'
+          (if exist .fpga-bridge\lock rmdir /s /q .fpga-bridge\lock)
+          '@
+
+          # The first acquire works from a clean profile and records the owner.
+          if ((Invoke-Cmd $acquire) -ne 0) { throw 'first acquire failed' }
+          $owner = (Get-Content .fpga-bridge\lock\owner.txt -Raw).Trim()
+          if ($owner -ne 'ci@runner building demo since 2026-10-15T10:00:00Z') { throw "wrong owner file: [$owner]" }
+
+          # A second acquire must fail and must not overwrite the first owner.
+          if ((Invoke-Cmd $acquireOther) -eq 0) { throw 'second acquire should have failed while the lock is held' }
+          $owner = (Get-Content .fpga-bridge\lock\owner.txt -Raw).Trim()
+          if ($owner -ne 'ci@runner building demo since 2026-10-15T10:00:00Z') { throw "owner was overwritten: [$owner]" }
+          if ((Invoke-Cmd $readOwner) -ne 0) { throw 'reading the owner failed' }
+
+          # Prep must clear a stale job directory even when .fpga-bridge already exists (the `&`-after-`if` trap).
+          New-Item -ItemType Directory -Force .fpga-bridge\demo | Out-Null
+          Set-Content .fpga-bridge\demo\old.txt 'stale'
+          if ((Invoke-Cmd $prep) -ne 0) { throw 'prep failed' }
+          if (Test-Path .fpga-bridge\demo) { throw 'stale job directory survived prep' }
+          if ((Invoke-Cmd $prep) -ne 0) { throw 'prep with nothing to remove should succeed' }
+
+          # Prep creates the scratch directory when it is missing.
+          Remove-Item .fpga-bridge -Recurse -Force
+          if ((Invoke-Cmd $prep) -ne 0) { throw 'prep on a fresh profile failed' }
+          if (-not (Test-Path .fpga-bridge)) { throw 'prep did not create .fpga-bridge' }
+
+          # Release, then the lock can be taken again.
+          if ((Invoke-Cmd $acquire) -ne 0) { throw 'acquire after prep failed' }
+          if ((Invoke-Cmd $release) -ne 0) { throw 'release failed' }
+          if (Test-Path .fpga-bridge\lock) { throw 'lock survived release' }
+          if ((Invoke-Cmd $acquire) -ne 0) { throw 'acquire after release failed' }
+
+          # Unlock removes a held lock, and succeeds when there is none.
+          if ((Invoke-Cmd $unlock) -ne 0) { throw 'unlock failed' }
+          if (Test-Path .fpga-bridge\lock) { throw 'lock survived unlock' }
+          if ((Invoke-Cmd $unlock) -ne 0) { throw 'unlock with no lock should succeed' }
+          Write-Host 'cmd.exe command lines behave as expected'
+
+      - name: Cancel kills the marked process tree and nothing else
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'cancel-test'
+          New-Item -ItemType Directory -Force $dir | Out-Null
+
+          $cancel = @'
+          powershell -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like ('*fpgabridge-' + 'a1b2c3d4*') -and $_.ProcessId -ne $PID } | ForEach-Object { taskkill /F /T /PID $_.ProcessId }"
+          '@
+
+          # Stand-ins for vivado.bat (carries the marker on its command line) and an unrelated process.
+          $marked = Start-Process -FilePath cmd.exe -ArgumentList '/c', 'ping -n 120 127.0.0.1 >nul & rem fpgabridge-a1b2c3d4' -PassThru
+          $other  = Start-Process -FilePath cmd.exe -ArgumentList '/c', 'ping -n 120 127.0.0.1 >nul & rem unrelated' -PassThru
+          Start-Sleep -Seconds 3
+          if (-not (Get-Process -Id $marked.Id -ErrorAction SilentlyContinue)) { throw 'marked stand-in did not start' }
+
+          Set-Content -Path "$dir\cancel.cmd" -Value @('@echo off', $cancel) -Encoding ascii
+          & cmd.exe /c "$dir\cancel.cmd" 2>&1 | Out-String | Write-Host
+          if ($LASTEXITCODE -ne 0) { throw "cancel command exited with $LASTEXITCODE" }
+          Start-Sleep -Seconds 3
+
+          if (Get-Process -Id $marked.Id -ErrorAction SilentlyContinue) { throw 'marked process survived the cancel command' }
+          $left = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*fpgabridge-a1b2c3d4*' }
+          if ($left) { throw 'a process with the marker is still running' }
+          if (-not (Get-Process -Id $other.Id -ErrorAction SilentlyContinue)) { throw 'the cancel command killed an unrelated process' }
+          Stop-Process -Id $other.Id -Force
+          Write-Host 'cancel command stops only the marked job'
+
   # Manual only: runs the real setup script on a Windows runner (installs and starts OpenSSH, changes the
   # firewall). The runner is thrown away afterwards. Tailscale is not installed there, so the script is
   # expected to warn about it; a fake Vivado install is created so discovery can be checked.
