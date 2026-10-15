@@ -7,6 +7,12 @@ searches (`git grep`) for patterns, a search for dead and duplicated code, and r
 Items under **Fixed** were changed in the same commit as this file. Everything else is flagged, in rough priority
 order, with file and line references taken at the time of writing.
 
+> **Update (cleanup branch):** likely bugs 1-7, the strict-concurrency warnings, the debug hooks, the brittle icon
+> bundle lookup, `codesign --deep`, the flaky cancel test, and the stale README are all fixed since this was written,
+> each with a test where one makes sense. Still open: `.id(accents)` in `AppearanceRoot`, the `AppModel` split,
+> the library's default `print` sink, `ObservableObject` to `@Observable`, and the unverified assumptions below. The
+> sections below keep the original findings for the record.
+
 ## Fixed
 
 - **Inconsistent spelling.** "colour", "behaviour" and "centre" were mixed with the American spellings used

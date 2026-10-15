@@ -119,8 +119,12 @@ enum Theme {
     /// Editors, the console, lists and tables. The same black as the window in dark mode, so panes join up with no
     /// visible steps; thin separators divide them.
     static let nsSurface = dynamic(light: .textBackgroundColor, dark: 0x0A0B0F)
+    /// The sidebar when glass can't be used (glass off, or fullscreen, where there is no desktop behind the window to
+    /// show through). A step lighter than the black panes, as the glass reads.
+    static let nsSidebar = dynamic(light: .windowBackgroundColor, dark: 0x16181E)
     static let window = Color(nsColor: nsWindow)
     static let surface = Color(nsColor: nsSurface)
+    static let sidebar = Color(nsColor: nsSidebar)
 }
 
 /// The grey tint for controls.
@@ -180,13 +184,23 @@ extension View {
 
 /// The fill for large surfaces (the home window and the sidebar): regular Liquid Glass on macOS 26+, blurred enough
 /// that text over a busy desktop stays readable. A material on older systems, or a solid color when glass is off.
-/// "Clear" in Settings makes it more transparent.
+/// "Clear" in Settings makes it more transparent. In fullscreen there is no desktop behind the window for the glass to
+/// show, so it would draw as flat gray; it is the solid color there instead.
 struct GlassFill: View {
     var solid: Color = Theme.window
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
+    @State private var isFullScreen = false
 
     var body: some View {
-        if glass == .off {
+        fill
+            .onAppear { isFullScreen = NSApp.windows.contains { $0.styleMask.contains(.fullScreen) } }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in isFullScreen = true }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { _ in isFullScreen = false }
+    }
+
+    @ViewBuilder
+    private var fill: some View {
+        if glass == .off || isFullScreen {
             solid
         } else if #available(macOS 26.0, *) {
             Color.clear.glassEffect(glass == .clear ? .clear : .regular, in: Rectangle())

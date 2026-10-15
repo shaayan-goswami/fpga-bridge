@@ -269,7 +269,7 @@ private struct WindowGlassContainers: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
             content
-                .containerBackground(for: .window) { GlassFill() }
+                .containerBackground(for: .window) { GlassFill(solid: Theme.sidebar) }
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         } else {
             content

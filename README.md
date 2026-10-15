@@ -4,7 +4,7 @@ Build FPGA designs from a Mac, even though Vivado doesn't run on macOS.
 
 fpga-bridge lets you write, simulate, and flash on your Mac while a remote Windows or Linux machine with Vivado does the heavy build in the background.
 
-> **Status:** early development. The architecture and roadmap below are the plan. Features marked with an unchecked box are not built yet.
+> **Status:** early development. The `fpga-bridge` CLI and the Mac app (a prototype that mirrors Vivado's layout) are built and tested against a fake remote. Neither has been run against a real Vivado or Windows machine yet. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done. Features marked with an unchecked box are not built yet.
 
 ## Why
 
@@ -39,7 +39,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 ## Requirements
 
 **On your Mac**
-- Python 3
+- macOS 14 or later, and the Swift toolchain (Xcode) to build from source
 - Verilator and Surfer (simulation and waveforms)
 - openFPGALoader (check that your board is on its supported list)
 - Tailscale (optional, for reaching the build machine from outside your home network)
@@ -68,7 +68,7 @@ Not available yet. This section will cover:
 
 ## Roadmap
 
-1. **CLI prototype:** a `build.tcl` plus a Python script that copies files over SSH, runs the Vivado build, and pulls results back
+1. **CLI prototype:** a Tcl build script plus a Swift CLI that copies files over SSH, runs the Vivado build, and pulls results back
 2. **Basic Mac app:** editor, build button, live log, parsed timing and utilization summary
 3. **Simulation and flashing:** one-click Verilator runs and board programming
 4. **Polish:** easier first-run setup, support for more boards, user testing
