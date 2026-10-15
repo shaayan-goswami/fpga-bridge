@@ -23,7 +23,7 @@ let package = Package(
         .testTarget(
             name: "FPGABridgeCoreTests",
             dependencies: ["FPGABridgeCore"],
-            resources: [.copy("Fixtures")]
+            resources: [.copy("Fixtures"), .copy("FakeRemote")]
         ),
     ]
 )

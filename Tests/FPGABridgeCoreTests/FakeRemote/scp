@@ -1,0 +1,40 @@
+#!/bin/bash
+# Fake `scp` for tests. The remote side is the directory $FAKE_HOME.
+#
+# Mirrors real scp where it matters here: a directory needs -r, a missing parent directory is an error,
+# and copying a directory to a path that doesn't exist creates it under that name.
+set -u
+HOME_="${FAKE_HOME:?FAKE_HOME not set}"
+LOG="${FAKE_LOG:-/dev/null}"
+
+echo "scp $*" >> "$LOG"
+
+recursive=0
+paths=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o|-i) shift 2; continue ;;
+    -r) recursive=1 ;;
+    -*) ;;
+    *) paths+=("$1") ;;
+  esac
+  shift
+done
+
+[ "${#paths[@]}" -eq 2 ] || { echo "usage: scp [-r] source target" >&2; exit 1; }
+[ -z "${FAKE_SCP_FAIL:-}" ] || { echo "scp: Connection closed" >&2; exit 1; }
+
+src="${paths[0]}"; dst="${paths[1]}"
+if [[ "$src" == *@*:* ]]; then
+  s="$HOME_/${src#*:}"; d="$dst"
+elif [[ "$dst" == *@*:* ]]; then
+  s="$src"; d="$HOME_/${dst#*:}"
+else
+  echo "scp: exactly one side must be remote" >&2; exit 1
+fi
+
+[ -e "$s" ] || { echo "scp: $s: No such file or directory" >&2; exit 1; }
+if [ -d "$s" ] && [ "$recursive" -eq 0 ]; then
+  echo "scp: $s: not a regular file" >&2; exit 1
+fi
+if [ -d "$s" ]; then cp -R "$s" "$d"; else cp "$s" "$d"; fi

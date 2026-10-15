@@ -1,0 +1,99 @@
+#!/bin/bash
+# Fake `ssh` for tests. Pretends to be a Windows machine whose user profile is $FAKE_HOME.
+#
+# It only understands the exact cmd.exe command lines fpga-bridge is supposed to send, and exits 127 on anything
+# else, so an accidental change to those command lines fails a test instead of passing silently.
+#
+# Environment:
+#   FAKE_HOME          directory standing in for the Windows user profile (required)
+#   FAKE_LOG           file that every invocation is appended to
+#   FAKE_SSH_FAIL      "permission" or "refused" to simulate a failed login
+#   FAKE_VIVADO_PATH   the one vivado.bat path that "exists"
+#   FAKE_VIVADO_MODE   "pass" (default) or "fail"
+#   FAKE_REPORT_DIR    directory holding timing_summary.rpt and utilization.rpt for a passing build
+set -u
+HOME_="${FAKE_HOME:?FAKE_HOME not set}"
+LOG="${FAKE_LOG:-/dev/null}"
+
+echo "ssh $*" >> "$LOG"
+
+target=""; cmd=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o|-i) shift 2; continue ;;
+    -*) shift; continue ;;
+    *) if [ -z "$target" ]; then target="$1"; else cmd="$1"; fi ;;
+  esac
+  shift
+done
+
+case "${FAKE_SSH_FAIL:-}" in
+  permission) echo "$target: Permission denied (publickey,password,keyboard-interactive)." >&2; exit 255 ;;
+  refused) echo "ssh: connect to host ${target#*@} port 22: Connection refused" >&2; exit 255 ;;
+esac
+
+if [ "$cmd" = "echo ok" ]; then
+  echo ok; exit 0
+fi
+
+if [ "$cmd" = "if not exist .fpga-bridge mkdir .fpga-bridge" ]; then
+  mkdir -p "$HOME_/.fpga-bridge"; exit 0
+fi
+
+re='^if not exist \.fpga-bridge mkdir \.fpga-bridge & if exist \.fpga-bridge\\([A-Za-z0-9_-]+) rmdir /s /q \.fpga-bridge\\([A-Za-z0-9_-]+)$'
+if [[ "$cmd" =~ $re ]] && [ "${BASH_REMATCH[1]}" = "${BASH_REMATCH[2]}" ]; then
+  mkdir -p "$HOME_/.fpga-bridge"
+  rm -rf "$HOME_/.fpga-bridge/${BASH_REMATCH[1]}"
+  exit 0
+fi
+
+re='^if exist "([^"]+)" \(echo found\) else \(echo missing\)$'
+if [[ "$cmd" =~ $re ]]; then
+  if [ "${BASH_REMATCH[1]}" = "${FAKE_VIVADO_PATH:-}" ]; then echo found; else echo missing; fi
+  exit 0
+fi
+
+# A full build: cd into the job directory and run Vivado on build.tcl.
+re='^cd \.fpga-bridge\\([A-Za-z0-9_-]+) && call "([^"]+)" -mode batch -nojournal -nolog -source build\.tcl$'
+if [[ "$cmd" =~ $re ]]; then
+  name="${BASH_REMATCH[1]}"; viv="${BASH_REMATCH[2]}"
+  dir="$HOME_/.fpga-bridge/$name"
+  [ -d "$dir" ] || { echo "The system cannot find the path specified." >&2; exit 1; }
+  cd "$dir" || exit 1
+  [ -f build.tcl ] || { echo "ERROR: build.tcl not found" ; exit 1; }
+  echo "fake-vivado: $viv"
+  # Every file the script reads must have been staged at the relative path it names.
+  for f in $(grep -oE '\{[^}]+\}' build.tcl | tr -d '{}'); do
+    [ -f "$f" ] || { echo "ERROR: [Common 17-69] File '$f' does not exist"; exit 1; }
+  done
+  if [ "${FAKE_VIVADO_MODE:-pass}" = "fail" ]; then
+    echo "ERROR: [Synth 8-439] module 'missing_module' not declared"
+    exit 1
+  fi
+  top="$(sed -n 's/^synth_design -top \([A-Za-z0-9_-]*\) .*/\1/p' build.tcl)"
+  mkdir -p out
+  cp "${FAKE_REPORT_DIR:?}/timing_summary.rpt" out/
+  cp "${FAKE_REPORT_DIR:?}/utilization.rpt" out/
+  echo "fake bitstream" > "out/${top}.bit"
+  echo "fake-vivado: done"
+  exit 0
+fi
+
+# A one-off Tcl script.
+re='^call "([^"]+)" -mode batch -nojournal -nolog -source (\.fpga-bridge\\job-[A-Za-z0-9-]+\.tcl)$'
+if [[ "$cmd" =~ $re ]]; then
+  file="$HOME_/${BASH_REMATCH[2]//\\//}"
+  [ -f "$file" ] || { echo "ERROR: script not found" >&2; exit 1; }
+  echo "fake-vivado ran:"
+  cat "$file"
+  exit 0
+fi
+
+re='^del (\.fpga-bridge\\job-[A-Za-z0-9-]+\.tcl)$'
+if [[ "$cmd" =~ $re ]]; then
+  rm -f "$HOME_/${BASH_REMATCH[1]//\\//}"
+  exit 0
+fi
+
+echo "fake-ssh: unhandled command: $cmd" >&2
+exit 127

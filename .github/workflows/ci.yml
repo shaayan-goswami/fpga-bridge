@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swift:
+    name: Build and test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Build
+        run: swift build
+      - name: Test
+        run: swift test
+
+  windows-script-syntax:
+    name: Check windows/setup.ps1 parses
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse script
+        shell: pwsh
+        run: |
+          $errors = $null
+          $tokens = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'windows/setup.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error "$($_.Extent.StartLineNumber): $($_.Message)" }
+            exit 1
+          }
+          Write-Host 'windows/setup.ps1 parses cleanly'
+
+  # Manual only: runs the real setup script on a Windows runner (installs and starts OpenSSH, changes the
+  # firewall). The runner is thrown away afterwards. Tailscale is not installed there, so the script is
+  # expected to warn about it; a fake Vivado install is created so discovery can be checked.
+  windows-setup-smoke:
+    name: Run windows/setup.ps1 (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create a fake Vivado install
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force 'C:\Xilinx\Vivado\2022.2\bin', 'C:\Xilinx\Vivado\2023.2\bin' | Out-Null
+          Set-Content 'C:\Xilinx\Vivado\2022.2\bin\vivado.bat' '@echo off'
+          Set-Content 'C:\Xilinx\Vivado\2023.2\bin\vivado.bat' '@echo off'
+      - name: Run setup.ps1 with a throwaway key
+        shell: pwsh
+        run: |
+          $key = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForCiSmokeTestOnlyDoNotUse0000000 ci@example'
+          .\windows\setup.ps1 -PublicKey $key *>&1 | Tee-Object -FilePath setup-output.txt
+      - name: Check results
+        shell: pwsh
+        run: |
+          $out = Get-Content setup-output.txt -Raw
+          if ((Get-Service sshd).Status -ne 'Running') { throw 'sshd is not running' }
+          if ((Get-Service sshd).StartType -ne 'Automatic') { throw 'sshd is not set to start automatically' }
+          if ($out -notmatch [regex]::Escape('C:\Xilinx\Vivado\2023.2\bin\vivado.bat')) { throw 'newest Vivado was not chosen' }
+          $keys = Get-Content "$env:ProgramData\ssh\administrators_authorized_keys" -ErrorAction SilentlyContinue
+          if (-not ($keys -match 'ci@example')) { throw 'public key was not authorized' }
+          Write-Host 'setup.ps1 smoke test passed'

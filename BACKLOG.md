@@ -27,7 +27,9 @@ Legend: `[x]` done, `[ ]` todo. Order within a milestone is roughly the order to
 - [ ] Test `windows/setup.ps1` on a real Windows machine (fresh and already-configured)
 - [ ] Test `doctor` and `tcl` end to end against that machine, on home LAN and from outside (phone hotspot)
 - [ ] Handle Microsoft-account usernames and domain accounts in the setup script's printed `--user`
-- [ ] CI: build and test on macOS via GitHub Actions
+- [x] CI: build and test on macOS via GitHub Actions, plus a syntax check of `windows/setup.ps1` (workflow written; not yet seen running on GitHub)
+- [x] Fake build machine for tests: stub `ssh`/`scp` that only accept the exact commands we should send; covers `doctor`, `build`, `tcl`
+- [ ] Run the manual `windows-setup-smoke` CI job (Actions tab > CI > Run workflow) and fix whatever it finds in `setup.ps1`
 
 ## M1: Remote builds (CLI)
 

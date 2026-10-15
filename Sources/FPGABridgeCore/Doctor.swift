@@ -9,14 +9,16 @@ public struct Check: Equatable {
 
 /// Runs the first-run health checks. Each check stops the chain when later ones can't be meaningful.
 public enum Doctor {
-    public static func run(config: BridgeConfig) -> [Check] {
+    /// `tailscale` is injectable so tests don't depend on the machine's real Tailscale state.
+    public static func run(
+        config: BridgeConfig,
+        tailscale: () throws -> TailscaleStatus = { try Tailscale.status() }
+    ) -> [Check] {
         var checks: [Check] = []
 
-        switch checkTailscale(host: config.host) {
-        case let (check, proceed):
-            checks.append(check)
-            if !proceed { return checks }
-        }
+        let (tailscaleCheck, proceed) = checkTailscale(host: config.host, status: tailscale)
+        checks.append(tailscaleCheck)
+        if !proceed { return checks }
 
         let remote = Remote(config: config)
         let ssh = checkSSH(remote)
@@ -27,9 +29,9 @@ public enum Doctor {
         return checks
     }
 
-    static func checkTailscale(host: String) -> (Check, Bool) {
+    static func checkTailscale(host: String, status provider: () throws -> TailscaleStatus) -> (Check, Bool) {
         do {
-            let status = try Tailscale.status()
+            let status = try provider()
             guard status.isRunning else {
                 return (Check(name: "Tailscale", level: .fail,
                               detail: "State is \(status.backendState). Open Tailscale and sign in."), false)

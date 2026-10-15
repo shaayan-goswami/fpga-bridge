@@ -43,3 +43,24 @@ Timing that is not met does not fail the build (the bitstream is still produced)
 - `Sources/FPGABridgeCore`: config, Tailscale status, SSH/Vivado runner, health checks. Reusable by a future SwiftUI app.
 - `Sources/fpga-bridge`: the command-line front end.
 - `windows/setup.ps1`: Windows first-run setup.
+
+## Developing
+
+```sh
+swift build
+swift test
+```
+
+The tests run `build`, `doctor` and `tcl` against stub `ssh`/`scp` scripts in `Tests/FPGABridgeCoreTests/FakeRemote/`
+that act as a Windows machine. They accept only the exact command lines fpga-bridge should send, so if you change a
+remote command, update the stub in the same commit.
+
+If `swift test` fails with "resource fork, Finder information, or similar detritus not allowed", the checkout is in a
+folder (such as `~/Desktop`) where macOS adds Finder attributes to build products. Build somewhere else instead:
+
+```sh
+swift test --scratch-path /tmp/fpga-bridge-build
+```
+
+CI runs on every push and pull request. The `windows-setup-smoke` job runs `windows/setup.ps1` for real on a throwaway
+Windows runner; start it by hand from the Actions tab.
