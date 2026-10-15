@@ -134,6 +134,9 @@ enum Snapshot {
                 capture(window, to: path)
                 if let sheet = window.attachedSheet {
                     capture(sheet, to: path.replacingOccurrences(of: ".png", with: "-sheet.png"))
+                    if let inner = sheet.attachedSheet {
+                        capture(inner, to: path.replacingOccurrences(of: ".png", with: "-sheet2.png"))
+                    }
                 }
             }
             // terminate(_:) can be held up by an open sheet; this process has nothing to save.

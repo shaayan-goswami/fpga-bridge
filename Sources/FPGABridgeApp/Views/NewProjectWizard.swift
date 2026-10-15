@@ -40,10 +40,12 @@ final class WizardState: ObservableObject {
         var id: String { rawValue }
     }
 
-    struct PendingFile: Identifiable, Hashable {
+    struct PendingFile: Identifiable, Equatable {
         let id = UUID()
         var url: URL?
         var newName: String?
+        /// Set by the Define Module dialog for files created in the wizard.
+        var module: ModuleDefinition?
         var name: String { url?.lastPathComponent ?? newName ?? "" }
         var location: String { url?.deletingLastPathComponent().path ?? "<Local to Project>" }
     }
@@ -118,10 +120,15 @@ final class WizardState: ObservableObject {
         if !doNotSpecifySources {
             request.designSources = designFiles.compactMap(\.url)
             request.constraints = constraintFiles.compactMap(\.url)
-            request.newFiles = designFiles.compactMap { $0.newName.map { NewFile(set: .design, name: $0) } }
+            request.newFiles = designFiles.compactMap { file in file.newName.map { NewFile(set: .design, name: $0, module: file.module) } }
                 + constraintFiles.compactMap { $0.newName.map { NewFile(set: .constraints, name: $0) } }
         }
         return request
+    }
+
+    /// New design files still needing a module definition (Vivado asks for these when you click Finish).
+    var newDesignFiles: [PendingFile] {
+        doNotSpecifySources ? [] : designFiles.filter { $0.newName != nil }
     }
 
     /// The parts we can offer: the ones on the supported boards. Any other part can be typed in Settings later.
@@ -132,6 +139,7 @@ struct NewProjectWizard: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @StateObject private var state = WizardState()
+    @State private var defineDrafts: [ModuleDraft]?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -174,6 +182,18 @@ struct NewProjectWizard: View {
             }
         }
         .frame(width: 860, height: 600)
+        .sheet(isPresented: Binding(get: { defineDrafts != nil }, set: { if !$0 { defineDrafts = nil } })) {
+            if let drafts = defineDrafts {
+                DefineModuleSheet(drafts: drafts) { defined in
+                    for draft in defined {
+                        if let i = state.designFiles.firstIndex(where: { $0.newName == draft.fileName }) {
+                            state.designFiles[i].module = draft.module
+                        }
+                    }
+                    create()
+                }
+            }
+        }
     }
 
     private var stepList: some View {
@@ -227,7 +247,17 @@ struct NewProjectWizard: View {
         .padding(16)
     }
 
+    /// Like Vivado: new design files get a Define Module dialog before the project is created.
     private func finish() {
+        let pending = state.newDesignFiles
+        if pending.isEmpty {
+            create()
+        } else {
+            defineDrafts = pending.compactMap { $0.newName.map { ModuleDraft(fileName: $0, set: .design) } }
+        }
+    }
+
+    private func create() {
         do {
             try model.createProject(state.request())
             dismiss()
@@ -358,7 +388,6 @@ private struct FilesPage: View {
     @Binding var files: [WizardState.PendingFile]
     @State private var selection: WizardState.PendingFile.ID?
     @State private var creating = false
-    @State private var newName = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -367,7 +396,7 @@ private struct FilesPage: View {
                 if set == .design {
                     Button { pick(directories: true) } label: { Label("Add Directories…", systemImage: "folder.badge.plus") }
                 }
-                Button { newName = ""; creating = true } label: { Label("Create File…", systemImage: "square.and.pencil") }
+                Button { creating = true } label: { Label("Create File…", systemImage: "square.and.pencil") }
                 Spacer()
                 Button { files.removeAll { $0.id == selection } } label: { Image(systemName: "minus") }
                     .disabled(selection == nil)
@@ -406,16 +435,10 @@ private struct FilesPage: View {
                 .disabled(true)
                 .help("Sources are always copied into the project's .srcs folder, so the build machine gets everything it needs.")
         }
-        .alert("Create Source File", isPresented: $creating) {
-            TextField("File name", text: $newName)
-            Button("OK") {
-                let name = newName.trimmingCharacters(in: .whitespaces)
-                if !name.isEmpty { files.append(.init(newName: name)) }
+        .sheet(isPresented: $creating) {
+            CreateSourceFileSheet(sourceSet: set, defaultLanguage: state.language) { name in
+                if !files.contains(where: { $0.newName == name }) { files.append(.init(newName: name)) }
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(set == .constraints ? "An empty .xdc file will be created in the project."
-                                     : "A \(state.language) file with an empty module will be created in the project.")
         }
     }
 

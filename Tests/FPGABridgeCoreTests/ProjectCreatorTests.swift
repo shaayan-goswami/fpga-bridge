@@ -125,7 +125,7 @@ final class ProjectCreatorTests: XCTestCase {
         r.newFiles = [NewFile(set: .design, name: "top"), NewFile(set: .constraints, name: "pins")]
         let dir = try ProjectCreator.create(r)
         let verilog = try String(contentsOf: dir.appendingPathComponent("p.srcs/sources_1/new/top.v"), encoding: .utf8)
-        XCTAssertTrue(verilog.contains("module top ("), verilog)
+        XCTAssertTrue(verilog.contains("module top("), verilog)
         XCTAssertTrue(exists(dir, "p.srcs/constrs_1/new/pins.xdc"))
         XCTAssertEqual(try Project.load(from: dir).top, "top", "a created module becomes the detected top")
 

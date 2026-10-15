@@ -160,7 +160,7 @@ struct AddSourcesSheet: View {
     @State private var files: [URL] = []
     @State private var newFiles: [String] = []
     @State private var creating = false
-    @State private var newName = ""
+    @State private var defineDrafts: [ModuleDraft]?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -195,7 +195,7 @@ struct AddSourcesSheet: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Button { pick() } label: { Label("Add Files…", systemImage: "doc.badge.plus") }
-                            Button { newName = ""; creating = true } label: { Label("Create File…", systemImage: "square.and.pencil") }
+                            Button { creating = true } label: { Label("Create File…", systemImage: "square.and.pencil") }
                         }
                         List {
                             ForEach(files, id: \.self) { Label($0.lastPathComponent, systemImage: "doc.text") }
@@ -231,13 +231,30 @@ struct AddSourcesSheet: View {
             .padding(14)
         }
         .frame(width: 620, height: 460)
-        .alert("Create Source File", isPresented: $creating) {
-            TextField("File name", text: $newName)
-            Button("OK") {
-                let name = newName.trimmingCharacters(in: .whitespaces)
-                if !name.isEmpty { newFiles.append(name) }
+        .onAppear {
+            // Screenshot scenario: jump straight to Define Module with a sample port list.
+            guard ProcessInfo.processInfo.environment["FPGA_BRIDGE_SCENARIO"] == "definemodule", defineDrafts == nil else { return }
+            choosing = false
+            newFiles = ["uart_tx.v", "uart_tb.v"]
+            var draft = ModuleDraft(fileName: "uart_tx.v", set: .design)
+            draft.module.ports = [
+                PortDefinition(name: "clk"), PortDefinition(name: "rst"),
+                PortDefinition(name: "data", isBus: true, msb: 7, lsb: 0), PortDefinition(name: "start"),
+                PortDefinition(name: "tx", direction: .output), PortDefinition(name: "busy", direction: .output),
+            ]
+            defineDrafts = [draft, ModuleDraft(fileName: "uart_tb.v", set: .simulation)]
+        }
+        .sheet(isPresented: $creating) {
+            CreateSourceFileSheet(sourceSet: set, defaultLanguage: model.project?.targetLanguage ?? "Verilog") { name in
+                if !newFiles.contains(name) { newFiles.append(name) }
             }
-            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: Binding(get: { defineDrafts != nil }, set: { if !$0 { defineDrafts = nil } })) {
+            if let drafts = defineDrafts {
+                DefineModuleSheet(drafts: drafts) { defined in
+                    commit(modules: Dictionary(uniqueKeysWithValues: defined.map { ($0.fileName, $0.module) }))
+                }
+            }
         }
     }
 
@@ -249,9 +266,19 @@ struct AddSourcesSheet: View {
         if panel.runModal() == .OK { files += panel.urls.filter { !files.contains($0) } }
     }
 
+    /// New design or simulation files get a Define Module dialog first, as in Vivado. Constraints don't.
     private func finish() {
+        let needModules = set != .constraints && !newFiles.isEmpty
+        if needModules {
+            defineDrafts = newFiles.map { ModuleDraft(fileName: $0, set: set) }
+        } else {
+            commit(modules: [:])
+        }
+    }
+
+    private func commit(modules: [String: ModuleDefinition]) {
         if !files.isEmpty { model.addSources(files, to: set) }
-        for name in newFiles { model.createSourceFile(named: name, in: set) }
+        for name in newFiles { model.createSourceFile(named: name, in: set, module: modules[name]) }
         dismiss()
     }
 }

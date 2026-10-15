@@ -3,15 +3,38 @@ import SwiftUI
 /// Vivado's Flow Navigator: every item is a command (run something, open a dialog), not a page.
 struct FlowNavigatorView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var collapsed: Set<FlowSection> = []
 
     var body: some View {
         List {
             ForEach(FlowSection.allCases) { section in
-                Section(section.rawValue) {
-                    ForEach(section.items) { item in
-                        FlowRow(item: item)
+                Section {
+                    if !collapsed.contains(section) {
+                        ForEach(section.items) { item in
+                            FlowRow(item: item)
+                        }
                     }
+                } header: {
+                    // Vivado shows an arrow on each section; the sidebar's own hide/show only appears on hover.
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            if collapsed.contains(section) { collapsed.remove(section) } else { collapsed.insert(section) }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .bold))
+                                .rotationEffect(.degrees(collapsed.contains(section) ? -90 : 0))
+                                .frame(width: 10)
+                            Text(section.rawValue)
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(collapsed.contains(section) ? "Show \(section.rawValue)" : "Hide \(section.rawValue)")
                 }
+                .collapsible(false)
             }
         }
         .listStyle(.sidebar)

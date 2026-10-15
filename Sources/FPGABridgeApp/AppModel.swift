@@ -86,7 +86,7 @@ final class AppModel: ObservableObject {
         case "settings":
             openExampleProject()
             showSettings = true
-        case "addsources":
+        case "addsources", "definemodule":
             openExampleProject()
             showAddSources = true
         case "file":
@@ -202,11 +202,12 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func createSourceFile(named name: String, in set: SourceSet) {
+    func createSourceFile(named name: String, in set: SourceSet, module: ModuleDefinition? = nil) {
         guard let projectURL, let project else { return }
         do {
-            let path = try ProjectCreator.createFile(NewFile(set: set, name: name), language: project.targetLanguage ?? "Verilog",
-                                                     projectName: project.name, directory: projectURL)
+            let path = try ProjectCreator.createFile(NewFile(set: set, name: name, module: module),
+                                                     language: project.targetLanguage ?? "Verilog",
+                                                     projectName: project.name, directory: projectURL, part: project.part)
             echoTcl("add_files -fileset \(set.directoryName) \(path)")
             reloadProjectAfterChange()
             openFile(path)

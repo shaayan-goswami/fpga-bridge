@@ -36,10 +36,13 @@ public struct NewFile: Equatable {
     public var set: SourceSet
     /// File name; an extension is added from the project language when missing.
     public var name: String
+    /// From the Define Module dialog. Without it the module is named after the file and has no ports.
+    public var module: ModuleDefinition?
 
-    public init(set: SourceSet, name: String) {
+    public init(set: SourceSet, name: String, module: ModuleDefinition? = nil) {
         self.set = set
         self.name = name
+        self.module = module
     }
 }
 
@@ -156,7 +159,8 @@ public enum ProjectCreator {
             try copy(files, into: set, projectName: request.name, directory: directory)
         }
         for file in request.newFiles {
-            try createFile(file, language: request.language, projectName: request.name, directory: directory)
+            try createFile(file, language: request.language, projectName: request.name, directory: directory,
+                           part: request.part)
         }
 
         let project = Project(
@@ -224,24 +228,28 @@ public enum ProjectCreator {
         var ext = (file.name as NSString).pathExtension.lowercased()
         if ext.isEmpty { ext = file.set == .constraints ? "xdc" : (language == "VHDL" ? "vhd" : "v") }
         guard file.set.extensions.contains(ext) else { throw ProjectCreatorError.unsupportedFile(file.name, file.set) }
+        if let module = file.module, file.set != .constraints { try module.validate() }
         return (base, ext)
     }
 
+    /// Writes a new file into `<set>/new`, like Vivado's Create Source File followed by Define Module.
     @discardableResult
-    public static func createFile(_ file: NewFile, language: String, projectName: String, directory: URL) throws -> String {
+    public static func createFile(_ file: NewFile, language: String, projectName: String, directory: URL,
+                                  part: String = "") throws -> String {
         let (base, ext) = try resolve(file, language: language)
 
         let relative = "\(relativeDirectory(for: file.set, projectName: projectName))/new/\(base).\(ext)"
         let url = directory.appendingPathComponent(relative)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let template: String
+        let context = HDLTemplate.Context(projectName: projectName, part: part)
+        let module = file.module ?? ModuleDefinition(name: HDLTemplate.isIdentifier(base) ? base : "\(base)_module")
+        let text: String
         switch (file.set, ext) {
-        case (.constraints, _): template = "## Constraints for \(projectName)\n"
-        case (_, "vhd"), (_, "vhdl"):
-            template = "library IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\n\nentity \(base) is\n    Port ( clk : in STD_LOGIC );\nend \(base);\n\narchitecture Behavioral of \(base) is\nbegin\nend Behavioral;\n"
-        default: template = "`timescale 1ns / 1ps\n\nmodule \(base) (\n    input wire clk\n);\nendmodule\n"
+        case (.constraints, _): text = HDLTemplate.constraints(context: context)
+        case (_, "vhd"), (_, "vhdl"): text = HDLTemplate.vhdl(module, context: context)
+        default: text = HDLTemplate.verilog(module, context: context)
         }
-        do { try template.write(to: url, atomically: true, encoding: .utf8) }
+        do { try text.write(to: url, atomically: true, encoding: .utf8) }
         catch { throw ProjectCreatorError.copyFailed(error.localizedDescription) }
         return relative
     }
