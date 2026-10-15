@@ -78,16 +78,20 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 
 ## M4: Mac app (SwiftUI on `FPGABridgeCore`)
 
-- [ ] Move shared logic out of the CLI so both front ends call the same core API
-- [ ] First-run setup screen (wraps `doctor`, shows what to do for each failure)
-- [ ] Project view and file browser
-- [ ] Source editor (Verilog/SystemVerilog highlighting)
-- [ ] Build button with live log
-- [ ] Timing and utilization summary view
-- [ ] Flash button with board selection
-- [ ] Simulation button with waveform launch
-- [ ] Connection status indicator (Tailscale, SSH, build machine online)
-- [ ] Settings: build machine, Vivado path, board
+The app mirrors Vivado's IDE feature for feature. The full inventory, how each feature is delivered and the build
+order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this section only tracks the phases.
+
+- [x] Prototype: Quick Start, New Project wizard, Add Sources, Project Settings (General), Flow Navigator, Sources
+      hierarchy and properties, Project Summary, source viewer, reports, console panel, demo backend
+- [x] Vivado-style project creation in the core (`<name>.srcs/sources_1|constrs_1|sim_1`, Create File, top detection)
+- [ ] P1 Flow parity (separate runs with checkpoints, Launch Runs, completion popups, run settings and strategies)
+- [ ] P2 Projects and editing (real editor, Define Module, Sources context menus, File and Edit menus)
+- [ ] P3 Reports and analysis
+- [ ] P4 Program and debug (Hardware Manager via openFPGALoader)
+- [ ] P5 Simulation (Verilator/Icarus, waveform viewer)
+- [ ] P6 Design views (Netlist, I/O Ports, constraints editors, IP Catalog)
+- [ ] P7 Workspace polish (Window/Layout/View/Help, layouts, Quick Access, tool settings)
+- [ ] P8 Stretch (schematic, block design viewer)
 
 ## M5: Distribution and polish
 
