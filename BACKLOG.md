@@ -35,13 +35,18 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 
 - [x] Project file (`fpga-bridge.json`): name, top module, part, sources, constraints
 - [x] `fpga-bridge new`: scaffold a project file
-- [ ] Board presets for `new` (Digilent parts: Basys 3, Arty A7, Nexys A7, Cmod A7, etc.)
+- [x] Board presets for `new` (see docs/boards.md)
+- [ ] Add Nexys A7-50T once its part grade is confirmed against the physical board or Digilent's manual
+- [ ] Zynq boards (Zybo, Arty Z7): need processor-system handling
 - [x] Generate `build.tcl` (non-project mode: read sources/XDC, synth, opt, place, route, reports, bitstream)
 - [x] Copy project files to the build machine (clean job dir per project)
 - [x] `fpga-bridge build`: run the build, stream the live log to the terminal
 - [x] Fetch results back: bitstream, timing and utilization reports, full log
 - [ ] Non-zero exit and clear message on synthesis/implementation failure
-- [ ] Parse timing summary (WNS, TNS, failing paths) and utilization (LUT, FF, BRAM, DSP) into a short summary
+- [x] Parse timing summary (WNS/TNS/WHS/THS, failing endpoint counts) and utilization (LUT, FF, BRAM, DSP, IO) into a short summary; `fpga-bridge report` re-prints it
+- [ ] Replace the hand-written report fixtures with real Vivado output from the first real build
+- [ ] Show the worst failing paths (needs `report_timing -max_paths` in `build.tcl`)
+- [ ] `build --strict`: exit non-zero when timing is not met
 - [ ] Incremental behavior: skip copying unchanged files; optional `--clean`
 - [ ] Cancel a running build cleanly (Ctrl-C kills the remote Vivado process)
 - [ ] Handle dropped SSH connection mid-build (keepalive, reattach to the log, or fail clearly)

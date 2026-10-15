@@ -6,7 +6,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Report.self]
     )
 }
 
@@ -124,6 +124,19 @@ struct Build: ParsableCommand {
         let project = try Project.load(from: root)
         let status = try Remote(config: config).build(project: project, root: root)
         if status != 0 { throw ExitCode(status) }
+        print("")
+        print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+    }
+}
+
+struct Report: ParsableCommand {
+    static let configuration = CommandConfiguration(abstract: "Show the timing and utilization summary from the last build.")
+
+    func run() throws {
+        let dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(Remote.localOutputDir)
+        let summary = BuildSummary.load(from: dir)
+        print(summary.render())
+        if summary.timing == nil && summary.utilization == nil { throw ExitCode.failure }
     }
 }
 

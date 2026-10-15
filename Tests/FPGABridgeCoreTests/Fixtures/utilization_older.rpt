@@ -1,0 +1,15 @@
+| Tool Version : Vivado v.2016.4 (win64) Build 1756540 Mon Jan 23 19:11:23 MST 2017
+| Design       : top
+| Device       : 7a35tcpg236-1
+
+1. Slice Logic
+--------------
+
++----------------------------+------+-------+-----------+-------+
+|          Site Type         | Used | Fixed | Available | Util% |
++----------------------------+------+-------+-----------+-------+
+| Slice LUTs*                |   30 |     0 |     20800 |  0.14 |
+|   LUT as Logic             |   30 |     0 |     20800 |  0.14 |
+| Slice Registers           |   16 |     0 |     41600 |  0.04 |
++----------------------------+------+-------+-----------+-------+
+* Warning! The Final LUT count, after physical optimizations and full implementation, is typically lower. Run opt_design after synthesis.

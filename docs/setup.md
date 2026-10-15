@@ -23,7 +23,20 @@ swift build -c release
 fpga-bridge doctor                      # Tailscale, SSH and Vivado checks
 fpga-bridge tcl build.tcl               # run a local Tcl script in Vivado batch mode
 fpga-bridge tcl -c 'puts [version]'     # or inline Tcl
+fpga-bridge new --list-boards           # supported Digilent boards (see boards.md)
+fpga-bridge new --board basys3 --top top --sources src --constraints constraints
+fpga-bridge build                       # copy, run Vivado, fetch results into build/, print summary
+fpga-bridge report                      # re-print the timing/utilization summary from build/
 ```
+
+`build` prints something like:
+
+```
+Timing     MET   setup WNS +7.612 ns   hold WHS +0.171 ns
+Resources  LUT 12/20800 (0.1%)   FF 8/41600 (0.0%)   BRAM 2.5/50 (5.0%)   DSP 3/90 (3.3%)
+```
+
+Timing that is not met does not fail the build (the bitstream is still produced); it is shown as `NOT MET`.
 
 ## Layout
 
