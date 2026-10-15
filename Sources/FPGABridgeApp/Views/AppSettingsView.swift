@@ -31,7 +31,7 @@ private struct AppearanceSettings: View {
                     ForEach(GlassChoice.allCases) { Text($0.title).tag($0) }
                 }
             } footer: {
-                Text("Liquid Glass is the clear default; Frosted blurs more and Clear is the most transparent. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
+                Text("Liquid Glass is the default, used for the home window, the sidebar and controls. Clear is more transparent. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

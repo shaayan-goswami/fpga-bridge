@@ -27,17 +27,14 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
 }
 
 enum GlassChoice: String, CaseIterable, Identifiable {
-    /// Clear Liquid Glass on large surfaces (the window, the sidebar). The default.
+    /// Regular Liquid Glass. The default.
     case liquid
-    /// Stronger blur.
-    case frosted
     case clear
     case off
     var id: String { rawValue }
     var title: String {
         switch self {
         case .liquid: "Liquid Glass"
-        case .frosted: "Frosted"
         case .clear: "Clear"
         case .off: "Off (solid)"
         }
@@ -163,7 +160,7 @@ private struct GlassSurface<S: InsettableShape>: ViewModifier {
             content.glassEffect(liquidGlass, in: shape)
         } else {
             content
-                .background(glass == .frosted ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial), in: shape)
+                .background(.ultraThinMaterial, in: shape)
                 .overlay(shape.strokeBorder(.white.opacity(0.12)))
         }
     }
@@ -184,18 +181,10 @@ extension View {
     }
 }
 
-/// The fill for large surfaces: Liquid Glass (macOS 26+), a thin material on older systems, or a solid color when
-/// glass is off.
+/// The fill for large surfaces (the home window and the sidebar): regular Liquid Glass on macOS 26+, blurred enough
+/// that text over a busy desktop stays readable. A material on older systems, or a solid color when glass is off.
+/// "Clear" in Settings makes it more transparent.
 struct GlassFill: View {
-    enum Kind {
-        /// A whole window (the home page). Regular glass: blurred enough that text over a busy desktop stays readable,
-        /// the same look as the system's sidebar.
-        case window
-        /// A pane on top of the system's sidebar glass: clear, so the two read as one surface.
-        case pane
-    }
-
-    var kind: Kind = .window
     var solid: Color = Theme.window
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
 
@@ -203,17 +192,9 @@ struct GlassFill: View {
         if glass == .off {
             solid
         } else if #available(macOS 26.0, *) {
-            Color.clear.glassEffect(style, in: Rectangle())
+            Color.clear.glassEffect(glass == .clear ? .clear : .regular, in: Rectangle())
         } else {
-            Rectangle().fill(glass == .frosted || kind == .window ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.thinMaterial))
-        }
-    }
-
-    @available(macOS 26.0, *)
-    private var style: Glass {
-        switch (glass, kind) {
-        case (.clear, _), (.liquid, .pane): .clear
-        default: .regular
+            Rectangle().fill(glass == .clear ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(.regularMaterial))
         }
     }
 }
@@ -221,7 +202,7 @@ struct GlassFill: View {
 extension View {
     /// Puts a list or pane on a large glass surface instead of the system's sidebar background.
     func paneGlass(solid: Color = Theme.sidebar) -> some View {
-        scrollContentBackground(.hidden).background { GlassFill(kind: .pane, solid: solid) }
+        scrollContentBackground(.hidden).background { GlassFill(solid: solid) }
     }
 }
 

@@ -65,7 +65,7 @@ struct QuickStartView: View {
             }
         }
         .navigationTitle("FPGA Bridge")
-        .modifier(FrostedWindow())
+        .modifier(GlassWindow())
     }
 
     private var header: some View {
@@ -147,7 +147,7 @@ struct QuickActionRow: View {
 
 /// Makes the whole window a Liquid Glass pane that the desktop shows through (macOS 15+), with no title or toolbar
 /// background, so the glass runs edge to edge. "Off" in Settings keeps an opaque window.
-private struct FrostedWindow: ViewModifier {
+private struct GlassWindow: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
             content
