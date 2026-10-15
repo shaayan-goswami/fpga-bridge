@@ -10,15 +10,18 @@ public struct Project: Codable, Equatable {
     public var sources: [String]
     /// Constraint files or directories (searched recursively for .xdc).
     public var constraints: [String]
+    /// Board id from `BoardCatalog`, recorded when the project was created with `new --board`.
+    public var board: String?
 
     public static let fileName = "fpga-bridge.json"
 
-    public init(name: String, top: String, part: String, sources: [String], constraints: [String]) {
+    public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil) {
         self.name = name
         self.top = top
         self.part = part
         self.sources = sources
         self.constraints = constraints
+        self.board = board
     }
 
     public static func load(from directory: URL) throws -> Project {

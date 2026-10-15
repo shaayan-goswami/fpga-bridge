@@ -71,16 +71,40 @@ struct Tcl: ParsableCommand {
 struct New: ParsableCommand {
     static let configuration = CommandConfiguration(abstract: "Create fpga-bridge.json in the current directory.")
 
-    @Option(help: "Top module name.") var top: String
-    @Option(help: "Vivado part, e.g. xc7a35tcpg236-1 (Basys 3).") var part: String
+    @Option(help: "Top module name.") var top: String?
+    @Option(help: "Board id, e.g. basys3. See --list-boards.") var board: String?
+    @Option(help: "Vivado part, e.g. xc7a35tcpg236-1. Use instead of --board for other hardware.") var part: String?
+    @Flag(help: "Print the supported boards and exit.") var listBoards = false
     @Option(parsing: .upToNextOption, help: "Source files or directories.") var sources: [String] = ["."]
     @Option(parsing: .upToNextOption, help: "Constraint (.xdc) files or directories.") var constraints: [String] = ["."]
     @Option(help: "Project name (default: directory name).") var name: String?
 
+    func validate() throws {
+        if listBoards { return }
+        if top == nil { throw ValidationError("--top is required.") }
+        if (board == nil) == (part == nil) { throw ValidationError("Provide exactly one of --board or --part.") }
+    }
+
     func run() throws {
+        if listBoards {
+            print(BoardCatalog.table())
+            return
+        }
+        let resolvedBoard: Board?
+        if let board {
+            guard let found = BoardCatalog.lookup(board) else {
+                let hints = BoardCatalog.suggestions(for: board).map(\.id)
+                let tip = hints.isEmpty ? "Run `fpga-bridge new --list-boards`." : "Did you mean: \(hints.joined(separator: ", "))?"
+                throw ValidationError("Unknown board '\(board)'. \(tip)")
+            }
+            resolvedBoard = found
+        } else {
+            resolvedBoard = nil
+        }
         let dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let derived = dir.lastPathComponent.map { $0.isLetter || $0.isNumber || $0 == "-" ? $0 : "_" }
-        let project = Project(name: name ?? String(derived), top: top, part: part, sources: sources, constraints: constraints)
+        let project = Project(name: name ?? String(derived), top: top ?? "", part: resolvedBoard?.part ?? part ?? "",
+                              sources: sources, constraints: constraints, board: resolvedBoard?.id)
         try project.validate()
         if FileManager.default.fileExists(atPath: dir.appendingPathComponent(Project.fileName).path) {
             throw ValidationError("\(Project.fileName) already exists here.")
