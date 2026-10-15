@@ -37,7 +37,7 @@ struct Card<Content: View, Accessory: View>: View {
     }
 }
 
-/// A small coloured capsule: "Timing met", "Out-of-date", "Top".
+/// A small colored capsule: "Timing met", "Out-of-date", "Top".
 struct Pill: View {
     let text: String
     let color: Color
@@ -124,7 +124,7 @@ struct RunStatusIcon: View {
     }
 }
 
-/// Colours for console lines.
+/// Colors for console lines.
 extension ConsoleLine.Kind {
     var color: Color {
         switch self {

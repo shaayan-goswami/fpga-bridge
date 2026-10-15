@@ -1,7 +1,7 @@
 # Vivado parity plan
 
 Goal: someone who knows Vivado can use FPGA Bridge with no learning curve. Same layout, same menus, same dialogs,
-same flow behaviour. Only the look changes, to the macOS design language.
+same flow behavior. Only the look changes, to the macOS design language.
 
 Vivado's GUI is proprietary, so this is built from AMD's documentation (UG893 *Using the Vivado IDE*,
 UG895 *System-Level Design Entry*, UG904 *Implementation*, UG906 *Design Analysis*, UG908 *Programming and
@@ -16,7 +16,7 @@ Debugging*, UG910 *Getting Started*) and Vivado's documented Tcl commands, not f
 | **Local tool** | A Mac tool does Vivado's job (openFPGALoader for programming, Verilator/Icarus for simulation). |
 | **Not possible** | Can't work on a Mac; the row says why and what we offer instead. |
 
-Status: ✅ done · 🟡 prototype (works, not complete) · ⬜ todo
+Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 ---
 
@@ -24,11 +24,11 @@ Status: ✅ done · 🟡 prototype (works, not complete) · ⬜ todo
 
 | Vivado feature | How | Status |
 | --- | --- | --- |
-| Getting Started page: Quick Start (Create Project, Open Project, Open Example Project) | Mac | ✅ |
-| Recent Projects list | Mac | ✅ |
-| Tasks (Manage IP, Open Hardware Manager, Vivado Store) | Mac / Local tool | 🟡 (Hardware Manager disabled until P4) |
-| Learning Center (Documentation, Quick Take Videos, Release Notes) | Mac (links to our docs and AMD's) | 🟡 |
-| Example projects list (Open Example Project wizard with templates) | Mac | 🟡 (one example) |
+| Getting Started page: Quick Start (Create Project, Open Project, Open Example Project) | Mac | Done |
+| Recent Projects list | Mac | Done |
+| Tasks (Manage IP, Open Hardware Manager, Vivado Store) | Mac / Local tool | Prototype (Hardware Manager disabled until P4) |
+| Learning Center (Documentation, Quick Take Videos, Release Notes) | Mac (links to our docs and AMD's) | Prototype |
+| Example projects list (Open Example Project wizard with templates) | Mac | Prototype (one example) |
 
 ## 2. Menus
 
@@ -36,142 +36,142 @@ Status: ✅ done · 🟡 prototype (works, not complete) · ⬜ todo
 
 | Item | How | Status |
 | --- | --- | --- |
-| Project ▸ New… (New Project wizard) | Mac | ✅ |
-| Project ▸ Open…, Open Recent, Close | Mac | ✅ (Close confirmation ⬜) |
-| Project ▸ Save As… | Mac | ⬜ |
-| Project ▸ Archive… (zip with options: include run results, include config settings) | Mac | ⬜ |
-| Project ▸ Write Tcl… (script that recreates the project) | Mac | ⬜ |
-| Checkpoint ▸ Open / Write | Remote | ⬜ |
-| Text Editor ▸ New File, Open File, Save File, Save File As, Close File | Mac | ⬜ |
-| Add Sources… (⌥⌘A) | Mac | ✅ |
-| Import ▸ Import Constraints | Mac | ⬜ |
-| Export ▸ Export Bitstream File, Export Constraints, Export Hardware (.xsa), Export Simulation | Mac / Remote | ⬜ |
-| Exit (with confirmation) | Mac | ⬜ |
+| Project ▸ New… (New Project wizard) | Mac | Done |
+| Project ▸ Open…, Open Recent, Close | Mac | Done (Close confirmation Todo) |
+| Project ▸ Save As… | Mac | Todo |
+| Project ▸ Archive… (zip with options: include run results, include config settings) | Mac | Todo |
+| Project ▸ Write Tcl… (script that recreates the project) | Mac | Todo |
+| Checkpoint ▸ Open / Write | Remote | Todo |
+| Text Editor ▸ New File, Open File, Save File, Save File As, Close File | Mac | Todo |
+| Add Sources… (⌥⌘A) | Mac | Done |
+| Import ▸ Import Constraints | Mac | Todo |
+| Export ▸ Export Bitstream File, Export Constraints, Export Hardware (.xsa), Export Simulation | Mac / Remote | Todo |
+| Exit (with confirmation) | Mac | Todo |
 
 ### Edit
 
 | Item | How | Status |
 | --- | --- | --- |
-| Undo / Redo / Cut / Copy / Paste / Delete / Select All | Mac | ⬜ (needs the real editor) |
-| Find… (objects), Find in Files…, Replace in Files… | Mac | ⬜ |
+| Undo / Redo / Cut / Copy / Paste / Delete / Select All | Mac | Todo (needs the real editor) |
+| Find… (objects), Find in Files…, Replace in Files… | Mac | Todo |
 
 ### Flow
 
 | Item | How | Status |
 | --- | --- | --- |
-| Settings… | Mac | 🟡 (General page only) |
-| Run Synthesis / Run Implementation / Generate Bitstream | Remote | 🟡 (rules done; live runs still one script, see P1) |
-| Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | ⬜ |
-| Reset Runs dialog (with "delete generated files") | Mac | 🟡 (no dialog yet) |
-| Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | ⬜ |
-| Run Simulation ▸ Behavioral / Post-Synthesis / Post-Implementation | Local tool | ⬜ (behavioral only; post-synth needs a netlist export, Remote) |
-| Open Elaborated / Synthesized / Implemented Design | Remote | ⬜ (opens Netlist, Schematic, I/O views fed by Vivado) |
-| Open Hardware Manager | Local tool | ⬜ |
+| Settings… | Mac | Prototype (General page only) |
+| Run Synthesis / Run Implementation / Generate Bitstream | Remote | Prototype (rules done; live runs still one script, see P1) |
+| Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | Todo |
+| Reset Runs dialog (with "delete generated files") | Mac | Prototype (no dialog yet) |
+| Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |
+| Run Simulation ▸ Behavioral / Post-Synthesis / Post-Implementation | Local tool | Todo (behavioral only; post-synth needs a netlist export, Remote) |
+| Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado) |
+| Open Hardware Manager | Local tool | Todo |
 | Create Block Design… | Not possible (see §6) | — |
 
 ### Tools
 
 | Item | How | Status |
 | --- | --- | --- |
-| Settings… (Project settings and Tool settings) | Mac | 🟡 |
-| Language Templates | Mac (our own templates, same tree layout) | ⬜ |
-| IP Catalog / Customize IP / Generate Output Products | Remote | ⬜ |
-| Run Tcl Script… | Remote | ⬜ |
-| Timing ▸ Constraints Wizard, Edit Timing Constraints | Mac editor, Remote for design data | ⬜ |
-| Property Editor | Remote | ⬜ |
-| Generate Memory Configuration File (.mcs/.bin for flash) | Remote | ⬜ |
-| Create and Package New IP | Remote | ⬜ |
-| Custom Commands | Mac | ⬜ |
+| Settings… (Project settings and Tool settings) | Mac | Prototype |
+| Language Templates | Mac (our own templates, same tree layout) | Todo |
+| IP Catalog / Customize IP / Generate Output Products | Remote | Todo |
+| Run Tcl Script… | Remote | Todo |
+| Timing ▸ Constraints Wizard, Edit Timing Constraints | Mac editor, Remote for design data | Todo |
+| Property Editor | Remote | Todo |
+| Generate Memory Configuration File (.mcs/.bin for flash) | Remote | Todo |
+| Create and Package New IP | Remote | Todo |
+| Custom Commands | Mac | Todo |
 
 ### Reports
 
 | Item | How | Status |
 | --- | --- | --- |
-| Report Timing Summary (dialog with options) | Remote | 🟡 (report shown; dialog ⬜) |
-| Timing ▸ Report Timing (paths table), Report Clock Networks, Report Clock Interaction, Report CDC, Report Pulse Width | Remote | ⬜ |
-| Report Utilization (with hierarchy) | Remote | 🟡 (flat summary) |
-| Report Power | Remote | ⬜ |
-| Report DRC, Report Methodology, Report Noise | Remote | ⬜ |
-| Report I/O, Report Control Sets, Report QoR Suggestions, Report Design Analysis | Remote | ⬜ |
-| Report Instance Hierarchy | Remote | ⬜ |
+| Report Timing Summary (dialog with options) | Remote | Prototype (report shown; dialog Todo) |
+| Timing ▸ Report Timing (paths table), Report Clock Networks, Report Clock Interaction, Report CDC, Report Pulse Width | Remote | Todo |
+| Report Utilization (with hierarchy) | Remote | Prototype (flat summary) |
+| Report Power | Remote | Todo |
+| Report DRC, Report Methodology, Report Noise | Remote | Todo |
+| Report I/O, Report Control Sets, Report QoR Suggestions, Report Design Analysis | Remote | Todo |
+| Report Instance Hierarchy | Remote | Todo |
 
 ### Window, Layout, View, Help
 
 | Item | How | Status |
 | --- | --- | --- |
-| Window ▸ show/hide each pane (Project Summary, Sources, Properties, Netlist, Tcl Console, Messages, Log, Reports, Design Runs, Package, Device, I/O Ports, Timing, Find Results, Waveform) | Mac | 🟡 (console toggle only) |
-| Layout ▸ Default, I/O Planning, Floorplanning, Debug; Save Layout As; Remove Layout; Reset Layout | Mac | ⬜ |
-| View ▸ Zoom In/Out/Fit, Flow Navigator, Toolbar | Mac | 🟡 (sidebar toggle) |
-| Help ▸ Documentation and Tutorials, Tcl Command Help, About | Mac | ⬜ |
-| Quick Access search box (find any command by name) | Mac | ⬜ |
+| Window ▸ show/hide each pane (Project Summary, Sources, Properties, Netlist, Tcl Console, Messages, Log, Reports, Design Runs, Package, Device, I/O Ports, Timing, Find Results, Waveform) | Mac | Prototype (console toggle only) |
+| Layout ▸ Default, I/O Planning, Floorplanning, Debug; Save Layout As; Remove Layout; Reset Layout | Mac | Todo |
+| View ▸ Zoom In/Out/Fit, Flow Navigator, Toolbar | Mac | Prototype (sidebar toggle) |
+| Help ▸ Documentation and Tutorials, Tcl Command Help, About | Mac | Todo |
+| Quick Access search box (find any command by name) | Mac | Todo |
 
 ## 3. Windows and panes
 
 | Pane | How | Status |
 | --- | --- | --- |
-| Flow Navigator (all sections, run status icons, collapse sections) | Mac | ✅ (collapse ⬜) |
-| Sources ▸ Hierarchy (module tree, top marker) | Mac | ✅ |
-| Sources ▸ Libraries, Compile Order (reorder, manual compile order) | Mac | 🟡 (read-only) |
-| Sources ▸ IP Sources | Remote | ⬜ |
-| Sources toolbar: search, collapse/expand all, add, properties | Mac | 🟡 (add only) |
-| Sources context menu: Set as Top, Remove File, Disable File, Open File, Replace File, Copy File Into Project, Hierarchy Update, Refresh Hierarchy | Mac | ⬜ |
-| Source File Properties | Mac | ✅ |
-| Project Summary dashboard (Overview, Settings, Board, Synthesis, Implementation, DRC, Timing, Utilization, Power, Methodology, Design Runs) | Mac + Remote data | 🟡 |
-| Text editor: editing, save, undo, line numbers, syntax colours, find/replace, go to line, comment toggle, auto-indent, bracket match, linting markers from Messages | Mac | 🟡 (read-only preview) |
-| Tcl Console (history with ↑/↓, command echo of GUI actions, clear) | Mac → Remote | 🟡 (history ⬜) |
-| Messages (grouped by run and ID, severity filters, search, suppress, jump to source line) | Mac | 🟡 (grouping and filters) |
-| Log (per run, live) | Mac | ✅ |
-| Reports (per run, open in viewer) | Mac | ✅ |
-| Design Runs table (columns, context menu: Launch, Reset, Delete, Make Active, Change Run Settings, Open Run Directory) | Mac → Remote | 🟡 (table only) |
-| Run Properties | Mac | ⬜ |
-| Netlist (cells, nets, hierarchy of the opened design) | Remote | ⬜ |
-| Properties (any selected object) | Remote | ⬜ |
-| Schematic | Remote data + Mac renderer | ⬜ (stretch, see P8) |
-| I/O Ports table and Package view (pin assignment) | Remote data + Mac | ⬜ |
-| Timing results window (paths table, path report, highlight) | Remote | ⬜ |
+| Flow Navigator (all sections, run status icons, collapse sections) | Mac | Done (collapse Todo) |
+| Sources ▸ Hierarchy (module tree, top marker) | Mac | Done |
+| Sources ▸ Libraries, Compile Order (reorder, manual compile order) | Mac | Prototype (read-only) |
+| Sources ▸ IP Sources | Remote | Todo |
+| Sources toolbar: search, collapse/expand all, add, properties | Mac | Prototype (add only) |
+| Sources context menu: Set as Top, Remove File, Disable File, Open File, Replace File, Copy File Into Project, Hierarchy Update, Refresh Hierarchy | Mac | Todo |
+| Source File Properties | Mac | Done |
+| Project Summary dashboard (Overview, Settings, Board, Synthesis, Implementation, DRC, Timing, Utilization, Power, Methodology, Design Runs) | Mac + Remote data | Prototype |
+| Text editor: editing, save, undo, line numbers, syntax colors, find/replace, go to line, comment toggle, auto-indent, bracket match, linting markers from Messages | Mac | Prototype (read-only preview) |
+| Tcl Console (history with ↑/↓, command echo of GUI actions, clear) | Mac → Remote | Prototype (history Todo) |
+| Messages (grouped by run and ID, severity filters, search, suppress, jump to source line) | Mac | Prototype (grouping and filters) |
+| Log (per run, live) | Mac | Done |
+| Reports (per run, open in viewer) | Mac | Done |
+| Design Runs table (columns, context menu: Launch, Reset, Delete, Make Active, Change Run Settings, Open Run Directory) | Mac → Remote | Prototype (table only) |
+| Run Properties | Mac | Todo |
+| Netlist (cells, nets, hierarchy of the opened design) | Remote | Todo |
+| Properties (any selected object) | Remote | Todo |
+| Schematic | Remote data + Mac renderer | Todo (stretch, see P8) |
+| I/O Ports table and Package view (pin assignment) | Remote data + Mac | Todo |
+| Timing results window (paths table, path report, highlight) | Remote | Todo |
 | Device view / floorplanning | Not possible | — |
 
 ## 4. Dialogs and popups
 
 | Dialog | How | Status |
 | --- | --- | --- |
-| New Project wizard (all pages, Back/Next/Finish, "Do not specify sources", Parts/Boards with filters) | Mac | ✅ |
-| Add Sources wizard (constraints / design / simulation; Add Files, Add Directories, Create File) | Mac | 🟡 (Add Directories ⬜) |
-| Create Source File (file type, name, location) | Mac | 🟡 (name only) |
-| Define Module (port table: name, direction, bus, MSB, LSB) after creating a file | Mac | ⬜ |
-| Settings ▸ Project: General, Simulation, Elaboration, Synthesis (strategy + options table), Implementation (strategy + per-step options), Bitstream (options such as -bin_file), IP | Mac → Remote | 🟡 (General) |
-| Settings ▸ Tool: Project, IP Defaults, Source File, Display, Help, Text Editor (font, colours, tabs), 3rd Party Simulators, Colors, Selection Rules, Shortcuts, Strategies, Window Behavior | Mac | ⬜ |
-| Launch Runs (jobs, launch directory, scripts only) | Mac | ⬜ |
-| "Synthesis Completed" (Run Implementation / Open Synthesized Design / View Reports / Don't show again) | Mac | ⬜ |
-| "Implementation Completed" (Generate Bitstream / Open Implemented Design / View Reports) | Mac | ⬜ |
-| "Bitstream Generation Completed" (Open Implemented Design / View Reports / Open Hardware Manager / Generate Memory Configuration File) | Mac | ⬜ |
-| "Synthesis is Out-of-date" prompt when launching implementation | Mac | ⬜ (currently re-runs silently) |
-| Run failure popup with link to Messages / Log | Mac | ⬜ |
-| Reset Runs confirmation (delete generated files) | Mac | ⬜ |
-| Close Project / Exit confirmations | Mac | ⬜ |
-| Save Project As, Archive Project, Write Tcl | Mac | ⬜ |
-| Report Timing Summary / Report Timing / Report Utilization / Report Power option dialogs | Mac → Remote | ⬜ |
-| Constraints Wizard, Timing Constraints editor (Create Clock, Input/Output Delay, False Path, Multicycle) | Mac + Remote | ⬜ |
-| IP Catalog, Customize IP, Generate Output Products | Remote | ⬜ |
-| Program Device (bitstream file, Program) | Local tool | ⬜ |
-| Add Configuration Memory Device / Program Configuration Memory | Local tool | ⬜ |
-| Suppress Message / Manage Suppressions | Mac | ⬜ |
-| Language Templates window | Mac | ⬜ |
-| Tcl Command Help | Mac | ⬜ |
-| About | Mac | ⬜ |
+| New Project wizard (all pages, Back/Next/Finish, "Do not specify sources", Parts/Boards with filters) | Mac | Done |
+| Add Sources wizard (constraints / design / simulation; Add Files, Add Directories, Create File) | Mac | Prototype (Add Directories Todo) |
+| Create Source File (file type, name, location) | Mac | Prototype (name only) |
+| Define Module (port table: name, direction, bus, MSB, LSB) after creating a file | Mac | Todo |
+| Settings ▸ Project: General, Simulation, Elaboration, Synthesis (strategy + options table), Implementation (strategy + per-step options), Bitstream (options such as -bin_file), IP | Mac → Remote | Prototype (General) |
+| Settings ▸ Tool: Project, IP Defaults, Source File, Display, Help, Text Editor (font, colors, tabs), 3rd Party Simulators, Colors, Selection Rules, Shortcuts, Strategies, Window Behavior | Mac | Todo |
+| Launch Runs (jobs, launch directory, scripts only) | Mac | Todo |
+| "Synthesis Completed" (Run Implementation / Open Synthesized Design / View Reports / Don't show again) | Mac | Todo |
+| "Implementation Completed" (Generate Bitstream / Open Implemented Design / View Reports) | Mac | Todo |
+| "Bitstream Generation Completed" (Open Implemented Design / View Reports / Open Hardware Manager / Generate Memory Configuration File) | Mac | Todo |
+| "Synthesis is Out-of-date" prompt when launching implementation | Mac | Todo (currently re-runs silently) |
+| Run failure popup with link to Messages / Log | Mac | Todo |
+| Reset Runs confirmation (delete generated files) | Mac | Todo |
+| Close Project / Exit confirmations | Mac | Todo |
+| Save Project As, Archive Project, Write Tcl | Mac | Todo |
+| Report Timing Summary / Report Timing / Report Utilization / Report Power option dialogs | Mac → Remote | Todo |
+| Constraints Wizard, Timing Constraints editor (Create Clock, Input/Output Delay, False Path, Multicycle) | Mac + Remote | Todo |
+| IP Catalog, Customize IP, Generate Output Products | Remote | Todo |
+| Program Device (bitstream file, Program) | Local tool | Todo |
+| Add Configuration Memory Device / Program Configuration Memory | Local tool | Todo |
+| Suppress Message / Manage Suppressions | Mac | Todo |
+| Language Templates window | Mac | Todo |
+| Tcl Command Help | Mac | Todo |
+| About | Mac | Todo |
 
-## 5. Flow behaviour
+## 5. Flow behavior
 
-| Behaviour | How | Status |
+| Behavior | How | Status |
 | --- | --- | --- |
-| Separate synth_1 and impl_1 runs with checkpoints (implementation reuses the synthesized design) | Remote | ⬜ **(P1, core change)** |
-| Run Implementation runs synthesis first if missing or out-of-date | Mac | ✅ |
-| Generate Bitstream runs whatever is needed | Mac | ✅ |
-| Out-of-date tracking when sources, constraints or settings change | Mac | 🟡 (on add/settings; on file edit ⬜) |
-| Strategies (Vivado Synthesis Defaults, Flow_PerfOptimized_high, Performance_Explore, …) | Remote | ⬜ |
-| Incremental implementation | Remote | ⬜ |
-| GUI actions echoed as Tcl in the console | Mac | ✅ |
-| Live log while running, stop a running step | Mac / Remote | 🟡 (stop in demo only) |
+| Separate synth_1 and impl_1 runs with checkpoints (implementation reuses the synthesized design) | Remote | Todo **(P1, core change)** |
+| Run Implementation runs synthesis first if missing or out-of-date | Mac | Done |
+| Generate Bitstream runs whatever is needed | Mac | Done |
+| Out-of-date tracking when sources, constraints or settings change | Mac | Prototype (on add/settings; on file edit Todo) |
+| Strategies (Vivado Synthesis Defaults, Flow_PerfOptimized_high, Performance_Explore, …) | Remote | Todo |
+| Incremental implementation | Remote | Todo |
+| GUI actions echoed as Tcl in the console | Mac | Done |
+| Live log while running, stop a running step | Mac / Remote | Prototype (stop in demo only) |
 
 ## 6. Things a Mac can't do, and what we do instead
 
@@ -192,7 +192,7 @@ Each phase is usable on its own and is tested before the next one starts.
 1. **P1: Flow parity.** Separate synth_1/impl_1/bitstream runs with checkpoints (core + live backend); Launch Runs
    dialog; Synthesis/Implementation/Bitstream Completed popups; out-of-date prompt; Reset Runs dialog; Design Runs
    context menu and Run Properties; Synthesis/Implementation/Bitstream settings pages with strategies and options.
-2. **P2: Projects and editing.** Real text editor (edit, save, undo, find/replace, go to line, syntax colours);
+2. **P2: Projects and editing.** Real text editor (edit, save, undo, find/replace, go to line, syntax colors);
    Create Source File and Define Module dialogs; Sources context menus (Set as Top, Remove, Disable); Compile Order
    editing; Find in Files; Language Templates; File menu (Save As, Archive, Write Tcl, Close/Exit confirmations);
    Edit menu; Text Editor settings.

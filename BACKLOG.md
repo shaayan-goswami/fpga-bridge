@@ -93,6 +93,21 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
 - [ ] P7 Workspace polish (Window/Layout/View/Help, layouts, Quick Access, tool settings)
 - [ ] P8 Stretch (schematic, block design viewer)
 
+## Code quality
+
+Found by the review in [docs/code-review.md](docs/code-review.md). Fix the likely bugs first.
+
+- [ ] Cancelling a run can leave two runs going (AppModel `cancelRun`/`execute`); add a test that cancels and starts a second run
+- [ ] Cancelling only the bitstream step should not mark `impl_1` as cancelled
+- [ ] Reject reserved words as module, port and architecture names (Verilog, SystemVerilog, VHDL)
+- [ ] Validate the Vivado path when `init` saves it (quotes, `&`, `%`); reject symlinks that leave the project folder
+- [ ] Show an error instead of an empty source tree when sources can't be resolved or the project file can't be re-read
+- [ ] Move the 12 `FPGA_BRIDGE_*` debug and screenshot hooks into one file under `#if DEBUG`
+- [ ] Move to Swift 6 language mode: 41 strict-concurrency warnings, mostly the log closure and backend crossing tasks; replace the main-queue hop with an `AsyncStream`
+- [ ] Split the run engine out of `AppModel`; make accent colors observable so `.id(accents)` can go
+- [ ] Verify the `AppleIconAppearanceTheme` values against System Settings
+- [ ] De-flake the cancel test (no `Thread.sleep`, no real `SIGINT` to the test process)
+
 ## M5: Distribution and polish
 
 - [ ] Signed and notarized release builds (CLI and app)

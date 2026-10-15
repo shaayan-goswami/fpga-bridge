@@ -76,18 +76,11 @@ private struct ConsoleTabButton: View {
                 .background {
                     if !selected && hovering { Capsule().fill(Color.primary.opacity(0.06)) }
                 }
-                .modifier(ConsoleSelectedGlass(selected: selected))
+                .glassWhenSelected(selected)
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-    }
-}
-
-private struct ConsoleSelectedGlass: ViewModifier {
-    let selected: Bool
-    func body(content: Content) -> some View {
-        if selected { content.glassSurface(Capsule(), interactive: true) } else { content }
     }
 }
 

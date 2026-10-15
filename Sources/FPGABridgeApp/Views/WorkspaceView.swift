@@ -72,23 +72,10 @@ private struct TabButton: View {
         .background {
             if !selected && hovering { Capsule().fill(Color.primary.opacity(0.06)) }
         }
-        .modifier(SelectedGlass(selected: selected))
+        .glassWhenSelected(selected)
         .contentShape(Capsule())
         .onTapGesture { model.selectedTab = tab }
         .onHover { hovering = $0 }
-    }
-}
-
-/// The selected tab floats on glass; the others sit flat on the bar.
-private struct SelectedGlass: ViewModifier {
-    let selected: Bool
-
-    func body(content: Content) -> some View {
-        if selected {
-            content.glassSurface(Capsule(), interactive: true)
-        } else {
-            content
-        }
     }
 }
 

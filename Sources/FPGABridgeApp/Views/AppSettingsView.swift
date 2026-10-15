@@ -51,7 +51,7 @@ private struct AppearanceSettings: View {
                     .padding(.vertical, 2)
                 }
             } footer: {
-                Text("Muted colours that each mean one thing. Turn them off for an all-grey app.")
+                Text("Each accent color means one thing, in the colors Vivado uses. Turn them off for an all-grey app.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

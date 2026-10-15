@@ -3,8 +3,7 @@ import SwiftUI
 
 // MARK: Settings keys and choices
 
-/// The app is monochrome: black, gray and white, following light or dark mode. Colour is only used where it carries
-/// meaning (run status, errors, warnings, failed timing).
+/// UserDefaults keys for the settings on the Appearance and Text Editor pages.
 enum AppearanceKey {
     static let theme = "appearance.theme"
     static let glass = "appearance.glass"
@@ -39,11 +38,10 @@ enum GlassChoice: String, CaseIterable, Identifiable {
     }
 }
 
-/// Accents, each with one meaning, in Vivado's own colours. The light values were sampled from screenshots of
-/// Vivado 2023.1 (run green #4DBD33, error #F33321, critical warning #FCA602, link blue #0072FA, message link
-/// #00A6FD, hierarchy teal #58A6BB, top-module green #3BBA6A, tool-icon navy #406294); the dark values are the same
-/// hues lightened so they read on dark backgrounds. They only colour small things (icons, dots, thin bars, command
-/// text), never large areas, and can be turned off in Settings for a fully grey app.
+/// Accent colors, each with one meaning. The light values were sampled from Vivado 2023.1 screenshots (run green
+/// #4DBD33, error #F33321, critical warning #FCA602, link blue #0072FA, message link #00A6FD, hierarchy teal #58A6BB,
+/// top-module green #3BBA6A, tool-icon navy #406294). The dark values are the same hues, lighter. Accents mark small
+/// things only (icons, dots, thin bars, command text) and can be turned off in Settings.
 enum Accent {
     static var enabled: Bool { UserDefaults.standard.object(forKey: AppearanceKey.accents) as? Bool ?? true }
 
@@ -90,9 +88,9 @@ enum Accent {
     }
 }
 
-/// Neutral greys used for highlights and the control tint.
+/// The grey tint for controls.
 enum Mono {
-    /// Tint for controls: graphite, readable in both modes.
+    /// Graphite: readable in both light and dark mode.
     static let tint = Color(nsColor: .systemGray)
 }
 
@@ -137,6 +135,14 @@ private struct GlassSurface<S: InsettableShape>: ViewModifier {
     }
 }
 
+extension View {
+    /// Floats the view on glass when selected and leaves it flat otherwise, for tab strips.
+    @ViewBuilder
+    func glassWhenSelected(_ selected: Bool) -> some View {
+        if selected { glassSurface(Capsule(), interactive: true) } else { self }
+    }
+}
+
 /// Groups nearby glass shapes so they blend and morph together (macOS 26+).
 struct GlassGroup<Content: View>: View {
     var spacing: CGFloat = 8
@@ -171,8 +177,8 @@ struct Backdrop: View {
     }
 }
 
-/// A plain, grey text button for secondary actions ("Edit", "Report", "Show All"). macOS link buttons are always
-/// blue, which would break the monochrome look.
+/// A grey text button for secondary actions ("Edit", "Report", "Show All"). The built-in link style uses the system
+/// accent color, which would clash with the rest of the UI.
 struct QuietButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -183,7 +189,7 @@ struct QuietButtonStyle: ButtonStyle {
 
 // MARK: Root modifier
 
-/// Applies the theme and the monochrome control tint. Used on every scene's root view.
+/// Applies the theme and the control tint. Used on every scene's root view.
 struct AppearanceRoot: ViewModifier {
     @AppStorage(AppearanceKey.theme) private var theme = ThemeChoice.system
     @AppStorage(AppearanceKey.accents) private var accents = true
@@ -192,7 +198,7 @@ struct AppearanceRoot: ViewModifier {
         content
             .tint(Mono.tint)
             .preferredColorScheme(theme.colorScheme)
-            // Rebuild when accents are switched, so every accent colour is resolved again.
+            // Accent colors are read from UserDefaults, not observed, so rebuild the tree when the setting changes.
             .id(accents)
     }
 }
@@ -216,8 +222,8 @@ enum IconStyle: Equatable {
         }
     }
 
-    /// The pre-rendered image for this style. Tinted uses the user's own tint colour, which can't be pre-rendered,
-    /// so it shows the neutral Clear rendering; the packaged app's Dock icon gets the real tinted one from macOS.
+    /// The pre-rendered image for this style. Tinted depends on the user's tint color, which can't be pre-rendered, so
+    /// it uses the neutral Clear rendering. The packaged app's Dock icon gets the real tinted one from macOS.
     var resourceName: String {
         switch self {
         case .regularLight: "AppIcon-Default"

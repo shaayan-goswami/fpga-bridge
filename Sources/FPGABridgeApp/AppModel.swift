@@ -125,14 +125,7 @@ final class AppModel: ObservableObject {
             openTabs = [.summary]
             selectedTab = .summary
             selectedSourceID = nil
-            runs = [.synthesis: RunState(), .implementation: RunState()]
-            bitstreamReady = false
-            logs = [:]
-            reports = []
-            timing = nil
-            utilization = nil
-            lastOutcome = nil
-            lastMessage = "Ready"
+            clearRunState(message: "Ready")
             rebuildSourceTree()
             echoTcl("open_project \(directory.appendingPathComponent(Project.fileName).path)")
             addRecent(directory)
@@ -320,6 +313,13 @@ final class AppModel: ObservableObject {
     func resetRuns() {
         cancelRun()
         echoTcl("reset_run synth_1")
+        clearRunState(message: "Runs reset")
+        openTabs.removeAll { if case .report = $0 { return true }; return false }
+        if !openTabs.contains(selectedTab) { selectedTab = .summary }
+    }
+
+    /// Back to "Not started" with no logs, reports or results.
+    private func clearRunState(message: String) {
         runs = [.synthesis: RunState(), .implementation: RunState()]
         bitstreamReady = false
         logs = [:]
@@ -327,9 +327,7 @@ final class AppModel: ObservableObject {
         timing = nil
         utilization = nil
         lastOutcome = nil
-        lastMessage = "Runs reset"
-        openTabs.removeAll { if case .report = $0 { return true }; return false }
-        if !openTabs.contains(selectedTab) { selectedTab = .summary }
+        lastMessage = message
     }
 
     private func cancelRun() {
