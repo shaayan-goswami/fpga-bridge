@@ -30,8 +30,10 @@ With no build machine configured (`fpga-bridge init` not run yet) the app starts
 simulated so you can try the whole flow. Use **Open Example Project** on the start page for a ready-made design.
 
 **FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the Liquid Glass style (Frosted, Clear, Off), and
-editor and console font sizes. The app is monochrome; colour only marks status (errors, warnings, completed runs,
-failed timing). Project settings (part, top module, language, Vivado version) are under **Flow > Settings…**, as in
+editor and console font sizes, and whether to show accent colours. The app is grey, with muted accents that each mean
+one thing: green done/timing met, amber warning or out-of-date, red error/failed, blue running and Tcl commands,
+violet work on the build machine, and slate, copper and teal for design, constraint and simulation sources. Settings
+shows the legend; turn accents off for an all-grey app. Project settings (part, top module, language, Vivado version) are under **Flow > Settings…**, as in
 Vivado.
 
 The app icon is an Icon Composer document, `Sources/FPGABridgeApp/Resources/AppIcon.icon`, and follows the

@@ -143,7 +143,7 @@ struct ActivityView: View {
             } else if let summary = model.timing, model.lastOutcome == .complete {
                 Text("WNS \(formatSigned(summary.wns)) ns")
                     .monospacedDigit()
-                    .foregroundStyle(summary.constraintsMet ? Color.secondary : Color.red)
+                    .foregroundStyle(summary.constraintsMet ? Color.secondary : Accent.error)
             }
         }
         .font(.callout)
@@ -163,8 +163,8 @@ struct ActivityView: View {
 
     private var color: Color {
         switch model.lastOutcome {
-        case .complete: .green
-        case .failed: .red
+        case .complete: Accent.success
+        case .failed: Accent.error
         default: .secondary
         }
     }

@@ -18,6 +18,7 @@ struct AppSettingsView: View {
 private struct AppearanceSettings: View {
     @AppStorage(AppearanceKey.theme) private var theme = ThemeChoice.system
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.frosted
+    @AppStorage(AppearanceKey.accents) private var accents = true
 
     var body: some View {
         Form {
@@ -31,6 +32,26 @@ private struct AppearanceSettings: View {
                 }
             } footer: {
                 Text("Frosted glass blurs more than Clear. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Accent colors", isOn: $accents)
+                if accents {
+                    LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)],
+                              alignment: .leading, spacing: 8) {
+                        ForEach(Accent.legend) { entry in
+                            HStack(spacing: 8) {
+                                Circle().fill(entry.color).frame(width: 9, height: 9)
+                                Text(entry.name).font(.callout)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            } footer: {
+                Text("Muted colours that each mean one thing. Turn them off for an all-grey app.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -56,7 +77,7 @@ private struct AppearanceSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 340)
+        .frame(height: 560)
     }
 }
 

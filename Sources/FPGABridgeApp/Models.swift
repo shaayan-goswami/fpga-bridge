@@ -148,12 +148,12 @@ struct RunState {
     }
 
     var color: Color {
-        if outOfDate && status == .complete { return .orange }
+        if outOfDate && status == .complete { return Accent.warning }
         switch status {
         case .notStarted, .cancelled: return .secondary
-        case .running: return .secondary
-        case .complete: return .green
-        case .failed: return .red
+        case .running: return Accent.active
+        case .complete: return Accent.success
+        case .failed: return Accent.error
         }
     }
 }
@@ -270,8 +270,8 @@ enum ConnectionState: Equatable {
     var color: Color {
         switch self {
         case .checking: .secondary
-        case .connected: .green
-        case .offline: .red
+        case .connected: Accent.success
+        case .offline: Accent.error
         case .demo: .secondary
         }
     }

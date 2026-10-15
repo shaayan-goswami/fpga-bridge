@@ -46,7 +46,7 @@ struct CreateSourceFileSheet: View {
                     Text("<Local to Project>").foregroundStyle(.secondary)
                 }
                 if let problem {
-                    Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                    Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(Accent.warning)
                 }
             }
             .formStyle(.grouped)
@@ -146,7 +146,7 @@ struct DefineModuleSheet: View {
 
             if let error {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Accent.error)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 6)
             }

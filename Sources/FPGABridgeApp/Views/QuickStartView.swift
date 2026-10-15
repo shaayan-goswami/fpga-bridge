@@ -15,16 +15,17 @@ struct QuickStartView: View {
                         VStack(alignment: .leading, spacing: 26) {
                             section("Quick Start") {
                                 QuickActionRow(symbol: "plus.square.on.square", title: "Create Project",
-                                               subtitle: "Start the New Project wizard") { model.showNewProject = true }
+                                               subtitle: "Start the New Project wizard", tint: Accent.source) { model.showNewProject = true }
                                 QuickActionRow(symbol: "folder", title: "Open Project",
-                                               subtitle: "Open a project folder") { model.openProjectWithPanel() }
+                                               subtitle: "Open a project folder", tint: Accent.source) { model.openProjectWithPanel() }
                                 QuickActionRow(symbol: "lightbulb", title: "Open Example Project",
-                                               subtitle: "A small Basys 3 design to try things with") { model.openExampleProject() }
+                                               subtitle: "A small Basys 3 design to try things with", tint: Accent.source) { model.openExampleProject() }
                             }
                             section("Tasks") {
                                 QuickActionRow(symbol: "network", title: "Check Build Machine",
                                                subtitle: model.connection == .demo ? "Demo mode: no build machine configured"
-                                                                                   : model.connection.detail) {
+                                                                                   : model.connection.detail,
+                                               tint: Accent.remote) {
                                     Task { await model.start() }
                                 }
                                 QuickActionRow(symbol: "cable.connector.horizontal", title: "Open Hardware Manager",
@@ -32,7 +33,7 @@ struct QuickStartView: View {
                             }
                             section("Learning Center") {
                                 QuickActionRow(symbol: "book", title: "Documentation",
-                                               subtitle: "Setup, build machine and troubleshooting") {
+                                               subtitle: "Setup, build machine and troubleshooting", tint: Accent.simulation) {
                                     if let url = URL(string: "https://github.com/shaayan-goswami/fpga-bridge/blob/main/docs/setup.md") {
                                         NSWorkspace.shared.open(url)
                                     }
@@ -49,7 +50,7 @@ struct QuickStartView: View {
                             } else {
                                 ForEach(model.recentProjects, id: \.self) { url in
                                     QuickActionRow(symbol: "cpu", title: url.lastPathComponent,
-                                                   subtitle: url.deletingLastPathComponent().path) { model.openProject(at: url) }
+                                                   subtitle: url.deletingLastPathComponent().path, tint: Accent.source) { model.openProject(at: url) }
                                 }
                             }
                         }
@@ -104,6 +105,8 @@ struct QuickActionRow: View {
     let symbol: String
     let title: String
     let subtitle: String
+    /// A muted accent for what kind of action this is; nil keeps it grey.
+    var tint: Color? = nil
     var isEnabled = true
     let action: () -> Void
     @State private var hovering = false
@@ -113,9 +116,9 @@ struct QuickActionRow: View {
             HStack(spacing: 12) {
                 Image(systemName: symbol)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(tint ?? .primary)
                     .frame(width: 32, height: 32)
-                    .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background((tint ?? .primary).opacity(0.10), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.body.weight(.medium))
                     Text(subtitle)

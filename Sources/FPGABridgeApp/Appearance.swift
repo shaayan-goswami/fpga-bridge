@@ -8,6 +8,7 @@ import SwiftUI
 enum AppearanceKey {
     static let theme = "appearance.theme"
     static let glass = "appearance.glass"
+    static let accents = "appearance.accents"
     static let editorFontSize = "editor.fontSize"
     static let editorLineNumbers = "editor.lineNumbers"
     static let consoleFontSize = "console.fontSize"
@@ -35,6 +36,54 @@ enum GlassChoice: String, CaseIterable, Identifiable {
         case .clear: "Clear"
         case .off: "Off (solid)"
         }
+    }
+}
+
+/// Muted accents, each with one meaning. They only colour small things (icons, dots, thin bars, command text), never
+/// large areas, and can be turned off in Settings for a fully grey app. Each has a lighter shade for dark mode.
+enum Accent {
+    static var enabled: Bool { UserDefaults.standard.object(forKey: AppearanceKey.accents) as? Bool ?? true }
+
+    /// Done, timing met.
+    static var success: Color { make(light: 0x4F8A63, dark: 0x86B596) }
+    /// Warnings, out-of-date runs, utilization over 70%.
+    static var warning: Color { make(light: 0xA87A2E, dark: 0xD4AC64) }
+    /// Errors, failed runs, failed timing.
+    static var error: Color { make(light: 0xB5504A, dark: 0xDB857F) }
+    /// Something in progress, and Tcl commands in the console.
+    static var active: Color { make(light: 0x4A6F9E, dark: 0x8CABD1) }
+    /// Work that happens on the build machine in Vivado (synthesis, implementation, bitstream).
+    static var remote: Color { make(light: 0x76689C, dark: 0xA99DCC) }
+    /// Design sources and modules.
+    static var source: Color { make(light: 0x5B7896, dark: 0x97B0CA) }
+    /// Constraint files.
+    static var constraint: Color { make(light: 0x9A6B4F, dark: 0xC69C81) }
+    /// Simulation sources.
+    static var simulation: Color { make(light: 0x4E8A86, dark: 0x86B9B4) }
+
+    struct Entry: Identifiable {
+        let name: String
+        let color: Color
+        var id: String { name }
+    }
+
+    /// For the legend in Settings.
+    static var legend: [Entry] {
+        [Entry(name: "Done, timing met", color: success), Entry(name: "Warning, out-of-date", color: warning),
+         Entry(name: "Error, failed", color: error), Entry(name: "Running, Tcl commands", color: active),
+         Entry(name: "Runs on the build machine", color: remote), Entry(name: "Design sources", color: source),
+         Entry(name: "Constraints", color: constraint), Entry(name: "Simulation sources", color: simulation)]
+    }
+
+    /// Computed each time (not cached) so turning accents off in Settings takes effect when views are rebuilt.
+    private static func make(light: UInt32, dark: UInt32) -> Color {
+        let on = enabled
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            guard on else { return .secondaryLabelColor }
+            let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            return NSColor(srgbRed: CGFloat((hex >> 16) & 0xff) / 255, green: CGFloat((hex >> 8) & 0xff) / 255,
+                           blue: CGFloat(hex & 0xff) / 255, alpha: 1)
+        })
     }
 }
 
@@ -134,11 +183,14 @@ struct QuietButtonStyle: ButtonStyle {
 /// Applies the theme and the monochrome control tint. Used on every scene's root view.
 struct AppearanceRoot: ViewModifier {
     @AppStorage(AppearanceKey.theme) private var theme = ThemeChoice.system
+    @AppStorage(AppearanceKey.accents) private var accents = true
 
     func body(content: Content) -> some View {
         content
             .tint(Mono.tint)
             .preferredColorScheme(theme.colorScheme)
+            // Rebuild when accents are switched, so every accent colour is resolved again.
+            .id(accents)
     }
 }
 

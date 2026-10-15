@@ -126,15 +126,17 @@ private struct SourceLabel: View {
                 Text(detail).foregroundStyle(.secondary)
             }
             if node.isTop {
-                Pill(text: "Top", color: .secondary)
+                Pill(text: "Top", color: Accent.source)
             }
         }
         .lineLimit(1)
     }
 
     private var symbolColor: Color {
-        if node.symbol == "folder" { return .secondary }
-        return node.isTop ? .primary : .secondary
+        guard node.symbol != "folder", let path = node.path else { return .secondary }
+        if path.lowercased().hasSuffix(".xdc") { return Accent.constraint }
+        if path.contains("/sim_1/") { return Accent.simulation }
+        return Accent.source
     }
 }
 

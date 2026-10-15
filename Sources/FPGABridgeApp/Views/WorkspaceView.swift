@@ -200,9 +200,9 @@ struct ProjectSummaryView: View {
                         Text("\(formatSigned(timing.wns)) ns")
                             .font(.system(size: 30, weight: .semibold, design: .rounded))
                             .monospacedDigit()
-                            .foregroundStyle(timing.constraintsMet ? Color.primary : Color.red)
+                            .foregroundStyle(timing.constraintsMet ? Color.primary : Accent.error)
                         Pill(text: timing.constraintsMet ? "Timing met" : "Timing not met",
-                             color: timing.constraintsMet ? .green : .red,
+                             color: timing.constraintsMet ? Accent.success : Accent.error,
                              symbol: timing.constraintsMet ? "checkmark" : "exclamationmark.triangle.fill")
                     }
                     Text("Worst Negative Slack (setup)").font(.caption).foregroundStyle(.secondary)
@@ -230,7 +230,7 @@ struct ProjectSummaryView: View {
                     .monospacedDigit()
                 } else {
                     Label("No clocks or timing constraints were found, so nothing was timed.", systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Accent.warning)
                 }
             } else {
                 placeholder("Run Implementation to see timing.", action: "Run Implementation") { model.run(.implementation) }
@@ -367,7 +367,7 @@ enum Highlighter {
         }
         let options: NSRegularExpression.Options = ext.hasPrefix("vhd") ? [.caseInsensitive] : []
 
-        // Monochrome: structure comes from weight and grey levels, not hue.
+        // Mostly grey: weight carries structure, with muted accents for keywords, directives and strings.
         func paint(_ pattern: String, options: NSRegularExpression.Options = [],
                    _ style: (inout AttributedSubstring) -> Void) {
             guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return }
@@ -379,15 +379,15 @@ enum Highlighter {
 
         result.foregroundColor = Color.primary.opacity(0.88)
         paint("\\b(" + keywords.joined(separator: "|") + ")\\b", options: options) {
-            $0.foregroundColor = .primary
+            $0.foregroundColor = Accent.source
             $0.inlinePresentationIntent = .stronglyEmphasized
         }
         paint("\\b\\d+'[bBhHdDoO][0-9a-fA-F_xXzZ]+|\\b\\d[\\d_]*(\\.\\d+)?\\b") { $0.foregroundColor = .primary }
         paint("`\\w+|\\$\\w+") {
-            $0.foregroundColor = .secondary
+            $0.foregroundColor = Accent.remote
             $0.inlinePresentationIntent = .stronglyEmphasized
         }
-        paint("\"[^\"\\n]*\"") { $0.foregroundColor = .secondary }
+        paint("\"[^\"\\n]*\"") { $0.foregroundColor = Accent.constraint }
         for pattern in comments {
             paint(pattern) {
                 $0.foregroundColor = Color.secondary.opacity(0.8)

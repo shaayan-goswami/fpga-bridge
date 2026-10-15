@@ -173,7 +173,7 @@ struct NewProjectWizard: View {
 
                 if let error = state.error {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Accent.error)
                         .padding(.horizontal, 28)
                         .padding(.bottom, 8)
                 }
@@ -205,7 +205,7 @@ struct NewProjectWizard: View {
                 HStack(spacing: 10) {
                     ZStack {
                         Circle()
-                            .fill(index < current ? Color.primary : (index == current ? Color.primary : Color.secondary.opacity(0.25)))
+                            .fill(index < current ? Accent.success : (index == current ? Accent.active : Color.secondary.opacity(0.25)))
                             .frame(width: 10, height: 10)
                         if index < current {
                             Image(systemName: "checkmark").font(.system(size: 6, weight: .black)).foregroundStyle(Color(nsColor: .windowBackgroundColor))
@@ -332,7 +332,7 @@ private struct NamePage: View {
                     .textSelection(.enabled)
             }
             if let problem = state.nameProblem {
-                Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(Accent.warning)
             }
         }
         .formStyle(.grouped)

@@ -93,6 +93,7 @@ private struct FlowRow: View {
 
     private var iconStyle: AnyShapeStyle {
         guard item.isAvailable else { return AnyShapeStyle(.tertiary) }
-        return AnyShapeStyle(.primary)
+        // Runs happen in Vivado on the build machine.
+        return item.runKind != nil ? AnyShapeStyle(Accent.remote) : AnyShapeStyle(.primary)
     }
 }
