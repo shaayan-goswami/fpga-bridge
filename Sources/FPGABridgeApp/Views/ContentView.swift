@@ -66,8 +66,8 @@ struct MainWindowView: View {
                     }
                     SourcesPane()
                         .frame(width: sourcesWidth)
-                        // [] keeps the fill below the toolbar; the default would paint it up under it.
-                        .background(Theme.surface, ignoresSafeAreaEdges: [])
+                        // Fills up under the toolbar too, so only the sidebar shows the window glass there.
+                        .background(Theme.surface)
                     PaneDivider(width: $sourcesWidth, range: 280...460)
                     VSplitView {
                         WorkspaceView()
@@ -78,7 +78,7 @@ struct MainWindowView: View {
                                 .frame(minHeight: 160, idealHeight: 240, maxHeight: 420)
                         }
                     }
-                    .background(Theme.window, ignoresSafeAreaEdges: [])
+                    .background(Theme.surface)
                 }
                 StatusBar()
             }
@@ -287,6 +287,8 @@ private struct PaneDivider: View {
         Rectangle()
             .fill(Color(nsColor: .separatorColor))
             .frame(width: 1)
+            // Fills the same black up under the toolbar, so no sliver of window glass shows between the panes.
+            .background(Theme.surface)
             .overlay {
                 // A wider invisible strip makes the line easy to grab.
                 Color.clear

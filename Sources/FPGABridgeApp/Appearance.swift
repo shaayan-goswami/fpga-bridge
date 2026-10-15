@@ -116,8 +116,9 @@ enum Theme {
 
     /// The window and the home page.
     static let nsWindow = dynamic(light: .windowBackgroundColor, dark: 0x0A0B0F)
-    /// Editors, the console, lists and tables: a step lighter than the window so panes read as panes.
-    static let nsSurface = dynamic(light: .textBackgroundColor, dark: 0x0E0F14)
+    /// Editors, the console, lists and tables. The same black as the window in dark mode, so panes join up with no
+    /// visible steps; thin separators divide them.
+    static let nsSurface = dynamic(light: .textBackgroundColor, dark: 0x0A0B0F)
     static let window = Color(nsColor: nsWindow)
     static let surface = Color(nsColor: nsSurface)
 }
