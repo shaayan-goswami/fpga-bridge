@@ -149,7 +149,6 @@ struct QuickActionRow: View {
 /// background, so the frost runs edge to edge. "Off" in Settings keeps an opaque window.
 private struct FrostedWindow: ViewModifier {
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.frosted
-    @Environment(\.colorScheme) private var scheme
 
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
@@ -162,9 +161,7 @@ private struct FrostedWindow: ViewModifier {
         }
     }
 
-    /// Dark mode is solid near-black, not a blur of the desktop.
     private var background: AnyShapeStyle {
-        if scheme == .dark { return AnyShapeStyle(Theme.window) }
         switch glass {
         case .frosted: return AnyShapeStyle(.regularMaterial)
         case .clear: return AnyShapeStyle(.ultraThinMaterial)
