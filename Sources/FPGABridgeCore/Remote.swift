@@ -32,7 +32,7 @@ public struct Remote {
 
     /// Copies a Tcl script to the Windows machine, runs it with Vivado in batch mode, and streams the output.
     /// Returns Vivado's exit status.
-    public func runTcl(script: String) throws -> Int32 {
+    public func runTcl(script: String, log: ((String) -> Void)? = nil) throws -> Int32 {
         let name = "job-\(UUID().uuidString.prefix(8)).tcl"
         let local = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         try script.write(to: local, atomically: true, encoding: .utf8)
@@ -48,7 +48,8 @@ public struct Remote {
 
         let windowsPath = "\(Remote.remoteDir)\\\(name)"
         let status = try Shell.stream(
-            "ssh", sshOptions + [target, Remote.vivadoCommand(vivadoPath: config.vivadoPath, tclFile: windowsPath)])
+            "ssh", sshOptions + [target, Remote.vivadoCommand(vivadoPath: config.vivadoPath, tclFile: windowsPath)],
+            output: log)
         _ = try? exec("del \(windowsPath)")
         return status
     }
@@ -67,10 +68,14 @@ extension Remote {
     /// Returns Vivado's exit status, or `Shell.interruptedStatus` if cancelled with Ctrl-C (the remote Vivado is
     /// killed first). Throws `RemoteError.busy` if another build holds the machine and `.connectionLost` if SSH
     /// drops mid-build. The live log streams to the terminal.
-    public func build(project: Project, root: URL) throws -> Int32 {
+    ///
+    /// With `log`, the progress messages and Vivado's live output go to it in chunks (for a UI). Without it they go
+    /// straight to the terminal, which keeps ssh's own prompts working.
+    public func build(project: Project, root: URL, log captured: ((String) -> Void)? = nil) throws -> Int32 {
+        let log: (String) -> Void = captured ?? { print($0, terminator: "") }
         let sources = try project.resolveSources(in: root)
         let constraints = try project.resolveConstraints(in: root)
-        if let warning = project.versionWarning(vivadoPath: config.vivadoPath) { print("Warning: \(warning)") }
+        if let warning = project.versionWarning(vivadoPath: config.vivadoPath) { log("Warning: \(warning)\n") }
 
         // Stage everything in a temp dir named after the project so `scp -r` creates the right remote directory.
         let stage = FileManager.default.temporaryDirectory
@@ -96,19 +101,19 @@ extension Remote {
         let prep = try exec(Remote.prepCommand(jobDir: remoteProject))
         guard prep.succeeded else { throw RemoteError.ssh(prep.stderr) }
 
-        print("Copying \(sources.count + constraints.count) files to \(config.host)...")
+        log("Copying \(sources.count + constraints.count) files to \(config.host)...\n")
         let up = try Shell.run(
             "scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + [stagedProject.path, "\(target):\(Remote.remoteDir)/"],
             timeout: 120)
         guard up.succeeded else { throw RemoteError.ssh(up.stderr) }
 
-        print("Running Vivado... (Ctrl-C cancels)")
+        log("Running Vivado... (Ctrl-C cancels)\n")
         let token = Remote.makeJobToken()
         let run = Remote.buildCommand(vivadoPath: config.vivadoPath, jobDir: remoteProject, token: token)
         let status = try Shell.stream("ssh", sshOptions + [target, run], onInterrupt: {
-            print("\nCancelling: stopping Vivado on \(config.host)...")
+            log("\nCancelling: stopping Vivado on \(config.host)...\n")
             cancelRemoteJob(token: token)
-        })
+        }, output: captured)
         if status == Shell.interruptedStatus { return status }
         // ssh itself exits 255 when the connection fails; Vivado's own failures use other statuses.
         if status == 255 { throw RemoteError.connectionLost(jobDir: remoteProject) }
@@ -120,7 +125,7 @@ extension Remote {
             "scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + ["\(target):\(Remote.remoteDir)/\(project.name)/out", local.path],
             timeout: 300)
         guard down.succeeded else { throw RemoteError.ssh(down.stderr) }
-        print("Results in \(Remote.localOutputDir)/")
+        log("Results in \(Remote.localOutputDir)/\n")
         return 0
     }
 

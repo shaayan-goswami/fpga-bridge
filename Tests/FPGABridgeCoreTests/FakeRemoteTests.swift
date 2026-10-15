@@ -397,6 +397,46 @@ final class FakeRemoteTests: XCTestCase {
         XCTAssertThrowsError(try validate("2023.2; calc"))
     }
 
+    // MARK: Output capture (used by the app)
+
+    func testBuildSendsProgressAndVivadoOutputToTheLogCallback() throws {
+        let (project, root) = try makeProject()
+        let lock = NSLock()
+        var captured = ""
+        let status = try Remote(config: config).build(project: project, root: root) { chunk in
+            lock.lock(); captured += chunk; lock.unlock()
+        }
+        XCTAssertEqual(status, 0)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertTrue(captured.contains("Copying 3 files to buildbox"), captured)
+        XCTAssertTrue(captured.contains("fake-vivado: done"), "Vivado's output must be captured, not printed:\n\(captured)")
+        XCTAssertTrue(captured.contains("Results in build/"), captured)
+    }
+
+    func testBuildFailureOutputIsCapturedToo() throws {
+        setenv("FAKE_VIVADO_MODE", "fail", 1)
+        let (project, root) = try makeProject()
+        let lock = NSLock()
+        var captured = ""
+        let status = try Remote(config: config).build(project: project, root: root) { chunk in
+            lock.lock(); captured += chunk; lock.unlock()
+        }
+        XCTAssertEqual(status, 1)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertTrue(captured.contains("ERROR: [Synth 8-439]"), captured)
+    }
+
+    func testRunTclSendsOutputToTheLogCallback() throws {
+        let lock = NSLock()
+        var captured = ""
+        let status = try Remote(config: config).runTcl(script: "puts hello-from-tcl") { chunk in
+            lock.lock(); captured += chunk; lock.unlock()
+        }
+        XCTAssertEqual(status, 0)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertTrue(captured.contains("puts hello-from-tcl"), captured)
+    }
+
     // MARK: Tcl
 
     func testRunTclCopiesRunsAndCleansUp() throws {

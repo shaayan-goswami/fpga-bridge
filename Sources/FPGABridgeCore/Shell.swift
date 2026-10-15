@@ -60,13 +60,20 @@ public enum Shell {
     /// With `onInterrupt`, Ctrl-C (SIGINT) and SIGTERM are caught instead of killing this process: the child is
     /// terminated, `onInterrupt` runs after it has exited (so cleanup can talk to the same remote), and the result
     /// is `Shell.interruptedStatus`.
+    ///
+    /// With `output`, the child's stdout and stderr go to that callback in chunks (not necessarily whole lines)
+    /// instead of the terminal, and stdin is closed. This is how a UI shows a live log.
     public static func stream(
-        _ executable: String, _ arguments: [String], onInterrupt: (() -> Void)? = nil
+        _ executable: String, _ arguments: [String],
+        onInterrupt: (() -> Void)? = nil, output: ((String) -> Void)? = nil
     ) throws -> Int32 {
         let process = makeProcess(executable, arguments)
+        let capture = output.map { OutputCapture(process: process, handler: $0) }
         guard let onInterrupt else {
             do { try process.run() } catch { throw ShellError.launchFailed(executable, error) }
+            capture?.started()
             process.waitUntilExit()
+            capture?.finish()
             return process.terminationStatus
         }
 
@@ -85,12 +92,45 @@ public enum Shell {
         }
 
         do { try process.run() } catch { throw ShellError.launchFailed(executable, error) }
+        capture?.started()
         process.waitUntilExit()
+        capture?.finish()
         if flag.isSet {
             onInterrupt()
             return interruptedStatus
         }
         return process.terminationStatus
+    }
+
+    /// Reads a child's combined stdout/stderr on a background queue until the pipe closes.
+    private final class OutputCapture {
+        private let pipe = Pipe()
+        private let group = DispatchGroup()
+        private let handler: (String) -> Void
+
+        init(process: Process, handler: @escaping (String) -> Void) {
+            self.handler = handler
+            process.standardOutput = pipe
+            process.standardError = pipe
+            process.standardInput = FileHandle.nullDevice
+        }
+
+        /// Call right after `process.run()`: closes our copy of the write end so reading sees EOF when the child exits.
+        func started() {
+            try? pipe.fileHandleForWriting.close()
+            let handle = pipe.fileHandleForReading
+            group.enter()
+            DispatchQueue.global().async { [handler, group] in
+                while true {
+                    let data = handle.availableData
+                    if data.isEmpty { break }
+                    handler(String(decoding: data, as: UTF8.self))
+                }
+                group.leave()
+            }
+        }
+
+        func finish() { group.wait() }
     }
 
     /// Conventional exit status for "terminated by Ctrl-C" (128 + SIGINT).
