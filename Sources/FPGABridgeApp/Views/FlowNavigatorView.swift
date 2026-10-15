@@ -38,8 +38,7 @@ struct FlowNavigatorView: View {
             }
         }
         .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .background(Theme.sidebar)
+        .paneGlass()
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack {
                 Text("Flow Navigator")

@@ -29,7 +29,7 @@ Or run it straight from the build without packaging: `swift run "FPGA Bridge"`.
 With no build machine configured (`fpga-bridge init` not run yet) the app starts in **Demo Mode**: runs are
 simulated so you can try the whole flow. Use **Open Example Project** on the start page for a ready-made design.
 
-**FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the Liquid Glass style (Frosted, Clear, Off), editor and
+**FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the glass style (Liquid Glass, Frosted, Clear, Off), editor and
 console font sizes, and whether to show accent colors. The app is grey, with small accents in the colors Vivado itself
 uses, each meaning one thing: green for done and for run icons, amber for warnings and out-of-date runs, red for
 errors and failures, blue for running steps and Tcl commands, teal for design sources, navy for constraints and cyan

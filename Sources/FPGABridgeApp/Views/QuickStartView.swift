@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Vivado's Getting Started page (Quick Start, Tasks, Learning Center, Recent Projects). The window itself is frosted
-/// glass here, with the desktop blurred through it; the project window stays opaque.
+/// Vivado's Getting Started page (Quick Start, Tasks, Learning Center, Recent Projects). The window itself is Liquid
+/// Glass here, with the desktop showing through; the project window is near-black.
 struct QuickStartView: View {
     @EnvironmentObject private var model: AppModel
 
@@ -145,27 +145,17 @@ struct QuickActionRow: View {
     }
 }
 
-/// Makes the whole window a frosted pane that blurs the desktop behind it (macOS 15+), with no title or toolbar
-/// background, so the frost runs edge to edge. "Off" in Settings keeps an opaque window.
+/// Makes the whole window a Liquid Glass pane that the desktop shows through (macOS 15+), with no title or toolbar
+/// background, so the glass runs edge to edge. "Off" in Settings keeps an opaque window.
 private struct FrostedWindow: ViewModifier {
-    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.frosted
-
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
             content
-                .containerBackground(background, for: .window)
+                .containerBackground(for: .window) { GlassFill() }
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                 .toolbar(removing: .title)
         } else {
             content.background(Backdrop())
-        }
-    }
-
-    private var background: AnyShapeStyle {
-        switch glass {
-        case .frosted: return AnyShapeStyle(.regularMaterial)
-        case .clear: return AnyShapeStyle(.ultraThinMaterial)
-        case .off: return AnyShapeStyle(Theme.window)
         }
     }
 }

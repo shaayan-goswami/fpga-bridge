@@ -242,11 +242,14 @@ struct StatusBar: View {
     }
 }
 
-/// Gives the window the app's near-black dark color (macOS 15+); older systems keep the default.
+/// Gives the window the app's near-black dark color and removes the toolbar's own gray background (macOS 15+);
+/// older systems keep the defaults.
 private struct BlackContainers: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
-            content.containerBackground(Theme.window, for: .window)
+            content
+                .containerBackground(Theme.window, for: .window)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         } else {
             content
         }

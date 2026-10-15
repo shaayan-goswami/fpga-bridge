@@ -17,7 +17,7 @@ struct AppSettingsView: View {
 
 private struct AppearanceSettings: View {
     @AppStorage(AppearanceKey.theme) private var theme = ThemeChoice.system
-    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.frosted
+    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
     @AppStorage(AppearanceKey.accents) private var accents = true
 
     var body: some View {
@@ -31,7 +31,7 @@ private struct AppearanceSettings: View {
                     ForEach(GlassChoice.allCases) { Text($0.title).tag($0) }
                 }
             } footer: {
-                Text("Frosted glass blurs more than Clear. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
+                Text("Liquid Glass is the clear default; Frosted blurs more and Clear is the most transparent. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
