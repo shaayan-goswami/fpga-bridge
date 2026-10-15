@@ -184,25 +184,36 @@ extension View {
     }
 }
 
-/// The fill for large surfaces such as the window and the sidebar: Liquid Glass (macOS 26+) tinted toward the window
-/// color so text stays readable over a busy desktop, or a thin material on older systems, or a solid color when glass
-/// is off. Frosted keeps the system's own, stronger blur and needs no tint.
+/// The fill for large surfaces: Liquid Glass (macOS 26+), a thin material on older systems, or a solid color when
+/// glass is off.
 struct GlassFill: View {
+    enum Kind {
+        /// A whole window (the home page). Regular glass: blurred enough that text over a busy desktop stays readable,
+        /// the same look as the system's sidebar.
+        case window
+        /// A pane on top of the system's sidebar glass: clear, so the two read as one surface.
+        case pane
+    }
+
+    var kind: Kind = .window
     var solid: Color = Theme.window
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
-    @Environment(\.colorScheme) private var scheme
-
-    /// Dark glass in dark mode, light glass in light mode.
-    private var tint: Color { scheme == .dark ? Color.black.opacity(0.55) : Color.white.opacity(0.6) }
 
     var body: some View {
         if glass == .off {
             solid
         } else if #available(macOS 26.0, *) {
-            Color.clear.glassEffect(glass == .frosted ? .regular : Glass.clear.tint(tint), in: Rectangle())
+            Color.clear.glassEffect(style, in: Rectangle())
         } else {
-            Rectangle().fill(glass == .frosted ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.thinMaterial))
-                .overlay(tint.opacity(0.5))
+            Rectangle().fill(glass == .frosted || kind == .window ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.thinMaterial))
+        }
+    }
+
+    @available(macOS 26.0, *)
+    private var style: Glass {
+        switch (glass, kind) {
+        case (.clear, _), (.liquid, .pane): .clear
+        default: .regular
         }
     }
 }
@@ -210,7 +221,7 @@ struct GlassFill: View {
 extension View {
     /// Puts a list or pane on a large glass surface instead of the system's sidebar background.
     func paneGlass(solid: Color = Theme.sidebar) -> some View {
-        scrollContentBackground(.hidden).background { GlassFill(solid: solid) }
+        scrollContentBackground(.hidden).background { GlassFill(kind: .pane, solid: solid) }
     }
 }
 
