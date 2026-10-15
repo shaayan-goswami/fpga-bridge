@@ -31,6 +31,7 @@ let package = Package(
                 .copy("Resources/AppIcon-ClearLight.png"), .copy("Resources/AppIcon-ClearDark.png"),
             ]
         ),
+        .testTarget(name: "FPGABridgeAppTests", dependencies: ["FPGABridgeApp", "FPGABridgeCore"]),
         .testTarget(
             name: "FPGABridgeCoreTests",
             dependencies: ["FPGABridgeCore"],

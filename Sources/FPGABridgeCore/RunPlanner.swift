@@ -1,0 +1,38 @@
+import Foundation
+
+/// What can be launched. Like Vivado, a bitstream is the last step of the implementation run.
+public enum RunKind: Hashable, CaseIterable, Sendable {
+    case synthesis, implementation, bitstream
+
+    /// The Vivado run the step belongs to.
+    public var run: RunKind { self == .bitstream ? .implementation : self }
+    public var runName: String { run == .synthesis ? "synth_1" : "impl_1" }
+    public var title: String {
+        switch self {
+        case .synthesis: "Synthesis"
+        case .implementation: "Implementation"
+        case .bitstream: "Bitstream"
+        }
+    }
+}
+
+/// Vivado's rules for what a run command has to do first.
+public enum RunPlanner {
+    /// The steps to run, in order, for a request. Each step needs the ones before it, so whatever is missing or
+    /// out-of-date upstream runs first, and anything downstream of a re-run step runs again.
+    ///
+    /// - Run Synthesis runs synthesis, and only that.
+    /// - Run Implementation runs implementation, after synthesis if synthesis isn't up to date.
+    /// - Generate Bitstream runs the bitstream step, after whichever of the others is needed. If synthesis re-runs,
+    ///   implementation re-runs too: its result would be from the old netlist.
+    public static func steps(for target: RunKind, synthesisUpToDate: Bool, implementationUpToDate: Bool) -> [RunKind] {
+        var plan: [RunKind] = []
+        if target == .synthesis || !synthesisUpToDate { plan.append(.synthesis) }
+        if target != .synthesis {
+            let synthesisRuns = plan.contains(.synthesis)
+            if target == .implementation || synthesisRuns || !implementationUpToDate { plan.append(.implementation) }
+        }
+        if target == .bitstream { plan.append(.bitstream) }
+        return plan
+    }
+}

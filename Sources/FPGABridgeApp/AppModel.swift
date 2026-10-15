@@ -50,6 +50,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var connection: ConnectionState = .checking
 
     private var runTask: Task<Void, Never>?
+    /// Bumped whenever a run starts or is abandoned. A task from an earlier generation may still be finishing after
+    /// it was cancelled; it must not touch the state of the run that replaced it.
+    private var runGeneration = 0
     private var buffers: [RunKind: LineBuffer] = [:]
     private var tclBuffer = LineBuffer()
     private var fileCache: [String: String] = [:]
@@ -384,13 +387,9 @@ final class AppModel: ObservableObject {
 
     /// Vivado's behavior: each step runs what it depends on if that is missing or out-of-date.
     func run(_ target: RunKind) {
-        var plan: [RunKind] = []
-        if target == .synthesis || runs[.synthesis]?.isUpToDate != true { plan.append(.synthesis) }
-        if target == .implementation || (target == .bitstream && runs[.implementation]?.isUpToDate != true) {
-            plan.append(.implementation)
-        }
-        if target == .bitstream { plan.append(.bitstream) }
-        execute(plan)
+        execute(RunPlanner.steps(for: target,
+                                 synthesisUpToDate: runs[.synthesis]?.isUpToDate == true,
+                                 implementationUpToDate: runs[.implementation]?.isUpToDate == true))
     }
 
     func status(of item: FlowItem) -> RunState? {
@@ -430,28 +429,33 @@ final class AppModel: ObservableObject {
     }
 
     private func cancelRun() {
+        runGeneration += 1
         runTask?.cancel()
         runTask = nil
         isRunning = false
         activeStep = nil
+        stepStarted = nil
     }
 
     private func execute(_ plan: [RunKind]) {
         guard !isRunning, let project, let projectURL, !plan.isEmpty else { return }
         isRunning = true
         consoleVisible = true
+        runGeneration += 1
+        let generation = runGeneration
         runTask = Task { [weak self] in
             for (index, step) in plan.enumerated() {
-                guard let self, !Task.isCancelled else { break }
+                guard let self, !Task.isCancelled, self.runGeneration == generation else { return }
                 // A live run completes every step at once, so later steps may already be done.
                 if index > 0, self.isDone(step) { continue }
-                let succeeded = await self.performStep(step, project: project, directory: projectURL)
+                let succeeded = await self.performStep(step, project: project, directory: projectURL, generation: generation)
                 if !succeeded { break }
             }
-            self?.activeStep = nil
-            self?.stepStarted = nil
-            self?.isRunning = false
-            self?.runTask = nil
+            guard let self, self.runGeneration == generation else { return }
+            self.activeStep = nil
+            self.stepStarted = nil
+            self.isRunning = false
+            self.runTask = nil
         }
     }
 
@@ -459,7 +463,8 @@ final class AppModel: ObservableObject {
         step == .bitstream ? bitstreamReady && runs[.implementation]?.isUpToDate == true : runs[step]?.isUpToDate == true
     }
 
-    private func performStep(_ step: RunKind, project: Project, directory: URL) async -> Bool {
+    /// Returns false if the step failed, was cancelled, or belongs to a run that has since been abandoned.
+    private func performStep(_ step: RunKind, project: Project, directory: URL, generation: Int) async -> Bool {
         let run = step.run
         activeStep = step
         logRun = run
@@ -483,10 +488,17 @@ final class AppModel: ObservableObject {
         lastMessage = step == .bitstream ? "Running write_bitstream on impl_1…" : "Running \(step.runName)…"
 
         let outcome = await backend.run(step, project: project, directory: directory) { [weak self] chunk in
-            DispatchQueue.main.async { MainActor.assumeIsolated { self?.ingest(chunk, into: run) } }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    // Output from a run that was abandoned must not land in the log of its replacement.
+                    guard let self, self.runGeneration == generation else { return }
+                    self.ingest(chunk, into: run)
+                }
+            }
         }
         // Chunks are delivered through the main queue; let the ones already queued land before finishing.
         await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in DispatchQueue.main.async { done.resume() } }
+        guard runGeneration == generation else { return false }
         if var buffer = buffers[run] {
             logs[run, default: []].append(contentsOf: buffer.flush().map { ConsoleLine(text: $0, kind: ConsoleLine.classify($0)) })
             buffers[run] = buffer
@@ -494,9 +506,10 @@ final class AppModel: ObservableObject {
         runs[run]?.elapsed += Date().timeIntervalSince(started)
 
         if outcome.cancelled {
-            runs[run]?.status = .cancelled
+            // Cancelling write_bitstream leaves impl_1 as it was: complete, with no bitstream.
+            runs[run]?.status = step == .bitstream ? .complete : .cancelled
             lastOutcome = .cancelled
-            lastMessage = "\(step.runName) cancelled"
+            lastMessage = step == .bitstream ? "write_bitstream cancelled" : "\(step.runName) cancelled"
             return false
         }
         if outcome.failed || outcome.completed.isEmpty {

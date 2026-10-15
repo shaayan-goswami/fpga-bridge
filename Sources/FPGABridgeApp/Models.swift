@@ -98,22 +98,6 @@ enum FlowItem: String, CaseIterable, Identifiable {
 
 // MARK: Runs
 
-/// What can be launched. Like Vivado, a bitstream is the last step of the implementation run.
-enum RunKind: Hashable, CaseIterable {
-    case synthesis, implementation, bitstream
-
-    /// The Vivado run the step belongs to.
-    var run: RunKind { self == .bitstream ? .implementation : self }
-    var runName: String { run == .synthesis ? "synth_1" : "impl_1" }
-    var title: String {
-        switch self {
-        case .synthesis: "Synthesis"
-        case .implementation: "Implementation"
-        case .bitstream: "Bitstream"
-        }
-    }
-}
-
 enum RunStatus { case notStarted, running, complete, failed, cancelled }
 
 struct RunState {
