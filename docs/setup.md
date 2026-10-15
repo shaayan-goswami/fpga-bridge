@@ -17,6 +17,24 @@ swift build -c release
 .build/release/fpga-bridge doctor
 ```
 
+## The Mac app
+
+```sh
+scripts/make-app.sh            # builds dist/FPGA Bridge.app (set SCRATCH_PATH if the repo is under ~/Desktop)
+open "dist/FPGA Bridge.app"
+```
+
+Or run it straight from the build without packaging: `swift run FPGABridgeApp`.
+
+With no build machine configured (`fpga-bridge init` not run yet) the app starts in **Demo Mode**: runs are
+simulated so you can try the whole flow. Use **Open Example Project** on the start page for a ready-made design.
+
+**FPGA Bridge > Settings… (⌘,)** sets the appearance: light/dark, accent color, Liquid Glass style (Regular, Clear,
+Tinted, Off) and background, plus editor and console font sizes. Project settings (part, top module, language,
+Vivado version) are under **Flow > Settings…**, as in Vivado.
+
+The app icon is drawn by `scripts/make-icon.swift`; `scripts/make-icon.sh` regenerates the PNG and `.icns`.
+
 ## Commands
 
 ```sh

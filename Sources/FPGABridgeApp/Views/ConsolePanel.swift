@@ -8,14 +8,15 @@ struct ConsolePanel: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Picker("", selection: $model.consoleTab) {
-                    ForEach(ConsoleTab.allCases) { tab in
-                        Text(label(for: tab)).tag(tab)
+                GlassGroup(spacing: 4) {
+                    HStack(spacing: 4) {
+                        ForEach(ConsoleTab.allCases) { tab in
+                            ConsoleTabButton(title: label(for: tab), selected: model.consoleTab == tab) {
+                                model.consoleTab = tab
+                            }
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
 
                 Spacer()
 
@@ -59,9 +60,41 @@ struct ConsolePanel: View {
     }
 }
 
+private struct ConsoleTabButton: View {
+    let title: String
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.callout.weight(selected ? .semibold : .regular))
+                .foregroundStyle(selected ? .primary : .secondary)
+                .padding(.horizontal, 11)
+                .frame(height: 24)
+                .background {
+                    if !selected && hovering { Capsule().fill(Color.primary.opacity(0.06)) }
+                }
+                .modifier(ConsoleSelectedGlass(selected: selected))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+}
+
+private struct ConsoleSelectedGlass: ViewModifier {
+    let selected: Bool
+    func body(content: Content) -> some View {
+        if selected { content.glassSurface(Capsule(), interactive: true) } else { content }
+    }
+}
+
 private struct ConsoleLines: View {
     let lines: [ConsoleLine]
     var showCommandMarker = false
+    @AppStorage(AppearanceKey.consoleFontSize) private var fontSize = 12.0
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -83,7 +116,7 @@ private struct ConsoleLines: View {
                         .id(line.id)
                     }
                 }
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: fontSize, design: .monospaced))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)

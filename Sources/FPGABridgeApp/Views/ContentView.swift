@@ -75,8 +75,16 @@ struct MainToolbar: ToolbarContent {
     @ObservedObject var model: AppModel
 
     var body: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            ActivityView(model: model)
+        if #available(macOS 26.0, *) {
+            // The activity banner draws its own glass capsule, so hide the toolbar's shared glass behind it.
+            ToolbarItem(placement: .principal) {
+                ActivityView(model: model)
+            }
+            .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .principal) {
+                ActivityView(model: model)
+            }
         }
         ToolbarItemGroup(placement: .primaryAction) {
             Menu {
@@ -139,9 +147,9 @@ struct ActivityView: View {
             }
         }
         .font(.callout)
-        .padding(.horizontal, 12)
-        .frame(width: 440, height: 28)
-        .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, 14)
+        .frame(width: 440, height: 30)
+        .glassSurface(Capsule())
     }
 
     private var symbol: String {

@@ -13,11 +13,16 @@ struct FPGABridgeApp: App {
             ContentView()
                 .environmentObject(model)
                 .frame(minWidth: 1100, minHeight: 700)
+                .modifier(AppearanceRoot())
                 .task { await model.start() }
         }
         .defaultSize(width: 1440, height: 900)
         .windowToolbarStyle(.unified(showsTitle: true))
         .commands { AppCommands(model: model) }
+
+        Settings {
+            AppSettingsView()
+        }
     }
 }
 
@@ -31,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
         }
+        // The .app has its icon from Info.plist; under `swift run` set it here so the Dock shows it.
+        if Bundle.main.bundleIdentifier == nil, let icon = AppIcon.image { NSApp.applicationIconImage = icon }
         Snapshot.scheduleIfRequested()
     }
 

@@ -59,19 +59,14 @@ struct QuickStartView: View {
             .frame(maxWidth: 1040)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(AmbientBackground())
         .navigationTitle("FPGA Bridge")
     }
 
     private var header: some View {
         HStack(spacing: 16) {
-            Image(systemName: "cpu")
-                .font(.system(size: 30, weight: .medium))
-                .foregroundStyle(.white)
-                .frame(width: 64, height: 64)
-                .background(LinearGradient(colors: [.blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing),
-                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: .indigo.opacity(0.3), radius: 6, y: 3)
+            AppIconView(size: 84)
+                .shadow(color: .indigo.opacity(0.25), radius: 8, y: 4)
             VStack(alignment: .leading, spacing: 4) {
                 Text("FPGA Bridge").font(.largeTitle.weight(.bold))
                 Text("Vivado projects on your Mac. Builds run on your Windows machine.")
@@ -84,9 +79,9 @@ struct QuickStartView: View {
                 Text(model.connection.label)
             }
             .font(.callout)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(.quaternary.opacity(0.6), in: Capsule())
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .glassSurface(Capsule())
             .help(model.connection.detail)
         }
     }
@@ -97,10 +92,8 @@ struct QuickStartView: View {
                 .font(.title3.weight(.semibold))
                 .padding(.leading, 4)
             VStack(spacing: 0) { content() }
-                .padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(nsColor: .controlBackgroundColor)))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color(nsColor: .separatorColor).opacity(0.5)))
+                .padding(.vertical, 6)
+                .glassSurface(cornerRadius: 18)
         }
     }
 }

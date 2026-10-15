@@ -181,7 +181,8 @@ struct NewProjectWizard: View {
                 buttons
             }
         }
-        .frame(width: 860, height: 600)
+        .frame(width: 880, height: 620)
+        .background(AmbientBackground())
         .sheet(isPresented: Binding(get: { defineDrafts != nil }, set: { if !$0 { defineDrafts = nil } })) {
             if let drafts = defineDrafts {
                 DefineModuleSheet(drafts: drafts) { defined in
@@ -224,7 +225,9 @@ struct NewProjectWizard: View {
         .font(.callout)
         .padding(20)
         .frame(width: 210, alignment: .leading)
-        .background(.background.secondary)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .glassSurface(cornerRadius: 18)
+        .padding(12)
     }
 
     private var buttons: some View {
@@ -237,6 +240,7 @@ struct NewProjectWizard: View {
             if state.step == .summary {
                 Button("Finish") { finish() }
                     .keyboardShortcut(.defaultAction)
+                    .glassProminentButton()
             } else {
                 Button("Next") { state.error = nil; state.next() }
                     .keyboardShortcut(.defaultAction)

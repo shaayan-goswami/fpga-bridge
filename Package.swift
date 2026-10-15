@@ -21,7 +21,12 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
-        .executableTarget(name: "FPGABridgeApp", dependencies: ["FPGABridgeCore"]),
+        .executableTarget(
+            name: "FPGABridgeApp",
+            dependencies: ["FPGABridgeCore"],
+            exclude: ["Resources/AppIcon.icns"],
+            resources: [.copy("Resources/AppIcon.png")]
+        ),
         .testTarget(
             name: "FPGABridgeCoreTests",
             dependencies: ["FPGABridgeCore"],

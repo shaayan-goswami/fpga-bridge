@@ -25,13 +25,15 @@ private struct WorkspaceTabBar: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                ForEach(model.openTabs) { tab in
-                    TabButton(tab: tab)
+            GlassGroup(spacing: 6) {
+                HStack(spacing: 6) {
+                    ForEach(model.openTabs) { tab in
+                        TabButton(tab: tab)
+                    }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
         }
         .background(.bar)
     }
@@ -64,21 +66,29 @@ private struct TabButton: View {
             }
         }
         .font(.callout)
-        .padding(.leading, 10)
-        .padding(.trailing, tab.isCloseable ? 6 : 10)
-        .frame(height: 26)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(selected ? Color(nsColor: .controlBackgroundColor) : (hovering ? Color.primary.opacity(0.05) : .clear))
-                .shadow(color: .black.opacity(selected ? 0.08 : 0), radius: 1, y: 0.5)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .strokeBorder(selected ? Color(nsColor: .separatorColor).opacity(0.6) : .clear)
-        )
-        .contentShape(Rectangle())
+        .padding(.leading, 12)
+        .padding(.trailing, tab.isCloseable ? 7 : 12)
+        .frame(height: 28)
+        .background {
+            if !selected && hovering { Capsule().fill(Color.primary.opacity(0.06)) }
+        }
+        .modifier(SelectedGlass(selected: selected))
+        .contentShape(Capsule())
         .onTapGesture { model.selectedTab = tab }
         .onHover { hovering = $0 }
+    }
+}
+
+/// The selected tab floats on glass; the others sit flat on the bar.
+private struct SelectedGlass: ViewModifier {
+    let selected: Bool
+
+    func body(content: Content) -> some View {
+        if selected {
+            content.glassSurface(Capsule(), interactive: true)
+        } else {
+            content
+        }
     }
 }
 
@@ -102,7 +112,8 @@ struct ProjectSummaryView: View {
                             .help(model.projectURL?.path ?? "")
                     }
                     Spacer()
-                    Button("Settings…") { model.showSettings = true }
+                    Button { model.showSettings = true } label: { Label("Settings…", systemImage: "gearshape") }
+                        .glassButton()
                 }
 
                 HStack(alignment: .top, spacing: 16) {
@@ -119,7 +130,7 @@ struct ProjectSummaryView: View {
             }
             .padding(24)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(AmbientBackground())
     }
 
     private var settingsCard: some View {
@@ -259,7 +270,9 @@ struct ProjectSummaryView: View {
     private func placeholder(_ text: String, action: String, perform: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(text).foregroundStyle(.secondary)
-            Button(action, action: perform).disabled(model.isRunning)
+            Button(action, action: perform)
+                .glassProminentButton()
+                .disabled(model.isRunning)
         }
         .font(.callout)
     }
@@ -269,6 +282,8 @@ struct ProjectSummaryView: View {
 
 struct SourceEditorView: View {
     @EnvironmentObject private var model: AppModel
+    @AppStorage(AppearanceKey.editorFontSize) private var fontSize = 12.5
+    @AppStorage(AppearanceKey.editorLineNumbers) private var lineNumbers = true
     let path: String
 
     var body: some View {
@@ -287,19 +302,20 @@ struct SourceEditorView: View {
             Divider()
             ScrollView([.vertical, .horizontal]) {
                 HStack(alignment: .top, spacing: 0) {
-                    Text((1...lineCount).map(String.init).joined(separator: "\n"))
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.trailing)
-                        .padding(.horizontal, 10)
-                        .background(Color(nsColor: .textBackgroundColor).opacity(0.4))
-                    Divider()
+                    if lineNumbers {
+                        Text((1...lineCount).map(String.init).joined(separator: "\n"))
+                            .foregroundStyle(.tertiary)
+                            .multilineTextAlignment(.trailing)
+                            .padding(.horizontal, 10)
+                        Divider()
+                    }
                     Text(Highlighter.highlight(text, fileExtension: (path as NSString).pathExtension))
                         .textSelection(.enabled)
                         .padding(.horizontal, 12)
                         .fixedSize()
                     Spacer(minLength: 0)
                 }
-                .font(.system(size: 12.5, design: .monospaced))
+                .font(.system(size: fontSize, design: .monospaced))
                 .lineSpacing(3)
                 .padding(.vertical, 10)
             }

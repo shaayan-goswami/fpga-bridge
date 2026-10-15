@@ -33,10 +33,7 @@ struct Card<Content: View, Accessory: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(nsColor: .controlBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(Color(nsColor: .separatorColor).opacity(0.5)))
-        .shadow(color: .black.opacity(0.05), radius: 3, y: 1)
+        .glassSurface(cornerRadius: 16)
     }
 }
 
