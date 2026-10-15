@@ -48,8 +48,9 @@ struct FlowNavigatorView: View {
             }
             .padding(.horizontal, 18)
             .padding(.top, 6)
-            .padding(.bottom, 2)
+            .padding(.bottom, 10)
         }
+        .modifier(NoScrollEdgeLine())
     }
 }
 
@@ -70,7 +71,7 @@ private struct FlowRow: View {
                     .foregroundStyle(iconStyle)
                     .frame(width: 18)
                 Text(item.title)
-                    .foregroundStyle(item.isAvailable ? .primary : .tertiary)
+                    .foregroundStyle(item.isAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.secondary.opacity(0.75)))
                 Spacer(minLength: 4)
                 if let state = model.status(of: item), state.status != .notStarted {
                     RunStatusIcon(state: state)
@@ -93,8 +94,20 @@ private struct FlowRow: View {
     }
 
     private var iconStyle: AnyShapeStyle {
-        guard item.isAvailable else { return AnyShapeStyle(.tertiary) }
+        guard item.isAvailable else { return AnyShapeStyle(Color.secondary.opacity(0.65)) }
         // Runs happen in Vivado on the build machine.
         return item.runKind != nil ? AnyShapeStyle(Accent.remote) : AnyShapeStyle(.primary)
+    }
+}
+
+/// The list draws a hard line under the pinned "Flow Navigator" header once it scrolls under it (macOS 26+); the
+/// header sits on glass, so hide it.
+private struct NoScrollEdgeLine: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            content
+        }
     }
 }
