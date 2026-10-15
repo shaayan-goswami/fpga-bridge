@@ -7,7 +7,7 @@ let package = Package(
     products: [
         .library(name: "FPGABridgeCore", targets: ["FPGABridgeCore"]),
         .executable(name: "fpga-bridge", targets: ["fpga-bridge"]),
-        .executable(name: "FPGABridgeApp", targets: ["FPGABridgeApp"]),
+        .executable(name: "FPGA Bridge", targets: ["FPGABridgeApp"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),

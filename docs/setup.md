@@ -24,7 +24,7 @@ scripts/make-app.sh            # builds dist/FPGA Bridge.app (set SCRATCH_PATH i
 open "dist/FPGA Bridge.app"
 ```
 
-Or run it straight from the build without packaging: `swift run FPGABridgeApp`.
+Or run it straight from the build without packaging: `swift run "FPGA Bridge"`.
 
 With no build machine configured (`fpga-bridge init` not run yet) the app starts in **Demo Mode**: runs are
 simulated so you can try the whole flow. Use **Open Example Project** on the start page for a ready-made design.

@@ -7,14 +7,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 scratch=${SCRATCH_PATH:-.build}
-swift build -c release --product FPGABridgeApp --scratch-path "$scratch"
-bin=$(swift build -c release --product FPGABridgeApp --scratch-path "$scratch" --show-bin-path)
+swift build -c release --product "FPGA Bridge" --scratch-path "$scratch"
+bin=$(swift build -c release --product "FPGA Bridge" --scratch-path "$scratch" --show-bin-path)
 
 app="dist/FPGA Bridge.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
-cp "$bin/FPGABridgeApp" "$app/Contents/MacOS/FPGA Bridge"
+cp "$bin/FPGA Bridge" "$app/Contents/MacOS/FPGA Bridge"
 cp Sources/FPGABridgeApp/Resources/AppIcon-*.png "$app/Contents/Resources/"
 
 # The icon is an Icon Composer document. actool compiles it, as Xcode does, into Assets.car (the Liquid Glass icon
