@@ -63,7 +63,7 @@ struct MainWindowView: View {
                 HStack(spacing: 0) {
                     if showSidebar {
                         FlowNavigatorView().frame(width: sidebarWidth)
-                        PaneDivider(width: $sidebarWidth, range: 220...320)
+                        PaneDivider(width: $sidebarWidth, range: 220...320, showsLine: false)
                     }
                     SourcesPane()
                         .frame(width: sourcesWidth)
@@ -278,15 +278,17 @@ private struct WindowGlassContainers: ViewModifier {
     }
 }
 
-/// A thin line between two panes that can be dragged to resize the pane on its left.
+/// A thin line between two panes that can be dragged to resize the pane on its left. Without the line, the two panes'
+/// own colors mark the edge, which is cleaner where one is the gray sidebar and the other is black.
 private struct PaneDivider: View {
     @Binding var width: CGFloat
     let range: ClosedRange<CGFloat>
+    var showsLine = true
     @State private var startWidth: CGFloat?
 
     var body: some View {
         Rectangle()
-            .fill(Color(nsColor: .separatorColor))
+            .fill(showsLine ? Color(nsColor: .separatorColor) : Theme.surface)
             .frame(width: 1)
             // Fills the same black up under the toolbar, so no sliver of window glass shows between the panes.
             .background(Theme.surface)
