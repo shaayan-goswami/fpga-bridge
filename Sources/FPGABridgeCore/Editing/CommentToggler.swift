@@ -3,14 +3,20 @@ import Foundation
 /// Toggles line comments over the lines a selection touches, like Vivado's Toggle Line Comment.
 public enum CommentToggler {
     public struct Result: Equatable {
+        /// The whole text after toggling.
         public var text: String
         public var selection: NSRange
+        /// What changed, as an edit to the original text: `replacedRange` of the old text became `replacement`. An
+        /// editor applies this instead of replacing everything, which keeps its undo entry and scroll position small.
+        public var replacedRange: NSRange
+        public var replacement: String
     }
 
     public static func toggle(_ text: String, selection: NSRange, language: HDLLanguage) -> Result {
         let marker = language.lineComment
         let ns = text as NSString
-        guard selection.location <= ns.length else { return Result(text: text, selection: selection) }
+        let unchanged = Result(text: text, selection: selection, replacedRange: NSRange(location: 0, length: 0), replacement: "")
+        guard selection.location <= ns.length else { return unchanged }
 
         // A selection that ends right after a newline doesn't include the next line.
         var touched = selection
@@ -25,7 +31,7 @@ public enum CommentToggler {
         func isBlank(_ line: String) -> Bool { line.allSatisfy { $0 == " " || $0 == "\t" } }
 
         let content = lines.filter { !isBlank($0) }
-        guard !content.isEmpty else { return Result(text: text, selection: selection) }
+        guard !content.isEmpty else { return unchanged }
         let allCommented = content.allSatisfy { $0.dropFirst(leadingWhitespace($0)).hasPrefix(marker) }
         let column = content.map(leadingWhitespace).min() ?? 0
 
@@ -48,9 +54,11 @@ public enum CommentToggler {
             // Keep the caret in the same place relative to the text on its line.
             let delta = (toggled.first ?? "").utf16.count - (lines.first ?? "").utf16.count
             let location = max(lineRange.location, selection.location + delta)
-            return Result(text: newText, selection: NSRange(location: location, length: 0))
+            return Result(text: newText, selection: NSRange(location: location, length: 0),
+                          replacedRange: lineRange, replacement: newBlock)
         }
         let length = newBlock.utf16.count - (hasTrailingNewline ? 1 : 0)
-        return Result(text: newText, selection: NSRange(location: lineRange.location, length: length))
+        return Result(text: newText, selection: NSRange(location: lineRange.location, length: length),
+                      replacedRange: lineRange, replacement: newBlock)
     }
 }

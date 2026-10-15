@@ -29,6 +29,15 @@ final class EditingTests: XCTestCase {
         XCTAssertEqual(r.text, "// // a\n// b\n")
     }
 
+    func testTheEditCoversOnlyTheTouchedLines() {
+        let text = "keep\nwire a;\nwire b;\nkeep too\n"
+        let r = CommentToggler.toggle(text, selection: NSRange(location: 5, length: 14), language: .verilog)
+        XCTAssertEqual(r.replacedRange, NSRange(location: 5, length: 16), "the two touched lines, not the whole text")
+        XCTAssertEqual(r.replacement, "// wire a;\n// wire b;\n")
+        // Applying the edit to the original must give the full result.
+        XCTAssertEqual((text as NSString).replacingCharacters(in: r.replacedRange, with: r.replacement), r.text)
+    }
+
     func testBlankLinesAreLeftAlone() {
         let r = CommentToggler.toggle("a\n\nb\n", selection: NSRange(location: 0, length: 5), language: .verilog)
         XCTAssertEqual(r.text, "// a\n\n// b\n")

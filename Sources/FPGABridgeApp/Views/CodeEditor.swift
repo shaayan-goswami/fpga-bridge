@@ -155,10 +155,9 @@ final class CodeTextView: NSTextView {
     @objc func toggleComment(_ sender: Any?) {
         let result = CommentToggler.toggle(string, selection: selectedRange(), language: language)
         guard result.text != string else { return }
-        // Replace through the text system so the change is undoable.
-        let whole = NSRange(location: 0, length: (string as NSString).length)
-        guard shouldChangeText(in: whole, replacementString: result.text) else { return }
-        textStorage?.replaceCharacters(in: whole, with: result.text)
+        // Replace only the lines that changed, through the text system so the change is undoable.
+        guard shouldChangeText(in: result.replacedRange, replacementString: result.replacement) else { return }
+        textStorage?.replaceCharacters(in: result.replacedRange, with: result.replacement)
         didChangeText()
         setSelectedRange(result.selection)
     }
