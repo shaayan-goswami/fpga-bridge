@@ -231,9 +231,10 @@ struct AddSourcesSheet: View {
             .padding(14)
         }
         .frame(width: 620, height: 460)
+        #if DEBUG
         .onAppear {
             // Screenshot scenario: jump straight to Define Module with a sample port list.
-            guard ProcessInfo.processInfo.environment["FPGA_BRIDGE_SCENARIO"] == "definemodule", defineDrafts == nil else { return }
+            guard DebugHooks.scenario == "definemodule", defineDrafts == nil else { return }
             choosing = false
             newFiles = ["uart_tx.v", "uart_tb.v"]
             var draft = ModuleDraft(fileName: "uart_tx.v", set: .design)
@@ -244,6 +245,7 @@ struct AddSourcesSheet: View {
             ]
             defineDrafts = [draft, ModuleDraft(fileName: "uart_tb.v", set: .simulation)]
         }
+        #endif
         .sheet(isPresented: $creating) {
             CreateSourceFileSheet(sourceSet: set, defaultLanguage: model.project?.targetLanguage ?? "Verilog") { name in
                 if !newFiles.contains(name) { newFiles.append(name) }

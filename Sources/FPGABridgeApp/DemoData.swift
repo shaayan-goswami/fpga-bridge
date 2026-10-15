@@ -207,7 +207,7 @@ enum DemoData {
             var lines: [(Double, String)] = [
                 (0.2, "Copying \(sources.count + constraints.count) files to buildbox...\n"),
                 (0.5, "****** Vivado v2023.2 (64-bit)\n"),
-                (0.1, "source synth.tcl\n"),
+                (0.1, "source build.tcl\n"),
             ]
             for path in sources {
                 let ext = (path as NSString).pathExtension.lowercased()
@@ -235,8 +235,6 @@ enum DemoData {
 
     static let implementationLog: [(Double, String)] = [
         (0.4, "****** Vivado v2023.2 (64-bit)\n"),
-        (0.1, "source impl.tcl\n"),
-        (0.3, "Command: open_checkpoint synth.dcp\n"),
         (0.4, "Command: opt_design\n"),
         (0.4, "INFO: [Opt 31-49] Retargeted 0 cell(s).\n"),
         (0.3, "Command: place_design\n"),

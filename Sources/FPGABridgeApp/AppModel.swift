@@ -65,61 +65,16 @@ final class AppModel: ObservableObject {
     }
 
     static func make() -> AppModel {
-        let env = ProcessInfo.processInfo.environment
-        let persist = env["FPGA_BRIDGE_NO_PERSIST"] == nil
-        if env["FPGA_BRIDGE_DEMO"] == nil, let config = try? BridgeConfig.load() {
-            return AppModel(backend: LiveBackend(config: config), persist: persist)
+        if !DebugHooks.forceDemo, let config = try? BridgeConfig.load() {
+            return AppModel(backend: LiveBackend(config: config), persist: DebugHooks.persistRecents)
         }
-        let speed = Double(env["FPGA_BRIDGE_DEMO_SPEED"] ?? "") ?? 1
-        return AppModel(backend: DemoBackend(speed: speed), persist: persist)
+        return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), persist: DebugHooks.persistRecents)
     }
 
     func start() async {
         connection = .checking
         connection = await backend.checkConnection()
         await applyLaunchScenario()
-    }
-
-    /// Lets screenshots and manual testing start in a given state. Not used in normal launches.
-    private func applyLaunchScenario() async {
-        let env = ProcessInfo.processInfo.environment
-        if let path = env["FPGA_BRIDGE_OPEN"] { openProject(at: URL(fileURLWithPath: path)) }
-        switch env["FPGA_BRIDGE_SCENARIO"] {
-        case "wizard": showNewProject = true
-        case "example": openExampleProject()
-        case "built":
-            openExampleProject()
-            run(.bitstream)
-        case "settings":
-            openExampleProject()
-            showSettings = true
-        case "addsources", "definemodule":
-            openExampleProject()
-            showAddSources = true
-        case "file":
-            openExampleProject()
-            if let top = sourceTree.first?.children?.first?.path { openFile(top) }
-        case "editsave":
-            openExampleProject()
-            run(.bitstream)
-            while isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
-            if let top = sourceTree.first?.children?.first?.path {
-                openFile(top)
-                updateDraft(editedText(for: top) + "\n// saved from the editor\n", for: top)
-                saveFile(top)
-            }
-        case "edit":
-            openExampleProject()
-            if let top = sourceTree.first?.children?.first?.path {
-                openFile(top)
-                updateDraft(editedText(for: top) + "\n// added in the editor\nassign unused = 1'b0;\n", for: top)
-            }
-        default: break
-        }
-        if let tab = env["FPGA_BRIDGE_CONSOLE_TAB"].flatMap(ConsoleTab.init(rawValue:)) {
-            while isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
-            consoleTab = tab
-        }
     }
 
     // MARK: Projects
@@ -186,8 +141,7 @@ final class AppModel: ObservableObject {
 
     /// Vivado's "Open Example Project": a small Basys 3 design, written to disk as a normal project.
     func openExampleProject() {
-        let env = ProcessInfo.processInfo.environment
-        let base = env["FPGA_BRIDGE_EXAMPLES_DIR"].map { URL(fileURLWithPath: $0) }
+        let base = DebugHooks.examplesDirectory
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/FPGABridgeExamples")
         let directory = base.appendingPathComponent(DemoData.projectName)
         if FileManager.default.fileExists(atPath: directory.appendingPathComponent(Project.fileName).path) {
@@ -263,8 +217,13 @@ final class AppModel: ObservableObject {
     }
 
     private func reloadProjectAfterChange() {
-        guard let projectURL, let reloaded = try? Project.load(from: projectURL) else { return }
-        project = reloaded
+        guard let projectURL else { return }
+        do {
+            project = try Project.load(from: projectURL)
+        } catch {
+            errorMessage = "Couldn't reload the project: \(error.userMessage)"
+            return
+        }
         fileCache = [:]
         rebuildSourceTree()
         markOutOfDate()
@@ -278,12 +237,18 @@ final class AppModel: ObservableObject {
 
     private func rebuildSourceTree() {
         guard let project, let projectURL else { sourceTree = []; return }
-        sourceTree = SourceTreeBuilder.build(
-            top: project.top,
-            design: (try? project.resolveSources(in: projectURL)) ?? [],
-            constraints: (try? project.resolveConstraints(in: projectURL)) ?? [],
-            simulation: (try? project.resolveSimulationSources(in: projectURL)) ?? [],
-            read: contents(of:))
+        do {
+            sourceTree = SourceTreeBuilder.build(
+                top: project.top,
+                design: try project.resolveSources(in: projectURL),
+                constraints: try project.resolveConstraints(in: projectURL),
+                simulation: try project.resolveSimulationSources(in: projectURL),
+                read: contents(of:))
+        } catch {
+            // An empty tree with no explanation looks like an empty project.
+            sourceTree = []
+            errorMessage = "Couldn't read the project's source files: \(error.userMessage)"
+        }
     }
 
     func contents(of path: String) -> String {

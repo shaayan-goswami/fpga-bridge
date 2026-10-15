@@ -130,6 +130,38 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.lastOutcome, .cancelled)
     }
 
+    // MARK: Errors are shown
+
+    func testASourceThatCannotBeReadIsReportedInsteadOfShowingAnEmptyTree() throws {
+        let model = makeModel(DemoBackend(speed: 0))
+        let dir = try makeProject()
+        let outside = tmp.appendingPathComponent("outside.v")
+        try "module outside; endmodule".write(to: outside, atomically: true, encoding: .utf8)
+        try FileManager.default.createSymbolicLink(
+            at: dir.appendingPathComponent("demo.srcs/sources_1/imports/link.v"), withDestinationURL: outside)
+
+        model.openProject(at: dir)
+        XCTAssertTrue(model.sourceTree.isEmpty)
+        XCTAssertTrue(model.errorMessage?.contains("outside the project") == true, "\(String(describing: model.errorMessage))")
+    }
+
+    func testASystemErrorIsShownAsAReadableMessage() throws {
+        let model = makeModel(DemoBackend(speed: 0))
+        let dir = try makeProject()
+        model.openProject(at: dir)
+        let path = "demo.srcs/sources_1/imports/top.v"
+        model.updateDraft("changed\n", for: path)
+        // Make the target a directory so the write fails with a system error.
+        try FileManager.default.removeItem(at: dir.appendingPathComponent(path))
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent(path), withIntermediateDirectories: true)
+
+        XCTAssertFalse(model.saveFile(path))
+        let message = try XCTUnwrap(model.errorMessage)
+        XCTAssertTrue(message.hasPrefix("Couldn't save top.v"), message)
+        XCTAssertFalse(message.contains("Domain="), "a raw error dump isn't a message for people: \(message)")
+        XCTAssertTrue(model.isDirty(path), "a failed save must keep the edit")
+    }
+
     // MARK: Editing and saving
 
     func testSavingADesignFileWritesItAndMarksFinishedRunsOutOfDate() async throws {

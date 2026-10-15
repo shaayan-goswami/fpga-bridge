@@ -22,9 +22,10 @@ cp Sources/FPGABridgeApp/Resources/AppIcon-*.png "$app/Contents/Resources/"
 xcrun actool --compile "$app/Contents/Resources" --platform macosx --minimum-deployment-target 14.0 \
   --app-icon AppIcon --output-partial-info-plist "$(mktemp -d)/partial.plist" \
   Sources/FPGABridgeApp/Resources/AppIcon.icon >/dev/null
-if [ -d "$bin/fpga-bridge_FPGABridgeApp.bundle" ]; then
-  cp -R "$bin/fpga-bridge_FPGABridgeApp.bundle" "$app/Contents/Resources/"
-fi
+# SwiftPM's resource bundle is named "<package>_<target>.bundle"; match it by suffix.
+for resources in "$bin"/*_FPGABridgeApp.bundle; do
+  [ -d "$resources" ] && cp -R "$resources" "$app/Contents/Resources/"
+done
 
 version=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.1.0")
 build=$(git rev-list --count HEAD 2>/dev/null || echo "1")
@@ -63,6 +64,15 @@ cat > "$app/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
+# Sign the nested bundles first, then the app. (--deep is discouraged: it signs everything the same way and hides
+# problems with nested code.) Finder attributes make codesign refuse, and a folder under ~/Desktop gets them added
+# again at any moment, so clear them right before each signature.
+for nested in "$app"/Contents/Resources/*.bundle; do
+  if [ -d "$nested" ]; then
+    xattr -cr "$nested"
+    codesign --force --sign - "$nested"
+  fi
+done
 xattr -cr "$app"
-codesign --force --deep --sign - "$app"
+codesign --force --sign - "$app"
 echo "Built $app"

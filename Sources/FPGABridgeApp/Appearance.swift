@@ -345,12 +345,14 @@ enum AppIcon {
 
     private static func load(_ name: String) -> NSImage? {
         if let url = Bundle.main.url(forResource: name, withExtension: "png") { return NSImage(contentsOf: url) }
-        let bundleName = "fpga-bridge_FPGABridgeApp.bundle"
-        let candidates = [Bundle.main.bundleURL.appendingPathComponent(bundleName),
-                          Bundle.main.resourceURL?.appendingPathComponent(bundleName)].compactMap { $0 }
-        for url in candidates {
-            if let bundle = Bundle(url: url), let image = bundle.url(forResource: name, withExtension: "png") {
-                return NSImage(contentsOf: image)
+        // SwiftPM puts resources in "<package>_<target>.bundle". Look for it by its suffix instead of spelling out the
+        // package name, so renaming the package can't silently lose the icon.
+        for folder in [Bundle.main.bundleURL, Bundle.main.resourceURL].compactMap({ $0 }) {
+            let items = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+            for url in items where url.lastPathComponent.hasSuffix("_FPGABridgeApp.bundle") {
+                if let bundle = Bundle(url: url), let image = bundle.url(forResource: name, withExtension: "png") {
+                    return NSImage(contentsOf: image)
+                }
             }
         }
         return nil

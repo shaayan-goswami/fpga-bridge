@@ -67,10 +67,7 @@ final class WizardState: ObservableObject {
 
     init() {
         location = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents")
-        if let raw = ProcessInfo.processInfo.environment["FPGA_BRIDGE_WIZARD_STEP"], let n = Int(raw),
-           let start = Step(rawValue: n) {
-            step = start
-        }
+        if let n = DebugHooks.wizardStartStep, let start = Step(rawValue: n) { step = start }
     }
 
     var visibleSteps: [Step] {
