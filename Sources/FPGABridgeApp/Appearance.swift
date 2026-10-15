@@ -189,18 +189,10 @@ extension View {
 struct GlassFill: View {
     var solid: Color = Theme.window
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
-    @State private var isFullScreen = false
+    @ObservedObject private var fullScreen = FullScreenState.shared
 
     var body: some View {
-        fill
-            .onAppear { isFullScreen = NSApp.windows.contains { $0.styleMask.contains(.fullScreen) } }
-            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in isFullScreen = true }
-            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { _ in isFullScreen = false }
-    }
-
-    @ViewBuilder
-    private var fill: some View {
-        if glass == .off || isFullScreen {
+        if glass == .off || fullScreen.isFullScreen {
             solid
         } else if #available(macOS 26.0, *) {
             Color.clear.glassEffect(glass == .clear ? .clear : .regular, in: Rectangle())

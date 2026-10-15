@@ -12,6 +12,7 @@ struct ContentView: View {
                 QuickStartView()
             }
         }
+        .allowsFullScreen(model.hasProject)
         .sheet(isPresented: $model.showNewProject) {
             NewProjectWizard().environmentObject(model)
         }
