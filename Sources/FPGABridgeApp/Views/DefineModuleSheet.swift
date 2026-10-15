@@ -292,7 +292,7 @@ private struct PortTable: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(selection == port.id ? Color.accentColor.opacity(0.15) : .clear)
+                        .background(selection == port.id ? Color.primary.opacity(0.08) : .clear)
                         .contentShape(Rectangle())
                         .onTapGesture { selection = port.id }
                         Divider().opacity(0.5)

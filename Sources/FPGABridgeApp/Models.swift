@@ -151,7 +151,7 @@ struct RunState {
         if outOfDate && status == .complete { return .orange }
         switch status {
         case .notStarted, .cancelled: return .secondary
-        case .running: return .blue
+        case .running: return .secondary
         case .complete: return .green
         case .failed: return .red
         }
@@ -272,7 +272,7 @@ enum ConnectionState: Equatable {
         case .checking: .secondary
         case .connected: .green
         case .offline: .red
-        case .demo: .orange
+        case .demo: .secondary
         }
     }
 

@@ -24,8 +24,9 @@ let package = Package(
         .executableTarget(
             name: "FPGABridgeApp",
             dependencies: ["FPGABridgeCore"],
-            exclude: ["Resources/AppIcon.icns"],
-            resources: [.copy("Resources/AppIcon.png")]
+            // The .icon is compiled into the .app by scripts/make-app.sh (actool); the previews are for in-app use.
+            exclude: ["Resources/AppIcon.icon"],
+            resources: [.copy("Resources/AppIcon-Light.png"), .copy("Resources/AppIcon-Dark.png")]
         ),
         .testTarget(
             name: "FPGABridgeCoreTests",

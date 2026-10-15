@@ -6,20 +6,18 @@ struct AppSettingsView: View {
     var body: some View {
         TabView {
             AppearanceSettings()
-                .tabItem { Label("Appearance", systemImage: "paintpalette") }
+                .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
             EditorSettings()
                 .tabItem { Label("Text Editor", systemImage: "character.cursor.ibeam") }
         }
-        .frame(width: 560)
+        .frame(width: 540)
         .modifier(AppearanceRoot())
     }
 }
 
 private struct AppearanceSettings: View {
     @AppStorage(AppearanceKey.theme) private var theme = ThemeChoice.system
-    @AppStorage(AppearanceKey.accent) private var accent = AccentChoice.system
-    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.regular
-    @AppStorage(AppearanceKey.background) private var background = BackgroundChoice.ambient
+    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.frosted
 
     var body: some View {
         Form {
@@ -28,44 +26,18 @@ private struct AppearanceSettings: View {
                     ForEach(ThemeChoice.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
-
-                LabeledContent("Accent color") {
-                    HStack(spacing: 8) {
-                        ForEach(AccentChoice.allCases) { choice in
-                            Button { accent = choice } label: {
-                                Circle()
-                                    .fill(choice == .system
-                                          ? AnyShapeStyle(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red],
-                                                                          center: .center))
-                                          : AnyShapeStyle(choice.resolved))
-                                    .frame(width: 18, height: 18)
-                                    .overlay(Circle().strokeBorder(.white, lineWidth: accent == choice ? 2.5 : 0))
-                                    .overlay(Circle().strokeBorder(.black.opacity(0.15)))
-                                    .shadow(color: .black.opacity(accent == choice ? 0.25 : 0), radius: 2)
-                            }
-                            .buttonStyle(.plain)
-                            .help(choice.title)
-                        }
-                    }
-                }
-            }
-
-            Section {
                 Picker("Liquid Glass", selection: $glass) {
                     ForEach(GlassChoice.allCases) { Text($0.title).tag($0) }
                 }
-                Picker("Window background", selection: $background) {
-                    ForEach(BackgroundChoice.allCases) { Text($0.title).tag($0) }
-                }
             } footer: {
-                Text("Tinted glass picks up the accent color. Ambient adds soft color behind panels so the glass has something to refract. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
+                Text("Frosted glass blurs more than Clear. Liquid Glass needs macOS 26 or later; earlier systems use translucent materials.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section("Preview") {
                 ZStack {
-                    AmbientBackground()
+                    Backdrop()
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     HStack(spacing: 12) {
                         Label("Run Synthesis", systemImage: "play.fill")
@@ -84,7 +56,7 @@ private struct AppearanceSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 480)
+        .frame(height: 340)
     }
 }
 

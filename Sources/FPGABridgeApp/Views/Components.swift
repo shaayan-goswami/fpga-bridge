@@ -82,7 +82,7 @@ struct ResourceBar: View {
     let usage: ResourceUsage
 
     private var color: Color {
-        usage.percent >= 90 ? .red : usage.percent >= 70 ? .orange : .accentColor
+        usage.percent >= 90 ? .red : usage.percent >= 70 ? .orange : .primary
     }
 
     var body: some View {
@@ -128,7 +128,7 @@ struct RunStatusIcon: View {
 extension ConsoleLine.Kind {
     var color: Color {
         switch self {
-        case .command: .accentColor
+        case .command: .primary
         case .output: .primary
         case .info: .secondary
         case .warning: .orange

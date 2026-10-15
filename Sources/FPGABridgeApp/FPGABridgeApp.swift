@@ -37,7 +37,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate(ignoringOtherApps: true)
         }
         // The .app has its icon from Info.plist; under `swift run` set it here so the Dock shows it.
-        if Bundle.main.bundleIdentifier == nil, let icon = AppIcon.image { NSApp.applicationIconImage = icon }
+        if Bundle.main.bundleIdentifier == nil,
+           let icon = AppIcon.dockImage(dark: NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua) {
+            NSApp.applicationIconImage = icon
+        }
         Snapshot.scheduleIfRequested()
     }
 

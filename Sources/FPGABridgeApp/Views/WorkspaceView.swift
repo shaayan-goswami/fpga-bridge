@@ -50,7 +50,7 @@ private struct TabButton: View {
         HStack(spacing: 6) {
             Image(systemName: model.symbol(of: tab))
                 .font(.caption)
-                .foregroundStyle(selected ? Color.accentColor : .secondary)
+                .foregroundStyle(selected ? Color.primary : .secondary)
             Text(model.title(of: tab))
                 .lineLimit(1)
             if tab.isCloseable {
@@ -130,12 +130,12 @@ struct ProjectSummaryView: View {
             }
             .padding(24)
         }
-        .background(AmbientBackground())
+        .background(Backdrop())
     }
 
     private var settingsCard: some View {
         Card("Settings", symbol: "gearshape") {
-            Button("Edit") { model.showSettings = true }.buttonStyle(.link)
+            Button("Edit") { model.showSettings = true }.buttonStyle(QuietButtonStyle())
         } content: {
             if let project = model.project {
                 Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
@@ -158,7 +158,7 @@ struct ProjectSummaryView: View {
 
     private var designRunsCard: some View {
         Card("Design Runs", symbol: "list.bullet.rectangle") {
-            Button("Show All") { model.consoleVisible = true; model.consoleTab = .designRuns }.buttonStyle(.link)
+            Button("Show All") { model.consoleVisible = true; model.consoleTab = .designRuns }.buttonStyle(QuietButtonStyle())
         } content: {
             Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
                 GridRow {
@@ -191,7 +191,7 @@ struct ProjectSummaryView: View {
     private var timingCard: some View {
         Card("Timing", symbol: "timer") {
             if let entry = model.reports.first(where: { $0.fileName == BuildSummary.timingReport }) {
-                Button("Report") { model.openReport(entry.id) }.buttonStyle(.link)
+                Button("Report") { model.openReport(entry.id) }.buttonStyle(QuietButtonStyle())
             }
         } content: {
             if let timing = model.timing {
@@ -241,7 +241,7 @@ struct ProjectSummaryView: View {
     private var utilizationCard: some View {
         Card("Utilization", symbol: "chart.bar") {
             if let entry = model.reports.last(where: { $0.fileName.contains("utilization") }) {
-                Button("Report") { model.openReport(entry.id) }.buttonStyle(.link)
+                Button("Report") { model.openReport(entry.id) }.buttonStyle(QuietButtonStyle())
             }
         } content: {
             if let utilization = model.utilization {
@@ -271,7 +271,7 @@ struct ProjectSummaryView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(text).foregroundStyle(.secondary)
             Button(action, action: perform)
-                .glassProminentButton()
+                .glassButton()
                 .disabled(model.isRunning)
         }
         .font(.callout)
@@ -367,19 +367,33 @@ enum Highlighter {
         }
         let options: NSRegularExpression.Options = ext.hasPrefix("vhd") ? [.caseInsensitive] : []
 
-        func paint(_ pattern: String, _ color: Color, options: NSRegularExpression.Options = []) {
+        // Monochrome: structure comes from weight and grey levels, not hue.
+        func paint(_ pattern: String, options: NSRegularExpression.Options = [],
+                   _ style: (inout AttributedSubstring) -> Void) {
             guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return }
             for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
                 guard let range = Range(match.range, in: text), let attributed = Range(range, in: result) else { continue }
-                result[attributed].foregroundColor = color
+                style(&result[attributed])
             }
         }
 
-        paint("\\b(" + keywords.joined(separator: "|") + ")\\b", Color(nsColor: .systemPink), options: options)
-        paint("\\b\\d+'[bBhHdDoO][0-9a-fA-F_xXzZ]+|\\b\\d[\\d_]*(\\.\\d+)?\\b", Color(nsColor: .systemBlue))
-        paint("`\\w+|\\$\\w+", Color(nsColor: .systemOrange))
-        paint("\"[^\"\\n]*\"", Color(nsColor: .systemRed))
-        for pattern in comments { paint(pattern, Color(nsColor: .systemGreen).opacity(0.85)) }
+        result.foregroundColor = Color.primary.opacity(0.88)
+        paint("\\b(" + keywords.joined(separator: "|") + ")\\b", options: options) {
+            $0.foregroundColor = .primary
+            $0.inlinePresentationIntent = .stronglyEmphasized
+        }
+        paint("\\b\\d+'[bBhHdDoO][0-9a-fA-F_xXzZ]+|\\b\\d[\\d_]*(\\.\\d+)?\\b") { $0.foregroundColor = .primary }
+        paint("`\\w+|\\$\\w+") {
+            $0.foregroundColor = .secondary
+            $0.inlinePresentationIntent = .stronglyEmphasized
+        }
+        paint("\"[^\"\\n]*\"") { $0.foregroundColor = .secondary }
+        for pattern in comments {
+            paint(pattern) {
+                $0.foregroundColor = Color.secondary.opacity(0.8)
+                $0.inlinePresentationIntent = .emphasized
+            }
+        }
         return result
     }
 }

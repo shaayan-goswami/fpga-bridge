@@ -38,7 +38,7 @@ struct SourcesPane: View {
                                     .foregroundStyle(tab == item ? .primary : .secondary)
                                     .fixedSize()
                                 Capsule()
-                                    .fill(tab == item ? Color.accentColor : .clear)
+                                    .fill(tab == item ? Color.primary : .clear)
                                     .frame(height: 2)
                             }
                         }
@@ -126,7 +126,7 @@ private struct SourceLabel: View {
                 Text(detail).foregroundStyle(.secondary)
             }
             if node.isTop {
-                Pill(text: "Top", color: .blue)
+                Pill(text: "Top", color: .secondary)
             }
         }
         .lineLimit(1)
@@ -134,9 +134,7 @@ private struct SourceLabel: View {
 
     private var symbolColor: Color {
         if node.symbol == "folder" { return .secondary }
-        if node.isTop { return .blue }
-        if node.symbol == "pin" { return .orange }
-        return .accentColor
+        return node.isTop ? .primary : .secondary
     }
 }
 

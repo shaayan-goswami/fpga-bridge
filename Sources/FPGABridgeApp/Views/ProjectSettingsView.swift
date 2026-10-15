@@ -179,14 +179,14 @@ struct AddSourcesSheet: View {
                             Button { set = option } label: {
                                 HStack(spacing: 12) {
                                     Image(systemName: set == option ? "largecircle.fill.circle" : "circle")
-                                        .foregroundStyle(set == option ? Color.accentColor : .secondary)
+                                        .foregroundStyle(set == option ? Color.primary : .secondary)
                                         .font(.title3)
                                     Text("Add or create \(option.title.lowercased())")
                                     Spacer()
                                 }
                                 .padding(10)
                                 .contentShape(Rectangle())
-                                .background(RoundedRectangle(cornerRadius: 8).fill(set == option ? Color.accentColor.opacity(0.08) : .clear))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(set == option ? Color.primary.opacity(0.06) : .clear))
                             }
                             .buttonStyle(.plain)
                         }

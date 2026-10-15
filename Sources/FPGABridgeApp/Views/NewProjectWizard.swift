@@ -182,7 +182,7 @@ struct NewProjectWizard: View {
             }
         }
         .frame(width: 880, height: 620)
-        .background(AmbientBackground())
+        .background(Backdrop())
         .sheet(isPresented: Binding(get: { defineDrafts != nil }, set: { if !$0 { defineDrafts = nil } })) {
             if let drafts = defineDrafts {
                 DefineModuleSheet(drafts: drafts) { defined in
@@ -205,10 +205,10 @@ struct NewProjectWizard: View {
                 HStack(spacing: 10) {
                     ZStack {
                         Circle()
-                            .fill(index < current ? Color.accentColor : (index == current ? Color.accentColor : Color.secondary.opacity(0.25)))
+                            .fill(index < current ? Color.primary : (index == current ? Color.primary : Color.secondary.opacity(0.25)))
                             .frame(width: 10, height: 10)
                         if index < current {
-                            Image(systemName: "checkmark").font(.system(size: 6, weight: .black)).foregroundStyle(.white)
+                            Image(systemName: "checkmark").font(.system(size: 6, weight: .black)).foregroundStyle(Color(nsColor: .windowBackgroundColor))
                         }
                     }
                     Text(step.title)
@@ -240,7 +240,7 @@ struct NewProjectWizard: View {
             if state.step == .summary {
                 Button("Finish") { finish() }
                     .keyboardShortcut(.defaultAction)
-                    .glassProminentButton()
+                    .glassButton()
             } else {
                 Button("Next") { state.error = nil; state.next() }
                     .keyboardShortcut(.defaultAction)
@@ -301,7 +301,7 @@ private struct IntroPage: View {
 private struct WizardBulletLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 10) {
-            configuration.icon.foregroundStyle(Color.accentColor).frame(width: 22)
+            configuration.icon.foregroundStyle(.secondary).frame(width: 22)
             configuration.title
         }
     }
@@ -372,7 +372,7 @@ private struct TypePage: View {
     private func option(selected: Bool, title: String, detail: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                .foregroundStyle(selected ? Color.accentColor : .secondary)
+                .foregroundStyle(selected ? Color.primary : .secondary)
                 .font(.title3)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).fontWeight(.medium)
@@ -381,7 +381,7 @@ private struct TypePage: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 8).fill(selected ? Color.accentColor.opacity(0.08) : .clear))
+        .background(RoundedRectangle(cornerRadius: 8).fill(selected ? Color.primary.opacity(0.06) : .clear))
     }
 }
 

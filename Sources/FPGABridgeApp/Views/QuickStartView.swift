@@ -1,72 +1,75 @@
 import SwiftUI
 
-/// Vivado's Getting Started page: Quick Start actions, Tasks, Learning Center, and Recent Projects.
+/// Vivado's Getting Started page (Quick Start, Tasks, Learning Center, Recent Projects). The window itself is frosted
+/// glass here, with the desktop blurred through it; the project window stays opaque.
 struct QuickStartView: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                header
-                HStack(alignment: .top, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        section("Quick Start") {
-                            QuickActionRow(symbol: "plus.square.on.square", tint: .blue, title: "Create Project",
-                                           subtitle: "Start the New Project wizard") { model.showNewProject = true }
-                            Divider().padding(.leading, 54)
-                            QuickActionRow(symbol: "folder", tint: .indigo, title: "Open Project",
-                                           subtitle: "Open a project folder") { model.openProjectWithPanel() }
-                            Divider().padding(.leading, 54)
-                            QuickActionRow(symbol: "lightbulb", tint: .orange, title: "Open Example Project",
-                                           subtitle: "A small Basys 3 design to try things with") { model.openExampleProject() }
-                        }
-                        section("Tasks") {
-                            QuickActionRow(symbol: "network", tint: .green, title: "Check Build Machine",
-                                           subtitle: model.connection == .demo ? "Demo mode: no build machine configured"
-                                                      : model.connection.detail) { Task { await model.start() } }
-                            Divider().padding(.leading, 54)
-                            QuickActionRow(symbol: "cable.connector.horizontal", tint: .gray, title: "Open Hardware Manager",
-                                           subtitle: "Planned: program boards from the Mac", isEnabled: false) {}
-                        }
-                        section("Learning Center") {
-                            QuickActionRow(symbol: "book", tint: .teal, title: "Documentation",
-                                           subtitle: "Setup, build machine and troubleshooting") {
-                                if let url = URL(string: "https://github.com/shaayan-goswami/fpga-bridge/blob/main/docs/setup.md") {
-                                    NSWorkspace.shared.open(url)
+        ZStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 30) {
+                    header
+                    Divider().opacity(0.6)
+                    HStack(alignment: .top, spacing: 36) {
+                        VStack(alignment: .leading, spacing: 26) {
+                            section("Quick Start") {
+                                QuickActionRow(symbol: "plus.square.on.square", title: "Create Project",
+                                               subtitle: "Start the New Project wizard") { model.showNewProject = true }
+                                QuickActionRow(symbol: "folder", title: "Open Project",
+                                               subtitle: "Open a project folder") { model.openProjectWithPanel() }
+                                QuickActionRow(symbol: "lightbulb", title: "Open Example Project",
+                                               subtitle: "A small Basys 3 design to try things with") { model.openExampleProject() }
+                            }
+                            section("Tasks") {
+                                QuickActionRow(symbol: "network", title: "Check Build Machine",
+                                               subtitle: model.connection == .demo ? "Demo mode: no build machine configured"
+                                                                                   : model.connection.detail) {
+                                    Task { await model.start() }
+                                }
+                                QuickActionRow(symbol: "cable.connector.horizontal", title: "Open Hardware Manager",
+                                               subtitle: "Planned: program boards from the Mac", isEnabled: false) {}
+                            }
+                            section("Learning Center") {
+                                QuickActionRow(symbol: "book", title: "Documentation",
+                                               subtitle: "Setup, build machine and troubleshooting") {
+                                    if let url = URL(string: "https://github.com/shaayan-goswami/fpga-bridge/blob/main/docs/setup.md") {
+                                        NSWorkspace.shared.open(url)
+                                    }
                                 }
                             }
                         }
-                    }
-                    .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
 
-                    section("Recent Projects") {
-                        if model.recentProjects.isEmpty {
-                            Text("Projects you open will appear here.")
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, minHeight: 120)
-                        } else {
-                            ForEach(Array(model.recentProjects.enumerated()), id: \.element) { index, url in
-                                if index > 0 { Divider().padding(.leading, 54) }
-                                QuickActionRow(symbol: "cpu", tint: .purple, title: url.lastPathComponent,
-                                               subtitle: url.deletingLastPathComponent().path) { model.openProject(at: url) }
+                        section("Recent Projects") {
+                            if model.recentProjects.isEmpty {
+                                Text("Projects you open will appear here.")
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, minHeight: 120)
+                            } else {
+                                ForEach(model.recentProjects, id: \.self) { url in
+                                    QuickActionRow(symbol: "cpu", title: url.lastPathComponent,
+                                                   subtitle: url.deletingLastPathComponent().path) { model.openProject(at: url) }
+                                }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
-                    .frame(maxWidth: .infinity)
                 }
+                .padding(.horizontal, 48)
+                .padding(.top, 36)
+                .padding(.bottom, 48)
+                .frame(maxWidth: 1000)
+                .frame(maxWidth: .infinity)
             }
-            .padding(40)
-            .frame(maxWidth: 1040)
-            .frame(maxWidth: .infinity)
         }
-        .background(AmbientBackground())
         .navigationTitle("FPGA Bridge")
+        .modifier(FrostedWindow())
     }
 
     private var header: some View {
-        HStack(spacing: 16) {
-            AppIconView(size: 84)
-                .shadow(color: .indigo.opacity(0.25), radius: 8, y: 4)
+        HStack(spacing: 18) {
+            AppIconView(size: 76)
             VStack(alignment: .leading, spacing: 4) {
                 Text("FPGA Bridge").font(.largeTitle.weight(.bold))
                 Text("Vivado projects on your Mac. Builds run on your Windows machine.")
@@ -75,7 +78,7 @@ struct QuickStartView: View {
             }
             Spacer()
             HStack(spacing: 6) {
-                Circle().fill(model.connection.color).frame(width: 8, height: 8)
+                Circle().fill(model.connection.color).frame(width: 7, height: 7)
                 Text(model.connection.label)
             }
             .font(.callout)
@@ -87,20 +90,18 @@ struct QuickStartView: View {
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.title3.weight(.semibold))
-                .padding(.leading, 4)
-            VStack(spacing: 0) { content() }
-                .padding(.vertical, 6)
-                .glassSurface(cornerRadius: 18)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 8)
+            VStack(spacing: 2) { content() }
         }
     }
 }
 
 struct QuickActionRow: View {
     let symbol: String
-    let tint: Color
     let title: String
     let subtitle: String
     var isEnabled = true
@@ -111,10 +112,10 @@ struct QuickActionRow: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 30, height: 30)
-                    .background(tint.gradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.body.weight(.medium))
                     Text(subtitle)
@@ -128,15 +129,40 @@ struct QuickActionRow: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 7)
             .contentShape(Rectangle())
-            .background(RoundedRectangle(cornerRadius: 8).fill(hovering && isEnabled ? Color.primary.opacity(0.05) : .clear)
-                .padding(.horizontal, 4))
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(hovering && isEnabled ? Color.primary.opacity(0.06) : .clear))
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.5)
+        .opacity(isEnabled ? 1 : 0.45)
         .onHover { hovering = $0 }
+    }
+}
+
+/// Makes the whole window a frosted pane that blurs the desktop behind it (macOS 15+), with no title or toolbar
+/// background, so the frost runs edge to edge. "Off" in Settings keeps an opaque window.
+private struct FrostedWindow: ViewModifier {
+    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.frosted
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content
+                .containerBackground(background, for: .window)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                .toolbar(removing: .title)
+        } else {
+            content.background(Backdrop())
+        }
+    }
+
+    private var background: AnyShapeStyle {
+        switch glass {
+        case .frosted: AnyShapeStyle(.regularMaterial)
+        case .clear: AnyShapeStyle(.ultraThinMaterial)
+        case .off: AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+        }
     }
 }

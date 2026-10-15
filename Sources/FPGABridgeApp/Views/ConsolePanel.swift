@@ -105,7 +105,7 @@ private struct ConsoleLines: View {
                             if showCommandMarker {
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 8, weight: .bold))
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(.secondary)
                                     .opacity(line.kind == .command ? 1 : 0)
                             }
                             Text(line.text.isEmpty ? " " : line.text)
@@ -144,7 +144,7 @@ private struct TclConsoleView: View {
             HStack(spacing: 8) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.secondary)
                 TextField("Type a Tcl command here", text: $command)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12, design: .monospaced))

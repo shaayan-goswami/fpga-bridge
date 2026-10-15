@@ -29,11 +29,14 @@ Or run it straight from the build without packaging: `swift run FPGABridgeApp`.
 With no build machine configured (`fpga-bridge init` not run yet) the app starts in **Demo Mode**: runs are
 simulated so you can try the whole flow. Use **Open Example Project** on the start page for a ready-made design.
 
-**FPGA Bridge > Settings… (⌘,)** sets the appearance: light/dark, accent color, Liquid Glass style (Regular, Clear,
-Tinted, Off) and background, plus editor and console font sizes. Project settings (part, top module, language,
-Vivado version) are under **Flow > Settings…**, as in Vivado.
+**FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the Liquid Glass style (Frosted, Clear, Off), and
+editor and console font sizes. The app is monochrome; colour only marks status (errors, warnings, completed runs,
+failed timing). Project settings (part, top module, language, Vivado version) are under **Flow > Settings…**, as in
+Vivado.
 
-The app icon is drawn by `scripts/make-icon.swift`; `scripts/make-icon.sh` regenerates the PNG and `.icns`.
+The app icon is an Icon Composer document, `Sources/FPGABridgeApp/Resources/AppIcon.icon`, with a white
+background in light mode and black in dark mode. Edit it in Icon Composer (inside Xcode 26+). `scripts/make-app.sh`
+compiles it with `actool`; `scripts/render-icon.sh` refreshes the light and dark PNGs used inside the app.
 
 ## Commands
 

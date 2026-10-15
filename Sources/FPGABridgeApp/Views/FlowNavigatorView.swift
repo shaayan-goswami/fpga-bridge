@@ -93,6 +93,6 @@ private struct FlowRow: View {
 
     private var iconStyle: AnyShapeStyle {
         guard item.isAvailable else { return AnyShapeStyle(.tertiary) }
-        return item.runKind != nil ? AnyShapeStyle(Color.green) : AnyShapeStyle(Color.accentColor)
+        return AnyShapeStyle(.primary)
     }
 }

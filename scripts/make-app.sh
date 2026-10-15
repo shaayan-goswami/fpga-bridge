@@ -15,7 +15,13 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
 cp "$bin/FPGABridgeApp" "$app/Contents/MacOS/FPGA Bridge"
-cp Sources/FPGABridgeApp/Resources/AppIcon.icns Sources/FPGABridgeApp/Resources/AppIcon.png "$app/Contents/Resources/"
+cp Sources/FPGABridgeApp/Resources/AppIcon-Light.png Sources/FPGABridgeApp/Resources/AppIcon-Dark.png "$app/Contents/Resources/"
+
+# The icon is an Icon Composer document. actool compiles it, as Xcode does, into Assets.car (the Liquid Glass icon
+# that follows light and dark mode) plus AppIcon.icns for older systems.
+xcrun actool --compile "$app/Contents/Resources" --platform macosx --minimum-deployment-target 14.0 \
+  --app-icon AppIcon --output-partial-info-plist "$(mktemp -d)/partial.plist" \
+  Sources/FPGABridgeApp/Resources/AppIcon.icon >/dev/null
 if [ -d "$bin/fpga-bridge_FPGABridgeApp.bundle" ]; then
   cp -R "$bin/fpga-bridge_FPGABridgeApp.bundle" "$app/Contents/Resources/"
 fi
@@ -36,6 +42,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>CFBundleIdentifier</key>
     <string>io.github.shaayan-goswami.fpga-bridge</string>
     <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIconName</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
