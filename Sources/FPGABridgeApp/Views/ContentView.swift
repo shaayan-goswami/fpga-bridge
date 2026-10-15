@@ -46,17 +46,21 @@ struct ContentView: View {
 /// Vivado's layout: Flow Navigator | Sources + Properties | workspace over the console, with a status bar.
 struct MainWindowView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var columns: NavigationSplitViewVisibility = .all
+    @State private var showSidebar = true
 
+    /// Three panes like Vivado's: Flow Navigator, Sources, workspace over console. The sidebar has no background of
+    /// its own, so it shows the window's Liquid Glass, the same glass as the home screen. (The system's split view
+    /// draws its own sidebar on top, which never matched.) Every other pane is opaque.
     var body: some View {
         VStack(spacing: 0) {
-            NavigationSplitView(columnVisibility: $columns) {
-                FlowNavigatorView()
-                    .navigationSplitViewColumnWidth(min: 230, ideal: 260, max: 320)
-            } content: {
+            HSplitView {
+                if showSidebar {
+                    FlowNavigatorView()
+                        .frame(minWidth: 220, idealWidth: 250, maxWidth: 320)
+                }
                 SourcesPane()
-                    .navigationSplitViewColumnWidth(min: 280, ideal: 330, max: 460)
-            } detail: {
+                    .frame(minWidth: 280, idealWidth: 330, maxWidth: 460)
+                    .background(Theme.surface)
                 VSplitView {
                     WorkspaceView()
                         .frame(minHeight: 380)
@@ -66,13 +70,19 @@ struct MainWindowView: View {
                             .frame(minHeight: 160, idealHeight: 240, maxHeight: 420)
                     }
                 }
+                .background(Theme.window)
             }
-            .modifier(BlackContainers())
-            .navigationTitle(model.project?.name ?? "FPGA Bridge")
-            .navigationSubtitle(subtitle)
-            .toolbar { MainToolbar(model: model) }
-            // Below the split view rather than an inset, so it spans every column.
             StatusBar()
+        }
+        .modifier(WindowGlassContainers())
+        .navigationTitle(model.project?.name ?? "FPGA Bridge")
+        .navigationSubtitle(subtitle)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button { showSidebar.toggle() } label: { Label("Flow Navigator", systemImage: "sidebar.leading") }
+                    .help(showSidebar ? "Hide the Flow Navigator" : "Show the Flow Navigator")
+            }
+            MainToolbar(model: model)
         }
     }
 
@@ -242,13 +252,13 @@ struct StatusBar: View {
     }
 }
 
-/// Gives the window the app's near-black dark color and removes the toolbar's own gray background (macOS 15+);
-/// older systems keep the defaults.
-private struct BlackContainers: ViewModifier {
+/// Makes the window itself Liquid Glass, as on the home screen, with no toolbar background of its own (macOS 15+).
+/// Only the sidebar and the toolbar area show it; older systems keep the defaults.
+private struct WindowGlassContainers: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
             content
-                .containerBackground(Theme.window, for: .window)
+                .containerBackground(for: .window) { GlassFill() }
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         } else {
             content

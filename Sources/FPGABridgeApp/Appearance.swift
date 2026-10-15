@@ -118,12 +118,8 @@ enum Theme {
     static let nsWindow = dynamic(light: .windowBackgroundColor, dark: 0x0A0B0F)
     /// Editors, the console, lists and tables: a step lighter than the window so panes read as panes.
     static let nsSurface = dynamic(light: .textBackgroundColor, dark: 0x0E0F14)
-    /// The Flow Navigator and the Sources column.
-    static let nsSidebar = dynamic(light: .underPageBackgroundColor, dark: 0x08090C)
-
     static let window = Color(nsColor: nsWindow)
     static let surface = Color(nsColor: nsSurface)
-    static let sidebar = Color(nsColor: nsSidebar)
 }
 
 /// The grey tint for controls.
@@ -196,13 +192,6 @@ struct GlassFill: View {
         } else {
             Rectangle().fill(glass == .clear ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(.regularMaterial))
         }
-    }
-}
-
-extension View {
-    /// Puts a list or pane on a large glass surface instead of the system's sidebar background.
-    func paneGlass(solid: Color = Theme.sidebar) -> some View {
-        scrollContentBackground(.hidden).background { GlassFill(solid: solid) }
     }
 }
 
