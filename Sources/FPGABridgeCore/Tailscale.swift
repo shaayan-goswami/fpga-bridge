@@ -1,7 +1,7 @@
 import Foundation
 
-public struct TailscaleStatus: Equatable {
-    public struct Node: Equatable {
+public struct TailscaleStatus: Equatable, Sendable {
+    public struct Node: Equatable, Sendable {
         public var hostName: String
         public var dnsName: String
         public var ips: [String]

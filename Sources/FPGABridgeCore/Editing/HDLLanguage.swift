@@ -1,7 +1,7 @@
 import Foundation
 
 /// The languages the editor knows about, chosen from the file extension.
-public enum HDLLanguage: Equatable {
+public enum HDLLanguage: Equatable, Sendable {
     case verilog      // Verilog and SystemVerilog
     case vhdl
     case constraints  // XDC

@@ -1,7 +1,7 @@
 import Foundation
 
 /// The three source sets of a Vivado project.
-public enum SourceSet: String, CaseIterable, Identifiable {
+public enum SourceSet: String, CaseIterable, Identifiable, Sendable {
     case design, constraints, simulation
 
     public var id: String { rawValue }
@@ -32,7 +32,7 @@ public enum SourceSet: String, CaseIterable, Identifiable {
 }
 
 /// A file the user asked to create from scratch.
-public struct NewFile: Equatable {
+public struct NewFile: Equatable, Sendable {
     public var set: SourceSet
     /// File name; an extension is added from the project language when missing.
     public var name: String
@@ -47,7 +47,7 @@ public struct NewFile: Equatable {
 }
 
 /// Everything the New Project wizard collects.
-public struct NewProjectRequest {
+public struct NewProjectRequest: Sendable {
     public var name: String
     /// The folder the user picked. With `createSubdirectory` the project goes in `<location>/<name>`.
     public var location: URL

@@ -29,6 +29,7 @@ struct FPGABridgeApp: App {
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set once the window appears, so quitting can check for unsaved edits.
     static weak var model: AppModel?

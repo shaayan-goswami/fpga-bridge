@@ -77,6 +77,7 @@ struct CodeEditor: NSViewRepresentable {
         context.coordinator.highlight(textView)
     }
 
+    @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: CodeEditor
         weak var textView: CodeTextView?

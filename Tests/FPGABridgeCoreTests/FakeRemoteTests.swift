@@ -3,6 +3,14 @@ import XCTest
 
 /// Runs the real `Remote` and `Doctor` code against stub `ssh`/`scp` scripts (see FakeRemote/) that act as a Windows
 /// build machine. The stubs only accept the exact command lines fpga-bridge should send.
+/// Collects text from a callback that runs on another thread.
+final class LogBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var text = ""
+    func append(_ chunk: String) { lock.lock(); text += chunk; lock.unlock() }
+    var value: String { lock.lock(); defer { lock.unlock() }; return text }
+}
+
 final class FakeRemoteTests: XCTestCase {
     static let vivadoPath = #"C:\Program Files\Xilinx\Vivado\2023.2\bin\vivado.bat"#
 
@@ -307,17 +315,18 @@ final class FakeRemoteTests: XCTestCase {
     func testCtrlCStopsRemoteVivadoReleasesLockAndSkipsFetch() throws {
         setenv("FAKE_VIVADO_MODE", "hang", 1)
         let (project, root) = try makeProject()
-        let log = self.log!
+        let running = remoteFile(".running")
 
-        // Press "Ctrl-C" once the fake Vivado has been started.
+        // Press "Ctrl-C" once the fake Vivado reports that it is running. The signal handler is installed before the
+        // remote command starts, so there is no fixed delay to get wrong. Give up after 20 s rather than hang.
+        let pressed = expectation(description: "the fake Vivado started")
         Thread {
-            for _ in 0..<200 {
-                if let text = try? String(contentsOf: log, encoding: .utf8), text.contains("-tclargs") { break }
-                Thread.sleep(forTimeInterval: 0.05)
-            }
-            Thread.sleep(forTimeInterval: 0.3)
-            kill(getpid(), SIGINT)
+            let deadline = Date().addingTimeInterval(20)
+            while !FileManager.default.fileExists(atPath: running.path), Date() < deadline { Thread.sleep(forTimeInterval: 0.02) }
+            if FileManager.default.fileExists(atPath: running.path) { kill(getpid(), SIGINT) }
+            pressed.fulfill()
         }.start()
+        defer { wait(for: [pressed], timeout: 25) }
 
         let started = Date()
         let status = try Remote(config: config).build(project: project, root: root)
@@ -401,13 +410,10 @@ final class FakeRemoteTests: XCTestCase {
 
     func testBuildSendsProgressAndVivadoOutputToTheLogCallback() throws {
         let (project, root) = try makeProject()
-        let lock = NSLock()
-        var captured = ""
-        let status = try Remote(config: config).build(project: project, root: root) { chunk in
-            lock.lock(); captured += chunk; lock.unlock()
-        }
+        let box = LogBox()
+        let status = try Remote(config: config).build(project: project, root: root) { box.append($0) }
         XCTAssertEqual(status, 0)
-        lock.lock(); defer { lock.unlock() }
+        let captured = box.value
         XCTAssertTrue(captured.contains("Copying 3 files to buildbox"), captured)
         XCTAssertTrue(captured.contains("fake-vivado: done"), "Vivado's output must be captured, not printed:\n\(captured)")
         XCTAssertTrue(captured.contains("Results in build/"), captured)
@@ -416,24 +422,18 @@ final class FakeRemoteTests: XCTestCase {
     func testBuildFailureOutputIsCapturedToo() throws {
         setenv("FAKE_VIVADO_MODE", "fail", 1)
         let (project, root) = try makeProject()
-        let lock = NSLock()
-        var captured = ""
-        let status = try Remote(config: config).build(project: project, root: root) { chunk in
-            lock.lock(); captured += chunk; lock.unlock()
-        }
+        let box = LogBox()
+        let status = try Remote(config: config).build(project: project, root: root) { box.append($0) }
         XCTAssertEqual(status, 1)
-        lock.lock(); defer { lock.unlock() }
+        let captured = box.value
         XCTAssertTrue(captured.contains("ERROR: [Synth 8-439]"), captured)
     }
 
     func testRunTclSendsOutputToTheLogCallback() throws {
-        let lock = NSLock()
-        var captured = ""
-        let status = try Remote(config: config).runTcl(script: "puts hello-from-tcl") { chunk in
-            lock.lock(); captured += chunk; lock.unlock()
-        }
+        let box = LogBox()
+        let status = try Remote(config: config).runTcl(script: "puts hello-from-tcl") { box.append($0) }
         XCTAssertEqual(status, 0)
-        lock.lock(); defer { lock.unlock() }
+        let captured = box.value
         XCTAssertTrue(captured.contains("puts hello-from-tcl"), captured)
     }
 

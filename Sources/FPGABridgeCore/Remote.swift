@@ -1,7 +1,7 @@
 import Foundation
 
 /// Talks to the Windows machine over SSH. The remote shell is Windows' default `cmd.exe`.
-public struct Remote {
+public struct Remote: Sendable {
     public let config: BridgeConfig
 
     /// Scratch directory on the Windows side, relative to the user's profile (the SSH session's working directory).
@@ -32,7 +32,7 @@ public struct Remote {
 
     /// Copies a Tcl script to the Windows machine, runs it with Vivado in batch mode, and streams the output.
     /// Returns Vivado's exit status.
-    public func runTcl(script: String, log: ((String) -> Void)? = nil) throws -> Int32 {
+    public func runTcl(script: String, log: (@Sendable (String) -> Void)? = nil) throws -> Int32 {
         let name = "job-\(UUID().uuidString.prefix(8)).tcl"
         let local = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         try script.write(to: local, atomically: true, encoding: .utf8)
@@ -71,8 +71,8 @@ extension Remote {
     ///
     /// With `log`, the progress messages and Vivado's live output go to it in chunks (for a UI). Without it they go
     /// straight to the terminal, which keeps ssh's own prompts working.
-    public func build(project: Project, root: URL, log captured: ((String) -> Void)? = nil) throws -> Int32 {
-        let log: (String) -> Void = captured ?? { print($0, terminator: "") }
+    public func build(project: Project, root: URL, log captured: (@Sendable (String) -> Void)? = nil) throws -> Int32 {
+        let log: @Sendable (String) -> Void = captured ?? { print($0, terminator: "") }
         let sources = try project.resolveSources(in: root)
         let constraints = try project.resolveConstraints(in: root)
         guard !sources.isEmpty else {

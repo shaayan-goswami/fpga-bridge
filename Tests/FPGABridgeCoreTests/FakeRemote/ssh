@@ -94,7 +94,8 @@ if [[ "$cmd" =~ $re ]]; then
   case "${FAKE_VIVADO_MODE:-pass}" in
     fail) echo "ERROR: [Synth 8-439] module 'missing_module' not declared"; exit 1 ;;
     lost) echo "client_loop: send disconnect: Broken pipe" >&2; exit 255 ;;
-    hang) echo "fake-vivado: running"; exec sleep 30 ;;
+    # The marker file says "Vivado is up and running", which is what a test must wait for before pressing Ctrl-C.
+    hang) : > "$HOME_/.running"; echo "fake-vivado: running"; exec sleep 30 ;;
   esac
   top="$(sed -n 's/^synth_design -top \([A-Za-z0-9_-]*\) .*/\1/p' build.tcl)"
   mkdir -p out

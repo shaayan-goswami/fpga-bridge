@@ -409,18 +409,19 @@ final class AppModel: ObservableObject {
         runGeneration += 1
         let generation = runGeneration
         runTask = Task { [weak self] in
+            guard let self else { return }
             for (index, step) in plan.enumerated() {
-                guard let self, !Task.isCancelled, self.runGeneration == generation else { return }
+                guard !Task.isCancelled, runGeneration == generation else { return }
                 // A live run completes every step at once, so later steps may already be done.
-                if index > 0, self.isDone(step) { continue }
-                let succeeded = await self.performStep(step, project: project, directory: projectURL, generation: generation)
+                if index > 0, isDone(step) { continue }
+                let succeeded = await performStep(step, project: project, directory: projectURL, generation: generation)
                 if !succeeded { break }
             }
-            guard let self, self.runGeneration == generation else { return }
-            self.activeStep = nil
-            self.stepStarted = nil
-            self.isRunning = false
-            self.runTask = nil
+            guard runGeneration == generation else { return }
+            activeStep = nil
+            stepStarted = nil
+            isRunning = false
+            runTask = nil
         }
     }
 
@@ -452,12 +453,14 @@ final class AppModel: ObservableObject {
         }
         lastMessage = step == .bitstream ? "Running write_bitstream on impl_1…" : "Running \(step.runName)…"
 
-        let outcome = await backend.run(step, project: project, directory: directory) { [weak self] chunk in
+        // Captured strongly on purpose: the call is short-lived, and the run task keeps the model alive anyway.
+        let model = self
+        let outcome = await backend.run(step, project: project, directory: directory) { chunk in
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     // Output from a run that was abandoned must not land in the log of its replacement.
-                    guard let self, self.runGeneration == generation else { return }
-                    self.ingest(chunk, into: run)
+                    guard model.runGeneration == generation else { return }
+                    model.ingest(chunk, into: run)
                 }
             }
         }

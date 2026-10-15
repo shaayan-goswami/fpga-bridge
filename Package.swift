@@ -1,6 +1,9 @@
 // swift-tools-version:5.9
 import PackageDescription
 
+// Strict concurrency checking is on for every target, so data-race problems show up as warnings in every build.
+let strict: [SwiftSetting] = [.enableExperimentalFeature("StrictConcurrency")]
+
 let package = Package(
     name: "fpga-bridge",
     platforms: [.macOS(.v14)],
@@ -13,13 +16,14 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
     ],
     targets: [
-        .target(name: "FPGABridgeCore"),
+        .target(name: "FPGABridgeCore", swiftSettings: strict),
         .executableTarget(
             name: "fpga-bridge",
             dependencies: [
                 "FPGABridgeCore",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-            ]
+            ],
+            swiftSettings: strict
         ),
         .executableTarget(
             name: "FPGABridgeApp",
@@ -29,13 +33,15 @@ let package = Package(
             resources: [
                 .copy("Resources/AppIcon-Default.png"), .copy("Resources/AppIcon-Dark.png"),
                 .copy("Resources/AppIcon-ClearLight.png"), .copy("Resources/AppIcon-ClearDark.png"),
-            ]
+            ],
+            swiftSettings: strict
         ),
-        .testTarget(name: "FPGABridgeAppTests", dependencies: ["FPGABridgeApp", "FPGABridgeCore"]),
+        .testTarget(name: "FPGABridgeAppTests", dependencies: ["FPGABridgeApp", "FPGABridgeCore"], swiftSettings: strict),
         .testTarget(
             name: "FPGABridgeCoreTests",
             dependencies: ["FPGABridgeCore"],
-            resources: [.copy("Fixtures"), .copy("FakeRemote")]
+            resources: [.copy("Fixtures"), .copy("FakeRemote")],
+            swiftSettings: strict
         ),
     ]
 )

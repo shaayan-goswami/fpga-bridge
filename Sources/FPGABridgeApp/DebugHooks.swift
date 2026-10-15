@@ -91,6 +91,7 @@ extension AppModel {
 #if DEBUG
 /// Saves a PNG of the window (and any sheet) then quits, when FPGA_BRIDGE_SNAPSHOT is set. Used to check the
 /// layout without a person at the screen.
+@MainActor
 enum Snapshot {
     static var isRequested: Bool { ProcessInfo.processInfo.environment["FPGA_BRIDGE_SNAPSHOT"] != nil }
 
@@ -102,24 +103,28 @@ enum Snapshot {
         guard let path = env["FPGA_BRIDGE_SNAPSHOT"] else { return }
         let delay = Double(env["FPGA_BRIDGE_SNAPSHOT_DELAY"] ?? "") ?? 3
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            guard let window = mainWindow() else { return }
-            let size = env["FPGA_BRIDGE_WINDOW_SIZE"]?.split(separator: "x").compactMap { Double($0) } ?? []
-            let frame = size.count == 2 ? NSSize(width: size[0], height: size[1]) : window.frame.size
-            // Far outside any screen: the views still render for cacheDisplay, but nothing appears on the desktop.
-            window.setFrame(NSRect(x: -20_000, y: -20_000, width: frame.width, height: frame.height), display: true)
+            MainActor.assumeIsolated {
+                guard let window = mainWindow() else { return }
+                let size = env["FPGA_BRIDGE_WINDOW_SIZE"]?.split(separator: "x").compactMap { Double($0) } ?? []
+                let frame = size.count == 2 ? NSSize(width: size[0], height: size[1]) : window.frame.size
+                // Far outside any screen: the views still render for cacheDisplay, but nothing appears on the desktop.
+                window.setFrame(NSRect(x: -20_000, y: -20_000, width: frame.width, height: frame.height), display: true)
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            if let window = mainWindow() {
-                capture(window, to: path)
-                if let sheet = window.attachedSheet {
-                    capture(sheet, to: path.replacingOccurrences(of: ".png", with: "-sheet.png"))
-                    if let inner = sheet.attachedSheet {
-                        capture(inner, to: path.replacingOccurrences(of: ".png", with: "-sheet2.png"))
+            MainActor.assumeIsolated {
+                if let window = mainWindow() {
+                    capture(window, to: path)
+                    if let sheet = window.attachedSheet {
+                        capture(sheet, to: path.replacingOccurrences(of: ".png", with: "-sheet.png"))
+                        if let inner = sheet.attachedSheet {
+                            capture(inner, to: path.replacingOccurrences(of: ".png", with: "-sheet2.png"))
+                        }
                     }
                 }
+                // terminate(_:) can be held up by an open sheet; this process has nothing to save.
+                exit(0)
             }
-            // terminate(_:) can be held up by an open sheet; this process has nothing to save.
-            exit(0)
         }
     }
 

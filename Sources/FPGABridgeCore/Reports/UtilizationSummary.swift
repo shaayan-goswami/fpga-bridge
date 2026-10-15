@@ -1,7 +1,7 @@
 import Foundation
 
-public struct ResourceUsage: Equatable {
-    public enum Kind: String, CaseIterable {
+public struct ResourceUsage: Equatable, Sendable {
+    public enum Kind: String, CaseIterable, Sendable {
         case lut = "LUT"
         case ff = "FF"
         case bram = "BRAM"
@@ -19,7 +19,7 @@ public struct ResourceUsage: Equatable {
 }
 
 /// Top-level resource counts from `report_utilization`.
-public struct UtilizationSummary: Equatable {
+public struct UtilizationSummary: Equatable, Sendable {
     public var resources: [ResourceUsage]
 
     public func usage(_ kind: ResourceUsage.Kind) -> ResourceUsage? {

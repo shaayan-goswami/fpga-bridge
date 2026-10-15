@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CommandResult {
+public struct CommandResult: Sendable {
     public let status: Int32
     public let stdout: String
     public let stderr: String
@@ -31,12 +31,12 @@ public enum Shell {
         process.standardInput = FileHandle.nullDevice
 
         let group = DispatchGroup()
-        var outData = Data()
-        var errData = Data()
+        let outData = DataBox()
+        let errData = DataBox()
         group.enter()
-        DispatchQueue.global().async { outData = outPipe.fileHandleForReading.readDataToEndOfFile(); group.leave() }
+        DispatchQueue.global().async { outData.set(outPipe.fileHandleForReading.readDataToEndOfFile()); group.leave() }
         group.enter()
-        DispatchQueue.global().async { errData = errPipe.fileHandleForReading.readDataToEndOfFile(); group.leave() }
+        DispatchQueue.global().async { errData.set(errPipe.fileHandleForReading.readDataToEndOfFile()); group.leave() }
 
         do { try process.run() } catch { throw ShellError.launchFailed(executable, error) }
 
@@ -50,8 +50,8 @@ public enum Shell {
 
         return CommandResult(
             status: process.terminationStatus,
-            stdout: String(decoding: outData, as: UTF8.self),
-            stderr: String(decoding: errData, as: UTF8.self)
+            stdout: String(decoding: outData.value, as: UTF8.self),
+            stderr: String(decoding: errData.value, as: UTF8.self)
         )
     }
 
@@ -65,7 +65,7 @@ public enum Shell {
     /// instead of the terminal, and stdin is closed. This is how a UI shows a live log.
     public static func stream(
         _ executable: String, _ arguments: [String],
-        onInterrupt: (() -> Void)? = nil, output: ((String) -> Void)? = nil
+        onInterrupt: (() -> Void)? = nil, output: (@Sendable (String) -> Void)? = nil
     ) throws -> Int32 {
         let process = makeProcess(executable, arguments)
         let capture = output.map { OutputCapture(process: process, handler: $0) }
@@ -106,9 +106,9 @@ public enum Shell {
     private final class OutputCapture {
         private let pipe = Pipe()
         private let group = DispatchGroup()
-        private let handler: (String) -> Void
+        private let handler: @Sendable (String) -> Void
 
-        init(process: Process, handler: @escaping (String) -> Void) {
+        init(process: Process, handler: @escaping @Sendable (String) -> Void) {
             self.handler = handler
             process.standardOutput = pipe
             process.standardError = pipe
@@ -135,6 +135,14 @@ public enum Shell {
 
     /// Conventional exit status for "terminated by Ctrl-C" (128 + SIGINT).
     public static let interruptedStatus: Int32 = 130
+
+    /// Collects a pipe's output from a background queue; read it only after the queue has finished.
+    private final class DataBox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var data = Data()
+        func set(_ new: Data) { lock.lock(); data = new; lock.unlock() }
+        var value: Data { lock.lock(); defer { lock.unlock() }; return data }
+    }
 
     private final class InterruptFlag {
         private let lock = NSLock()

@@ -2,7 +2,7 @@ import Foundation
 
 /// What a finished build says about the design, read from the reports in `build/`.
 /// A missing or unreadable report is reported in `notes` and never fails the build.
-public struct BuildSummary: Equatable {
+public struct BuildSummary: Equatable, Sendable {
     public var timing: TimingSummary?
     public var utilization: UtilizationSummary?
     public var notes: [String]

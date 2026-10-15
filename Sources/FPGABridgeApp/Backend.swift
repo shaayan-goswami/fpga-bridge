@@ -10,20 +10,20 @@ struct RunOutcome {
 }
 
 /// Where runs and Tcl commands go: a real build machine, or a simulation when none is configured.
-protocol Backend: AnyObject {
+protocol Backend: AnyObject, Sendable {
     var isDemo: Bool { get }
     var hostName: String { get }
     var vivadoPath: String? { get }
     /// Whether a running step can be stopped from the app.
     var canStop: Bool { get }
     func checkConnection() async -> ConnectionState
-    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping (String) -> Void) async -> RunOutcome
-    func runTcl(_ command: String, project: Project?, log: @escaping (String) -> Void) async
+    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome
+    func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async
 }
 
 // MARK: Demo
 
-final class DemoBackend: Backend {
+final class DemoBackend: Backend, Sendable {
     let isDemo = true
     let hostName = "buildbox"
     let vivadoPath: String? = #"C:\Xilinx\Vivado\2023.2\bin\vivado.bat"#
@@ -35,7 +35,7 @@ final class DemoBackend: Backend {
 
     func checkConnection() async -> ConnectionState { .demo }
 
-    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping (String) -> Void) async -> RunOutcome {
+    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
         let sources = (try? project.resolveSources(in: directory)) ?? []
         let constraints = (try? project.resolveConstraints(in: directory)) ?? []
         if step == .synthesis && sources.isEmpty {
@@ -55,7 +55,7 @@ final class DemoBackend: Backend {
     }
 
     /// A handful of commands, enough to show how the console behaves.
-    func runTcl(_ command: String, project: Project?, log: @escaping (String) -> Void) async {
+    func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async {
         if speed > 0 { try? await Task.sleep(nanoseconds: 150_000_000) }
         let words = command.split(separator: " ").map(String.init)
         switch words.first ?? "" {
@@ -73,7 +73,7 @@ final class DemoBackend: Backend {
 
 // MARK: Live
 
-final class LiveBackend: Backend {
+final class LiveBackend: Backend, Sendable {
     let config: BridgeConfig
     let isDemo = false
     /// Stopping a live build from the app needs a cancel hook in the core (today it is Ctrl-C in the CLI).
@@ -95,7 +95,7 @@ final class LiveBackend: Backend {
 
     /// The build script still runs synthesis, implementation and the bitstream in one go, so any step completes
     /// all three. Separate runs with checkpoints are in the backlog.
-    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping (String) -> Void) async -> RunOutcome {
+    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
         let config = config
         return await Task.detached {
             do {
@@ -115,7 +115,7 @@ final class LiveBackend: Backend {
         }.value
     }
 
-    func runTcl(_ command: String, project: Project?, log: @escaping (String) -> Void) async {
+    func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async {
         let config = config
         await Task.detached {
             do { _ = try Remote(config: config).runTcl(script: command, log: log) } catch { log("ERROR: \(error.userMessage)\n") }

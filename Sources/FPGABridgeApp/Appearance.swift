@@ -331,6 +331,7 @@ final class IconStyleObserver: ObservableObject {
     }
 }
 
+@MainActor
 enum AppIcon {
     private static var cache: [String: NSImage] = [:]
 

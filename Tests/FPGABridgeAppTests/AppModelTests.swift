@@ -49,12 +49,13 @@ final class CancelBitstreamBackend: Backend, @unchecked Sendable {
 final class AppModelTests: XCTestCase {
     var tmp: URL!
 
-    override func setUpWithError() throws {
+    // The async variants run on the main actor, which `tmp` needs; the synchronous ones are nonisolated.
+    override func setUp() async throws {
         tmp = FileManager.default.temporaryDirectory.appendingPathComponent("appmodel-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
     }
 
-    override func tearDownWithError() throws { try? FileManager.default.removeItem(at: tmp) }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: tmp) }
 
     /// Makes a small project on disk and returns its directory.
     func makeProject(_ name: String = "demo") throws -> URL {

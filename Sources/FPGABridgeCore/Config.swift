@@ -1,6 +1,6 @@
 import Foundation
 
-public struct BridgeConfig: Codable, Equatable {
+public struct BridgeConfig: Codable, Equatable, Sendable {
     /// Tailscale name or IP of the Windows machine.
     public var host: String
     public var user: String

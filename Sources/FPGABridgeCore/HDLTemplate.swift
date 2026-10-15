@@ -1,8 +1,8 @@
 import Foundation
 
 /// One row of the Define Module dialog's I/O Port Definitions table.
-public struct PortDefinition: Equatable, Identifiable {
-    public enum Direction: String, CaseIterable, Identifiable {
+public struct PortDefinition: Equatable, Identifiable, Sendable {
+    public enum Direction: String, CaseIterable, Identifiable, Sendable {
         case input, output, `inout`
         public var id: String { rawValue }
 
@@ -39,7 +39,7 @@ public struct PortDefinition: Equatable, Identifiable {
 }
 
 /// What the Define Module dialog collects for one new source file.
-public struct ModuleDefinition: Equatable {
+public struct ModuleDefinition: Equatable, Sendable {
     /// Module name (Verilog) or entity name (VHDL).
     public var name: String
     /// VHDL architecture name.

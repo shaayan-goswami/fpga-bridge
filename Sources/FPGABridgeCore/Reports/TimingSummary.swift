@@ -2,7 +2,7 @@ import Foundation
 
 /// The "Design Timing Summary" from `report_timing_summary`.
 /// WNS/WHS are the worst setup/hold slack in ns (negative means a violation); TNS/THS are the totals of violations.
-public struct TimingSummary: Equatable {
+public struct TimingSummary: Equatable, Sendable {
     public var wns: Double?
     public var tns: Double?
     public var tnsFailingEndpoints: Int?

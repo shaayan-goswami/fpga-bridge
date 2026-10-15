@@ -1,7 +1,7 @@
 import Foundation
 
-public struct Check: Equatable {
-    public enum Level: Equatable { case ok, warn, fail }
+public struct Check: Equatable, Sendable {
+    public enum Level: Equatable, Sendable { case ok, warn, fail }
     public let name: String
     public let level: Level
     public let detail: String

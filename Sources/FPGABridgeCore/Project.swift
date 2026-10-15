@@ -1,7 +1,7 @@
 import Foundation
 
 /// A design to build, described by `fpga-bridge.json` in the project directory.
-public struct Project: Codable, Equatable {
+public struct Project: Codable, Equatable, Sendable {
     public var name: String
     public var top: String
     /// Vivado part number, e.g. "xc7a35tcpg236-1" for a Basys 3.

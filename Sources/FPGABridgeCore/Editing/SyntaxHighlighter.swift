@@ -1,7 +1,7 @@
 import Foundation
 
-public struct SyntaxToken: Equatable {
-    public enum Kind: Equatable { case keyword, number, directive, string, comment }
+public struct SyntaxToken: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable { case keyword, number, directive, string, comment }
     public let kind: Kind
     public let range: NSRange
 }
