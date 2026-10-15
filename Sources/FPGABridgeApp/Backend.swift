@@ -109,7 +109,7 @@ final class LiveBackend: Backend {
                 }
                 return RunOutcome(completed: [.synthesis, .implementation, .bitstream], reports: reports)
             } catch {
-                log("ERROR: \(error)\n")
+                log("ERROR: \(error.userMessage)\n")
                 return RunOutcome(failed: true)
             }
         }.value
@@ -118,7 +118,7 @@ final class LiveBackend: Backend {
     func runTcl(_ command: String, project: Project?, log: @escaping (String) -> Void) async {
         let config = config
         await Task.detached {
-            do { _ = try Remote(config: config).runTcl(script: command, log: log) } catch { log("ERROR: \(error)\n") }
+            do { _ = try Remote(config: config).runTcl(script: command, log: log) } catch { log("ERROR: \(error.userMessage)\n") }
         }.value
     }
 }

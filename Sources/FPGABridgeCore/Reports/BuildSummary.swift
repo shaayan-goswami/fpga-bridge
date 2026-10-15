@@ -15,11 +15,11 @@ public struct BuildSummary: Equatable {
 
         switch read(timingReport, in: directory, parse: TimingSummary.parse) {
         case .success(let timing): summary.timing = timing
-        case .failure(let error): summary.notes.append("\(timingReport): \(error)")
+        case .failure(let error): summary.notes.append("\(timingReport): \(error.userMessage)")
         }
         switch read(utilizationReport, in: directory, parse: UtilizationSummary.parse) {
         case .success(let utilization): summary.utilization = utilization
-        case .failure(let error): summary.notes.append("\(utilizationReport): \(error)")
+        case .failure(let error): summary.notes.append("\(utilizationReport): \(error.userMessage)")
         }
         return summary
     }

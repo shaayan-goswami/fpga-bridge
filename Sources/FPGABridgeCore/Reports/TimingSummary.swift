@@ -66,7 +66,7 @@ public struct TimingSummary: Equatable {
     }
 }
 
-public enum ReportError: Error, CustomStringConvertible, Equatable {
+public enum ReportError: DescribedError, Equatable {
     case notFound(String)
     case unparseable(String, String)
 

@@ -8,7 +8,7 @@ public struct CommandResult {
     public var succeeded: Bool { status == 0 }
 }
 
-public enum ShellError: Error, CustomStringConvertible {
+public enum ShellError: DescribedError {
     case timedOut(String)
     case launchFailed(String, Error)
 

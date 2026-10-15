@@ -70,7 +70,7 @@ public struct NewProjectRequest {
     }
 }
 
-public enum ProjectCreatorError: Error, CustomStringConvertible, Equatable {
+public enum ProjectCreatorError: DescribedError, Equatable {
     case invalidName
     case locationMissing(String)
     case alreadyExists(String)
@@ -228,7 +228,14 @@ public enum ProjectCreator {
         var ext = (file.name as NSString).pathExtension.lowercased()
         if ext.isEmpty { ext = file.set == .constraints ? "xdc" : (language == "VHDL" ? "vhd" : "v") }
         guard file.set.extensions.contains(ext) else { throw ProjectCreatorError.unsupportedFile(file.name, file.set) }
-        if let module = file.module, file.set != .constraints { try module.validate() }
+        if file.set != .constraints {
+            if let module = file.module {
+                try module.validate()
+            } else if HDLTemplate.isReservedWord(base) {
+                // Without a Define Module step the module is named after the file.
+                throw ModuleDefinitionError.reservedWord(base)
+            }
+        }
         return (base, ext)
     }
 

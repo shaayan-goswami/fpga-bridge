@@ -74,7 +74,7 @@ public enum Tailscale {
     }
 }
 
-public enum TailscaleError: Error, CustomStringConvertible {
+public enum TailscaleError: DescribedError {
     case notInstalled
     case unavailable(String)
 

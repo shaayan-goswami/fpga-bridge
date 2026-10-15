@@ -237,7 +237,7 @@ struct DefineModuleSheet: View {
                 try draft.module.validate()
             } catch {
                 current = draft.id
-                self.error = "\(draft.fileName): \(error)"
+                self.error = "\(draft.fileName): \(error.userMessage)"
                 return
             }
         }

@@ -266,7 +266,7 @@ struct NewProjectWizard: View {
             try model.createProject(state.request())
             dismiss()
         } catch {
-            state.error = "\(error)"
+            state.error = "\(error.userMessage)"
         }
     }
 }

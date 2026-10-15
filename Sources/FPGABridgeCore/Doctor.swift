@@ -45,7 +45,7 @@ public enum Doctor {
                 ? (Check(name: "Tailscale", level: .ok, detail: "Connected, \(host) is online"), true)
                 : (Check(name: "Tailscale", level: .fail, detail: "\(host) is offline on your tailnet. Is the Windows machine awake?"), false)
         } catch {
-            return (Check(name: "Tailscale", level: .fail, detail: "\(error)"), false)
+            return (Check(name: "Tailscale", level: .fail, detail: "\(error.userMessage)"), false)
         }
     }
 
@@ -57,7 +57,7 @@ public enum Doctor {
             }
             return Check(name: "SSH", level: .fail, detail: sshHint(r.stderr))
         } catch {
-            return Check(name: "SSH", level: .fail, detail: "\(error)")
+            return Check(name: "SSH", level: .fail, detail: "\(error.userMessage)")
         }
     }
 
@@ -71,7 +71,7 @@ public enum Doctor {
             return Check(name: "Vivado", level: .fail,
                          detail: "\(path) not found on Windows. Re-run windows\\setup.ps1 and `fpga-bridge init`.")
         } catch {
-            return Check(name: "Vivado", level: .fail, detail: "\(error)")
+            return Check(name: "Vivado", level: .fail, detail: "\(error.userMessage)")
         }
     }
 

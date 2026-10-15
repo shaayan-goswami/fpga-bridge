@@ -219,7 +219,7 @@ extension Remote {
     }
 }
 
-public enum RemoteError: Error, CustomStringConvertible, Equatable {
+public enum RemoteError: DescribedError, Equatable {
     case ssh(String)
     case busy(owner: String?)
     case connectionLost(jobDir: String)

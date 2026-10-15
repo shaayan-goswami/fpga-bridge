@@ -110,13 +110,21 @@ public struct Project: Codable, Equatable {
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {
                 throw ProjectError.invalid("\(entry) does not exist")
             }
+            // A symlink inside the project can point anywhere; don't send what it points at to the build machine.
+            guard isInside(url, root: root) else {
+                throw ProjectError.invalid("\(entry) points outside the project directory (a symlink?)")
+            }
             if isDir.boolValue {
                 let walker = FileManager.default.enumerator(at: url, includingPropertiesForKeys: nil)
                 while let item = walker?.nextObject() as? URL {
-                    if extensions.contains(item.pathExtension.lowercased()) { result.insert(relative(item, to: root)) }
+                    guard extensions.contains(item.pathExtension.lowercased()) else { continue }
+                    guard isInside(item, root: root) else {
+                        throw ProjectError.invalid("\(relative(item, to: root)) points outside the project directory (a symlink?)")
+                    }
+                    result.insert(relative(item, to: root))
                 }
             } else {
-                result.insert(entry)
+                result.insert(relative(url, to: root))
             }
         }
         // File names are written into Tcl braces, so these would break (or inject into) the script.
@@ -124,6 +132,11 @@ public struct Project: Codable, Equatable {
             throw ProjectError.invalid("\(bad) has a character ({, } or \\) that can't be used in a build file name")
         }
         return result.sorted()
+    }
+
+    /// True if the file, with symlinks followed, is still under the project directory.
+    private static func isInside(_ url: URL, root: URL) -> Bool {
+        url.resolvingSymlinksInPath().path.hasPrefix(root.resolvingSymlinksInPath().path + "/")
     }
 
     private static func relative(_ url: URL, to root: URL) -> String {
@@ -157,7 +170,7 @@ public struct Project: Codable, Equatable {
     }
 }
 
-public enum ProjectError: Error, CustomStringConvertible {
+public enum ProjectError: DescribedError {
     case missing(String)
     case invalid(String)
 

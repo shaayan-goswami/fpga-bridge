@@ -154,7 +154,7 @@ final class AppModel: ObservableObject {
             echoTcl("open_project \(directory.appendingPathComponent(Project.fileName).path)")
             addRecent(directory)
         } catch {
-            errorMessage = "Couldn't open the project: \(error)"
+            errorMessage = "Couldn't open the project: \(error.userMessage)"
         }
     }
 
@@ -210,7 +210,7 @@ final class AppModel: ObservableObject {
             }
             try createProject(request)
         } catch {
-            errorMessage = "Couldn't create the example project: \(error)"
+            errorMessage = "Couldn't create the example project: \(error.userMessage)"
         }
     }
 
@@ -222,7 +222,7 @@ final class AppModel: ObservableObject {
             reloadProjectAfterChange()
             if let first = added.first { openFile(first) }
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = "\(error.userMessage)"
         }
     }
 
@@ -236,7 +236,7 @@ final class AppModel: ObservableObject {
             reloadProjectAfterChange()
             openFile(path)
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = "\(error.userMessage)"
         }
     }
 
@@ -255,7 +255,7 @@ final class AppModel: ObservableObject {
             if updated.top != project?.top { echoTcl("set_property top \(top) [current_fileset]") }
             reloadProjectAfterChange()
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = "\(error.userMessage)"
         }
     }
 
