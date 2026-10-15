@@ -84,8 +84,14 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
 - [x] Prototype: Quick Start, New Project wizard, Add Sources, Project Settings (General), Flow Navigator, Sources
       hierarchy and properties, Project Summary, source viewer, reports, console panel, demo backend
 - [x] Vivado-style project creation in the core (`<name>.srcs/sources_1|constrs_1|sim_1`, Create File, top detection)
+- [x] Create Source File and Define Module dialogs (module name, I/O port table), with Verilog, SystemVerilog and VHDL
+      skeletons written from the definition; wired into the New Project wizard and Add Sources
+- [x] Look: Liquid Glass surfaces (material fallback before macOS 26), frosted home window, grey UI with accent colors
+      sampled from Vivado, Settings window (appearance, glass style, accents, font sizes), collapsible Flow Navigator
+- [x] App icon as an Icon Composer document that follows the system Icon & widget style; `scripts/make-app.sh` builds
+      and ad-hoc signs `FPGA Bridge.app`
 - [ ] P1 Flow parity (separate runs with checkpoints, Launch Runs, completion popups, run settings and strategies)
-- [ ] P2 Projects and editing (real editor, Define Module, Sources context menus, File and Edit menus)
+- [ ] P2 Projects and editing (real editor, Sources context menus, File and Edit menus; Define Module is done)
 - [ ] P3 Reports and analysis
 - [ ] P4 Program and debug (Hardware Manager via openFPGALoader)
 - [ ] P5 Simulation (Verilator/Icarus, waveform viewer)
@@ -114,7 +120,9 @@ Found by the review in [docs/code-review.md](docs/code-review.md). Fix the likel
 - [ ] GitHub Releases workflow (tagged builds, `.dmg` / `.zip`)
 - [ ] Homebrew tap for the CLI
 - [ ] Real Quick Start in the README (replaces "Not available yet")
-- [ ] Docs: build machine setup (sleep off, no auto-restart, pinned Vivado), troubleshooting, supported boards
+- [ ] Docs: build machine setup (sleep off, no auto-restart, pinned Vivado), troubleshooting (supported boards are in docs/boards.md)
+- [ ] Replace `codesign --deep` in `scripts/make-app.sh` with signing nested code individually
+- [ ] Update README: it still says Python 3 is required and that nothing is built
 - [ ] Support more boards beyond Digilent
 - [ ] User testing with other students (e.g. a hardware club) and fix what annoys them
 - [ ] Contributing guide and issue templates

@@ -137,8 +137,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | --- | --- | --- |
 | New Project wizard (all pages, Back/Next/Finish, "Do not specify sources", Parts/Boards with filters) | Mac | Done |
 | Add Sources wizard (constraints / design / simulation; Add Files, Add Directories, Create File) | Mac | Prototype (Add Directories Todo) |
-| Create Source File (file type, name, location) | Mac | Prototype (name only) |
-| Define Module (port table: name, direction, bus, MSB, LSB) after creating a file | Mac | Todo |
+| Create Source File (file type, name, location) | Mac | Done |
+| Define Module (port table: name, direction, bus, MSB, LSB) after creating a file | Mac | Done |
 | Settings ▸ Project: General, Simulation, Elaboration, Synthesis (strategy + options table), Implementation (strategy + per-step options), Bitstream (options such as -bin_file), IP | Mac → Remote | Prototype (General) |
 | Settings ▸ Tool: Project, IP Defaults, Source File, Display, Help, Text Editor (font, colors, tabs), 3rd Party Simulators, Colors, Selection Rules, Shortcuts, Strategies, Window Behavior | Mac | Todo |
 | Launch Runs (jobs, launch directory, scripts only) | Mac | Todo |
