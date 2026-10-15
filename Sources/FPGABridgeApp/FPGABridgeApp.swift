@@ -36,11 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
         }
-        // The .app has its icon from Info.plist; under `swift run` set it here so the Dock shows it.
-        if Bundle.main.bundleIdentifier == nil,
-           let icon = AppIcon.dockImage(dark: NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua) {
-            NSApp.applicationIconImage = icon
-        }
+        // The .app gets its icon from Assets.car; under `swift run` set it here, in the system's icon style.
+        AppIcon.updateDockIcon()
+        _ = IconStyleObserver.shared
         Snapshot.scheduleIfRequested()
     }
 

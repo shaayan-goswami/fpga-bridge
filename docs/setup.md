@@ -34,9 +34,10 @@ editor and console font sizes. The app is monochrome; colour only marks status (
 failed timing). Project settings (part, top module, language, Vivado version) are under **Flow > Settings…**, as in
 Vivado.
 
-The app icon is an Icon Composer document, `Sources/FPGABridgeApp/Resources/AppIcon.icon`, with a white
-background in light mode and black in dark mode. Edit it in Icon Composer (inside Xcode 26+). `scripts/make-app.sh`
-compiles it with `actool`; `scripts/render-icon.sh` refreshes the light and dark PNGs used inside the app.
+The app icon is an Icon Composer document, `Sources/FPGABridgeApp/Resources/AppIcon.icon`, and follows the
+system's **Icon & widget style** (Default, Dark, Clear, Tinted), not the window's light or dark mode. Edit it in
+Icon Composer (inside Xcode 26+). `scripts/make-app.sh` compiles it with `actool`; `scripts/render-icon.sh` refreshes
+the per-style PNGs used inside the app.
 
 ## Commands
 

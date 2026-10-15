@@ -144,11 +144,68 @@ struct AppearanceRoot: ViewModifier {
 
 // MARK: App icon
 
+/// The system's Icon & widget style (System Settings > Appearance): Default, Dark, Clear or Tinted. The app icon
+/// follows this, not the window's light or dark mode.
+enum IconStyle: Equatable {
+    case regularLight, regularDark, clearLight, clearDark, tintedLight, tintedDark
+
+    /// Read from the global `AppleIconAppearanceTheme` preference; absent means Default.
+    static var current: IconStyle {
+        switch UserDefaults.standard.string(forKey: "AppleIconAppearanceTheme") {
+        case "RegularDark": .regularDark
+        case "ClearLight": .clearLight
+        case "ClearDark": .clearDark
+        case "TintedLight": .tintedLight
+        case "TintedDark": .tintedDark
+        default: .regularLight
+        }
+    }
+
+    /// The pre-rendered image for this style. Tinted uses the user's own tint colour, which can't be pre-rendered,
+    /// so it shows the neutral Clear rendering; the packaged app's Dock icon gets the real tinted one from macOS.
+    var resourceName: String {
+        switch self {
+        case .regularLight: "AppIcon-Default"
+        case .regularDark: "AppIcon-Dark"
+        case .clearLight, .tintedLight: "AppIcon-ClearLight"
+        case .clearDark, .tintedDark: "AppIcon-ClearDark"
+        }
+    }
+}
+
+/// Keeps the current icon style, re-reading it whenever the app comes to the front (after the user changes it).
+@MainActor
+final class IconStyleObserver: ObservableObject {
+    static let shared = IconStyleObserver()
+    @Published private(set) var style = IconStyle.current
+    private var observer: NSObjectProtocol?
+
+    private init() {
+        observer = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+                                                          object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { IconStyleObserver.shared.refresh() }
+        }
+    }
+
+    func refresh() {
+        let latest = IconStyle.current
+        guard latest != style else { return }
+        style = latest
+        AppIcon.updateDockIcon()
+    }
+}
+
 enum AppIcon {
-    /// Light and dark renderings of AppIcon.icon (made with Icon Composer). In the .app they sit in Resources; under
-    /// `swift run` they come from SwiftPM's resource bundle.
-    static let light = load("AppIcon-Light")
-    static let dark = load("AppIcon-Dark")
+    private static var cache: [String: NSImage] = [:]
+
+    /// Renderings of AppIcon.icon (made with Icon Composer). In the .app they sit in Resources; under `swift run`
+    /// they come from SwiftPM's resource bundle.
+    static func image(for style: IconStyle) -> NSImage? {
+        if let cached = cache[style.resourceName] { return cached }
+        let image = load(style.resourceName) ?? load("AppIcon-Default")
+        cache[style.resourceName] = image
+        return image
+    }
 
     private static func load(_ name: String) -> NSImage? {
         if let url = Bundle.main.url(forResource: name, withExtension: "png") { return NSImage(contentsOf: url) }
@@ -163,29 +220,27 @@ enum AppIcon {
         return nil
     }
 
-    static func image(dark isDark: Bool) -> NSImage? { isDark ? (dark ?? light) : (light ?? dark) }
-
-    /// The icon with macOS's standard margin (an 824-point body on a 1024-point canvas), for the Dock under
-    /// `swift run`. Icon Composer's export fills the whole canvas, which would draw larger than other Dock icons.
-    /// The packaged app doesn't need this: the system draws its icon from Assets.car.
-    static func dockImage(dark isDark: Bool) -> NSImage? {
-        guard let artwork = image(dark: isDark) else { return nil }
-        let canvas = NSSize(width: 1024, height: 1024)
+    /// Under `swift run` there is no app bundle, so set the Dock icon by hand, with macOS's standard margin (an
+    /// 824-point body on a 1024-point canvas; Icon Composer's export fills the whole canvas). The packaged app
+    /// leaves this to the system, which draws it from Assets.car in every style.
+    @MainActor
+    static func updateDockIcon() {
+        guard Bundle.main.bundleIdentifier == nil, let artwork = image(for: IconStyle.current) else { return }
         let inset = (1024 - 824) / 2.0
-        return NSImage(size: canvas, flipped: false) { _ in
+        NSApp.applicationIconImage = NSImage(size: NSSize(width: 1024, height: 1024), flipped: false) { _ in
             artwork.draw(in: NSRect(x: inset, y: inset, width: 824, height: 824))
             return true
         }
     }
 }
 
-/// The app icon, matching the current light or dark appearance.
+/// The app icon in the system's current Icon & widget style.
 struct AppIconView: View {
     var size: CGFloat = 64
-    @Environment(\.colorScheme) private var scheme
+    @ObservedObject private var iconStyle = IconStyleObserver.shared
 
     var body: some View {
-        if let image = AppIcon.image(dark: scheme == .dark) {
+        if let image = AppIcon.image(for: iconStyle.style) {
             Image(nsImage: image)
                 .resizable()
                 .interpolation(.high)

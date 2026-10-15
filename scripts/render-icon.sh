@@ -1,6 +1,7 @@
 #!/bin/bash
-# Renders light and dark previews of the app icon from the Icon Composer document, for use inside the app
-# (Quick Start, About) and under `swift run`. The packaged app uses the .icon itself, compiled by actool.
+# Renders the app icon in each system Icon & widget style (Default, Dark, Clear light/dark) from the Icon Composer
+# document, for use inside the app (Quick Start) and as the Dock icon under `swift run`. The packaged app uses the
+# .icon itself, compiled by actool, so the system draws every style there, including Tinted.
 #   scripts/render-icon.sh
 # Needs Xcode 26 or later (Icon Composer ships inside it). Edit the icon by opening
 # Sources/FPGABridgeApp/Resources/AppIcon.icon in Icon Composer.
@@ -12,8 +13,8 @@ out=Sources/FPGABridgeApp/Resources
 ictool="$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool"
 [ -x "$ictool" ] || { echo "Icon Composer's ictool not found; install Xcode 26 or later." >&2; exit 1; }
 
-"$ictool" "$icon" --export-image --output-file "$out/AppIcon-Light.png" \
-  --platform macOS --rendition Default --width 512 --height 512 --scale 2
-"$ictool" "$icon" --export-image --output-file "$out/AppIcon-Dark.png" \
-  --platform macOS --rendition Dark --width 512 --height 512 --scale 2
-echo "wrote $out/AppIcon-Light.png and AppIcon-Dark.png"
+for rendition in Default Dark ClearLight ClearDark; do
+  "$ictool" "$icon" --export-image --output-file "$out/AppIcon-$rendition.png" \
+    --platform macOS --rendition "$rendition" --width 512 --height 512 --scale 2
+done
+echo "wrote $out/AppIcon-{Default,Dark,ClearLight,ClearDark}.png"

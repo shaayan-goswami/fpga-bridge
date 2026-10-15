@@ -15,7 +15,7 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
 cp "$bin/FPGABridgeApp" "$app/Contents/MacOS/FPGA Bridge"
-cp Sources/FPGABridgeApp/Resources/AppIcon-Light.png Sources/FPGABridgeApp/Resources/AppIcon-Dark.png "$app/Contents/Resources/"
+cp Sources/FPGABridgeApp/Resources/AppIcon-*.png "$app/Contents/Resources/"
 
 # The icon is an Icon Composer document. actool compiles it, as Xcode does, into Assets.car (the Liquid Glass icon
 # that follows light and dark mode) plus AppIcon.icns for older systems.
