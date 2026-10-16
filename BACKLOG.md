@@ -102,7 +102,7 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
 - [ ] P3 Reports and analysis
 - [x] P4 Program and debug: Hardware Manager screen, Program Device and Program Configuration Memory sheets (debug cores stay on Windows)
 - [x] P5 Simulation: Run Simulation tab with log and Stop, and a native waveform viewer (zoom, pan, cursor, bus radix, signal picker; opens by itself when a run finishes). Still to do: simulation settings, saved signal lists, markers and measurements, analog and real signals
-- [ ] P6 Design views (Netlist, I/O Ports, constraints editors, IP Catalog)
+- [x] P6 Design views, first slice: Elaborated, Synthesized and Implemented Design (netlist, I/O ports, utilization by module, reports) and the IP Catalog with Customize IP. Still to do: schematic, device view, constraints editors, nets, editing pins
 - [ ] P7 Workspace polish (Window/Layout/View/Help, layouts, Quick Access, tool settings)
 - [ ] P8 Stretch (schematic, block design viewer)
 

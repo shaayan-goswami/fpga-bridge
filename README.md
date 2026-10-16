@@ -48,12 +48,15 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Hardware Manager**: Auto Connect, device properties, Program Device and Program Configuration Memory Device
 - [x] **Language Templates**: about 50 Verilog, SystemVerilog, VHDL and XDC templates with search, preview and Insert Template
 - [x] **Run Simulation** with a log, Stop, and a **native waveform viewer** (zoom, pan, cursor, bus radix, signal picker)
+- [x] **Elaborated, Synthesized and Implemented Design**: the netlist hierarchy with cells, the I/O ports with pins and standards, utilization by module, and the reports of each stage (timing, clocks, power, DRC, methodology, I/O, route status), written by the build and restored when you reopen a project
+- [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
+- [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
 - [x] Liquid Glass design, light and dark mode, and a Demo Mode (no build machine needed) for trying the app
 
 **Not built yet** (greyed out or missing; see the backlog for the full list)
 - [ ] Separate synthesis and implementation runs with checkpoints, Launch Runs, run strategies, and stopping a live build from the app
 - [ ] Most reports (timing paths, power, DRC, methodology, clock reports) and their option dialogs
-- [ ] Vivado's design views (Elaborated, Synthesized and Implemented Design, schematic, I/O planning), constraints wizards and the IP Catalog. These need Vivado's own GUI tooling.
+- [ ] The schematic, device view and pin planning by dragging, and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
 - [ ] Save As, Archive, Write Tcl, Find and Replace in Files, Sources context menus
 - [ ] VHDL and post-synthesis simulation, waveform markers and saved layouts
 - [ ] Zynq boards and other FPGA vendors
@@ -140,6 +143,8 @@ Or do the same from the app: open `dist/FPGA Bridge.app`, choose **New Project**
 | --- | --- |
 | `init` | Save the build machine's host, user, Vivado path (and SSH key). `--os windows\|linux` if it can't be worked out from the path |
 | `doctor` | Check Tailscale, SSH, Vivado, openFPGALoader, Icarus Verilog and a waveform viewer |
+| `ip` | `list`, `config`, `add`, `remove`, `show`: browse Vivado's IP catalog and add IP to the project |
+| `script` | Print the Vivado Tcl that `build` would run, with the project's settings |
 | `new` | Create `fpga-bridge.json`. `--board <id>` (see `--list-boards`) or `--part <part>`, `--top`, `--sources`, `--constraints` |
 | `build` | Copy, run Vivado, fetch results into `build/`, print timing and utilization |
 | `report` | Show the timing and utilization summary of the last build |

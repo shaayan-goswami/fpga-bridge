@@ -60,7 +60,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Item | How | Status |
 | --- | --- | --- |
-| Settings… | Mac | Prototype (General page only) |
+| Settings… | Mac | Done for Project Settings (General, Simulation, Elaboration, Synthesis, Implementation, Bitstream: real options that change the build script and the simulator, checked on Vivado 2025.2). Tool settings Todo |
 | Run Synthesis / Run Implementation / Generate Bitstream | Remote | Prototype (rules done; live runs still one script, see P1) |
 | Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | Todo |
 | Reset Runs dialog (with "delete generated files") | Mac | Prototype (no dialog yet) |
@@ -69,7 +69,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
 | Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
-| Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado). Decision: keep mirroring Vivado for the design views, fed by Tcl data from the build machine |
+| Open Elaborated / Synthesized / Implemented Design | Remote | Prototype (Netlist hierarchy with cells, I/O Ports table, utilization by module, and the stage's reports, from data the build writes; verified on Vivado 2025.2). Schematic, Device view, Properties of nets and timing path highlighting are Todo. Decision: keep mirroring Vivado for the design views |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
 | Create Block Design… | Not possible (see §6) | — |
@@ -80,7 +80,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | --- | --- | --- |
 | Settings… (Project settings and Tool settings) | Mac | Prototype |
 | Language Templates (language > group > template tree, search, preview, Insert Template, Copy) | Mac (our own templates, same tree layout) | Done (about 50 templates in Verilog, SystemVerilog, VHDL and XDC) |
-| IP Catalog / Customize IP / Generate Output Products | Remote | Todo |
+| IP Catalog / Customize IP / Generate Output Products | Remote | Prototype (browse the real catalog with categories and search, Customize IP as a generic settings editor, instantiation templates in Verilog and VHDL, IP Sources tab; the build recreates, generates and synthesizes each IP; verified on Vivado 2025.2). Not done: allowed-value dropdowns (Vivado doesn't expose them to Tcl), IP caching between builds, Generate Output Products options, simulation models of IP |
 | Run Tcl Script… | Remote | Todo |
 | Timing ▸ Constraints Wizard, Edit Timing Constraints | Mac editor, Remote for design data | Todo |
 | Property Editor | Remote | Todo |
@@ -92,11 +92,11 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Item | How | Status |
 | --- | --- | --- |
-| Report Timing Summary (dialog with options) | Remote | Prototype (report shown; dialog Todo) |
-| Timing ▸ Report Timing (paths table), Report Clock Networks, Report Clock Interaction, Report CDC, Report Pulse Width | Remote | Todo |
-| Report Utilization (with hierarchy) | Remote | Prototype (flat summary) |
-| Report Power | Remote | Todo |
-| Report DRC, Report Methodology, Report Noise | Remote | Todo |
+| Report Timing Summary (dialog with options) | Remote | Prototype (the report is shown; the options dialog is Todo) |
+| Timing ▸ Report Timing (paths table), Report Clock Networks, Report Clock Interaction, Report CDC, Report Pulse Width | Remote | Prototype (Report Timing, Clocks and Clock Utilization are written by the build and shown as text; the paths table, Clock Interaction, CDC and Pulse Width are Todo) |
+| Report Utilization (with hierarchy) | Remote | Done in two forms: Vivado's own report as text, and utilization by module from the netlist (cell counts, which can differ from Vivado's site counts) |
+| Report Power | Remote | Prototype (written by the build, shown as text) |
+| Report DRC, Report Methodology, Report Noise | Remote | Prototype (DRC and Methodology written by the build, shown as text; Noise Todo) |
 | Report I/O, Report Control Sets, Report QoR Suggestions, Report Design Analysis | Remote | Todo |
 | Report Instance Hierarchy | Remote | Todo |
 
@@ -130,10 +130,10 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Reports (per run, open in viewer) | Mac | Done |
 | Design Runs table (columns, context menu: Launch, Reset, Delete, Make Active, Change Run Settings, Open Run Directory) | Mac → Remote | Prototype (table only) |
 | Run Properties | Mac | Todo |
-| Netlist (cells, nets, hierarchy of the opened design) | Remote | Todo |
+| Netlist (cells, nets, hierarchy of the opened design) | Remote | Prototype (cells and hierarchy; nets Todo) |
 | Properties (any selected object) | Remote | Todo |
 | Schematic | Remote data + Mac renderer | Todo (stretch, see P8) |
-| I/O Ports table and Package view (pin assignment) | Remote data + Mac | Todo |
+| I/O Ports table and Package view (pin assignment) | Remote data + Mac | Prototype (the table with pin, standard, slew, drive and pull; the Package view and editing pins are Todo) |
 | Timing results window (paths table, path report, highlight) | Remote | Todo |
 | Device view / floorplanning | Not possible | — |
 
@@ -145,7 +145,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Add Sources wizard (constraints / design / simulation; Add Files, Add Directories, Create File) | Mac | Prototype (Add Directories Todo) |
 | Create Source File (file type, name, location) | Mac | Done |
 | Define Module (port table: name, direction, bus, MSB, LSB) after creating a file | Mac | Done |
-| Settings ▸ Project: General, Simulation, Elaboration, Synthesis (strategy + options table), Implementation (strategy + per-step options), Bitstream (options such as -bin_file), IP | Mac → Remote | Prototype (General) |
+| Settings ▸ Project: General, Simulation, Elaboration, Synthesis (strategy + options table), Implementation (strategy + per-step options), Bitstream (options such as -bin_file), IP | Mac → Remote | Done (the IP page is the IP Sources list) |
 | Settings ▸ Tool: Project, IP Defaults, Source File, Display, Help, Text Editor (font, colors, tabs), 3rd Party Simulators, Colors, Selection Rules, Shortcuts, Strategies, Window Behavior | Mac | Todo |
 | Launch Runs (jobs, launch directory, scripts only) | Mac | Todo |
 | "Synthesis Completed" (Run Implementation / Open Synthesized Design / View Reports / Don't show again) | Mac | Todo |
@@ -158,7 +158,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Save Project As, Archive Project, Write Tcl | Mac | Todo |
 | Report Timing Summary / Report Timing / Report Utilization / Report Power option dialogs | Mac → Remote | Todo |
 | Constraints Wizard, Timing Constraints editor (Create Clock, Input/Output Delay, False Path, Multicycle) | Mac + Remote | Todo |
-| IP Catalog, Customize IP, Generate Output Products | Remote | Todo |
+| IP Catalog, Customize IP, Generate Output Products | Remote | Prototype (see above) |
 | Program Device (bitstream file, Program) | Local tool | Todo |
 | Add Configuration Memory Device / Program Configuration Memory | Local tool | Todo |
 | Suppress Message / Manage Suppressions | Mac | Todo |
