@@ -135,6 +135,11 @@ struct AppCommands: Commands {
                 .disabled(!model.hasProject)
         }
 
+        CommandMenu("Tools") {
+            Button("Language Templates") { model.open(.templates) }
+                .disabled(!model.hasProject)
+        }
+
         CommandMenu("Reports") {
             Button("Report Timing Summary") { openReport(BuildSummary.timingReport) }
                 .disabled(report(BuildSummary.timingReport) == nil)

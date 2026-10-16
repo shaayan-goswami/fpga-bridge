@@ -75,7 +75,7 @@ enum FlowItem: String, CaseIterable, Identifiable {
     /// What the item says when it can't be used yet.
     var unavailableReason: String? {
         switch self {
-        case .languageTemplates, .ipCatalog: "Not available in this prototype"
+        case .ipCatalog: "The IP Catalog needs Vivado's own IP tooling and isn't available yet"
         case .runSimulation: "Simulation with Verilator is planned"
         case .openElaboratedDesign, .openSynthesizedDesign, .openImplementedDesign:
             "Vivado's schematic and netlist viewers can't run on the Mac. Use the reports instead."
@@ -170,6 +170,7 @@ enum WorkspaceTab: Hashable, Identifiable {
     case file(String)
     case report(String)
     case hardware
+    case templates
 
     var id: Self { self }
     var isCloseable: Bool { self != .summary }

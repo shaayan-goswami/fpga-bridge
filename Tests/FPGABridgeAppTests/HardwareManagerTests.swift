@@ -13,7 +13,7 @@ final class FakeHardware: HardwareBackend, @unchecked Sendable {
     var programStatus: Int32 = 0
     var programOutput: [String] = []
 
-    var programmed: [(path: String, persist: Bool, board: String?)] { lock.lock(); defer { lock.unlock() }; return _programmed }
+    var programmed: [(path: String, persist: Bool, board: String?)] { lock.withLock { _programmed } }
 
     func detect(board: Board?) async throws -> [Programmer.Device] {
         if let detectError { throw detectError }
@@ -21,7 +21,7 @@ final class FakeHardware: HardwareBackend, @unchecked Sendable {
     }
 
     func program(bitstream: String, board: Board?, persist: Bool, log: @escaping @Sendable (String) -> Void) async -> Int32 {
-        lock.lock(); _programmed.append((bitstream, persist, board?.id)); lock.unlock()
+        lock.withLock { _programmed.append((bitstream, persist, board?.id)) }
         programOutput.forEach(log)
         return programStatus
     }

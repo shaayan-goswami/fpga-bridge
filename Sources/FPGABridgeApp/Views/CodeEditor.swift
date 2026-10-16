@@ -12,6 +12,12 @@ struct CodeEditor: NSViewRepresentable {
     var showLineNumbers: Bool
     /// Move the cursor into the editor when it first appears.
     var focusOnAppear = true
+    /// Called with the caret's UTF-16 offset whenever it moves.
+    var onCaretMove: ((Int) -> Void)?
+    /// Where to put the caret when the editor opens, e.g. where it was last time.
+    var initialCaret: Int?
+    /// False for a read-only view, such as the Language Templates preview.
+    var isEditable = true
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -57,6 +63,12 @@ struct CodeEditor: NSViewRepresentable {
         context.coordinator.textView = textView
         context.coordinator.apply(settings: self, to: textView, container: container)
         textView.string = text
+        if let caret = initialCaret {
+            let location = min(caret, (text as NSString).length)
+            textView.setSelectedRange(NSRange(location: location, length: 0))
+            // The text isn't laid out yet; scroll once it is.
+            DispatchQueue.main.async { textView.scrollRangeToVisible(NSRange(location: location, length: 0)) }
+        }
         context.coordinator.highlight(textView)
         if focusOnAppear {
             DispatchQueue.main.async { container.window?.makeFirstResponder(textView) }
@@ -87,9 +99,15 @@ struct CodeEditor: NSViewRepresentable {
 
         func apply(settings: CodeEditor, to textView: CodeTextView, container: EditorContainer) {
             textView.language = settings.language
+            textView.isEditable = settings.isEditable
             container.showsGutter = settings.showLineNumbers
             container.gutter.fontSize = settings.fontSize
             textView.baseFont = NSFont.monospacedSystemFont(ofSize: settings.fontSize, weight: .regular)
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? CodeTextView else { return }
+            parent.onCaretMove?(textView.selectedRange().location)
         }
 
         func textDidChange(_ notification: Notification) {
@@ -128,19 +146,25 @@ struct CodeEditor: NSViewRepresentable {
             let whole = NSRange(location: 0, length: storage.length)
             storage.beginEditing()
             storage.setAttributes([.font: font, .foregroundColor: NSColor.labelColor.withAlphaComponent(0.88)], range: whole)
-            let bold = NSFont.monospacedSystemFont(ofSize: font.pointSize, weight: .semibold)
             for token in SyntaxHighlighter.tokens(in: storage.string, language: textView.language) where NSMaxRange(token.range) <= storage.length {
-                switch token.kind {
-                case .keyword: storage.addAttributes([.foregroundColor: Accent.sourceNS, .font: bold], range: token.range)
-                case .number: storage.addAttributes([.foregroundColor: NSColor.labelColor], range: token.range)
-                case .directive: storage.addAttributes([.foregroundColor: Accent.remoteNS, .font: bold], range: token.range)
-                case .string: storage.addAttributes([.foregroundColor: Accent.constraintNS], range: token.range)
-                case .comment:
-                    storage.addAttributes([.foregroundColor: NSColor.secondaryLabelColor, .obliqueness: 0.15], range: token.range)
-                }
+                storage.addAttributes(SyntaxStyle.attributes(for: token.kind, size: font.pointSize), range: token.range)
             }
             storage.endEditing()
             textView.typingAttributes = [.font: font, .foregroundColor: NSColor.labelColor]
+        }
+    }
+}
+
+/// How each kind of token is colored.
+enum SyntaxStyle {
+    static func attributes(for kind: SyntaxToken.Kind, size: CGFloat) -> [NSAttributedString.Key: Any] {
+        let bold = NSFont.monospacedSystemFont(ofSize: size, weight: .semibold)
+        switch kind {
+        case .keyword: return [.foregroundColor: Accent.sourceNS, .font: bold]
+        case .number: return [.foregroundColor: NSColor.labelColor]
+        case .directive: return [.foregroundColor: Accent.remoteNS, .font: bold]
+        case .string: return [.foregroundColor: Accent.constraintNS]
+        case .comment: return [.foregroundColor: NSColor.secondaryLabelColor, .obliqueness: 0.15]
         }
     }
 }

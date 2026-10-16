@@ -14,6 +14,7 @@ struct WorkspaceView: View {
                 case .file(let path): SourceEditorView(path: path)
                 case .report(let id): ReportView(id: id)
                 case .hardware: HardwareManagerView()
+                case .templates: LanguageTemplatesView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -309,7 +310,8 @@ struct SourceEditorView: View {
             Divider()
             CodeEditor(
                 text: Binding(get: { model.editedText(for: path) }, set: { model.updateDraft($0, for: path) }),
-                language: language, fontSize: CGFloat(fontSize), showLineNumbers: lineNumbers)
+                language: language, fontSize: CGFloat(fontSize), showLineNumbers: lineNumbers,
+                onCaretMove: { model.setCaret($0, in: path) }, initialCaret: model.caret(in: path))
                 .id(path)
         }
     }

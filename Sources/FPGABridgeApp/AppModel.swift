@@ -352,6 +352,7 @@ final class AppModel: ObservableObject {
         case .settings: showSettings = true
         case .addSources: showAddSources = true
         case .openHardwareManager: open(.hardware)
+        case .languageTemplates: open(.templates)
         default: if let kind = item.runKind { run(kind) }
         }
     }
@@ -609,6 +610,36 @@ final class AppModel: ObservableObject {
     func open(_ tab: WorkspaceTab) {
         if !openTabs.contains(tab) { openTabs.append(tab) }
         selectedTab = tab
+        if case .file(let path) = tab { lastFile = path }
+    }
+
+    // MARK: Language templates
+
+    /// The file a template goes into: the one most recently open in the editor, as in Vivado.
+    @Published private(set) var lastFile: String?
+    /// The template chosen in the Language Templates tab, kept while you switch to a file and back.
+    @Published var selectedTemplateID: String?
+    /// Where the caret is in each open file, as a UTF-16 offset, reported by the editor.
+    private var carets: [String: Int] = [:]
+
+    func setCaret(_ offset: Int, in path: String) { carets[path] = offset }
+
+    func caret(in path: String) -> Int? { carets[path] }
+
+    /// Whether Insert Template has somewhere to put the text.
+    var canInsertTemplate: Bool { lastFile.map { openTabs.contains(.file($0)) } ?? false }
+
+    /// Inserts `text` at the caret of the last edited file (at the end if the caret isn't known), then shows that file.
+    func insertTemplate(_ text: String) {
+        guard let path = lastFile, openTabs.contains(.file(path)) else { return }
+        let current = editedText(for: path) as NSString
+        let at = min(carets[path] ?? current.length, current.length)
+        // Start on a line of its own, so a template pasted mid-line doesn't join the code before it.
+        let atLineStart = at == 0 || current.character(at: at - 1) == 10
+        let piece = (atLineStart ? "" : "\n") + text
+        updateDraft(current.replacingCharacters(in: NSRange(location: at, length: 0), with: piece), for: path)
+        carets[path] = at + (piece as NSString).length
+        open(.file(path))
     }
 
     /// Closes a tab, asking first if it holds unsaved edits.
@@ -638,6 +669,7 @@ final class AppModel: ObservableObject {
         case .file(let path): (path as NSString).lastPathComponent
         case .report(let id): report(id).map { "\($0.title) – \($0.run.runName)" } ?? "Report"
         case .hardware: "Hardware Manager"
+        case .templates: "Language Templates"
         }
     }
 
@@ -647,6 +679,7 @@ final class AppModel: ObservableObject {
         case .file(let path): (path as NSString).pathExtension.lowercased() == "xdc" ? "pin" : "doc.text"
         case .report: "doc.plaintext"
         case .hardware: "cable.connector.horizontal"
+        case .templates: "doc.text.magnifyingglass"
         }
     }
 

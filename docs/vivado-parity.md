@@ -76,7 +76,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Item | How | Status |
 | --- | --- | --- |
 | Settings… (Project settings and Tool settings) | Mac | Prototype |
-| Language Templates | Mac (our own templates, same tree layout) | Todo |
+| Language Templates (language > group > template tree, search, preview, Insert Template, Copy) | Mac (our own templates, same tree layout) | Done (about 50 templates in Verilog, SystemVerilog, VHDL and XDC) |
 | IP Catalog / Customize IP / Generate Output Products | Remote | Todo |
 | Run Tcl Script… | Remote | Todo |
 | Timing ▸ Constraints Wizard, Edit Timing Constraints | Mac editor, Remote for design data | Todo |
@@ -159,7 +159,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Program Device (bitstream file, Program) | Local tool | Todo |
 | Add Configuration Memory Device / Program Configuration Memory | Local tool | Todo |
 | Suppress Message / Manage Suppressions | Mac | Todo |
-| Language Templates window | Mac | Todo |
+| Language Templates window | Mac | Done |
 | Tcl Command Help | Mac | Todo |
 | About | Mac | Todo |
 

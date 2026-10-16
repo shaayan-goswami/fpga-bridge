@@ -58,6 +58,11 @@ extension AppModel {
                 while hardware.target != .open { try? await Task.sleep(nanoseconds: 50_000_000) }
             }
             if DebugHooks.scenario == "programdevice" { hardware.sheet = .device }
+        case "templates":
+            openExampleProject()
+            if let top = sourceTree.first?.children?.first?.path { openFile(top) }
+            open(.templates)
+            selectedTemplateID = "Verilog/Counters/Binary Up Counter"
         case "settings":
             openExampleProject()
             showSettings = true
