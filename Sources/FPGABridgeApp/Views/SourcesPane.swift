@@ -5,6 +5,7 @@ import SwiftUI
 struct SourcesPane: View {
     @EnvironmentObject private var model: AppModel
     @State private var tab = Tab.hierarchy
+    @State private var propertiesHeight: CGFloat = 220
 
     enum Tab: String, CaseIterable, Identifiable {
         case hierarchy = "Hierarchy"
@@ -15,7 +16,7 @@ struct SourcesPane: View {
     }
 
     var body: some View {
-        VSplitView {
+        VerticalPaneSplit(height: $propertiesHeight, range: 160...420, minTop: 240) {
             VStack(spacing: 0) {
                 HStack {
                     Text("Sources").font(.headline)
@@ -51,10 +52,8 @@ struct SourcesPane: View {
                 Divider()
                 content
             }
-            .frame(minHeight: 240)
-
+        } bottom: {
             PropertiesPanel()
-                .frame(minHeight: 160, idealHeight: 220)
         }
         .onChange(of: model.selectedSourceID) { _, id in
             if let path = model.node(withID: id)?.path { model.openFile(path) }

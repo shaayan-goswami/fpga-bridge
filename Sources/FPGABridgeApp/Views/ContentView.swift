@@ -54,6 +54,7 @@ struct MainWindowView: View {
     @State private var showSidebar = true
     @State private var sidebarWidth: CGFloat = 250
     @State private var sourcesWidth: CGFloat = 330
+    @State private var consoleHeight: CGFloat = 240
 
     /// Three panes like Vivado's: Flow Navigator, Sources, workspace over console. The sidebar has no background of
     /// its own, so it shows the window's Liquid Glass, the same glass as the home screen. (The system's split view
@@ -74,14 +75,10 @@ struct MainWindowView: View {
                         // Fills up under the toolbar too, so only the sidebar shows the window glass there.
                         .background(Theme.surface)
                     PaneDivider(width: $sourcesWidth, range: 280...460)
-                    VSplitView {
+                    VerticalPaneSplit(height: $consoleHeight, range: 160...420, minTop: 380, showsBottom: model.consoleVisible) {
                         WorkspaceView()
-                            .frame(minHeight: 380)
-                            .layoutPriority(1)
-                        if model.consoleVisible {
-                            ConsolePanel()
-                                .frame(minHeight: 160, idealHeight: 240, maxHeight: 420)
-                        }
+                    } bottom: {
+                        ConsolePanel()
                     }
                     .background(Theme.surface)
                 }
@@ -278,6 +275,51 @@ private struct WindowGlassContainers: ViewModifier {
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         } else {
             content
+        }
+    }
+}
+
+/// Two panes stacked with a draggable divider, the bottom one a fixed height you can change. Plain SwiftUI: the
+/// system's VSplitView hosts its panes in an AppKit split view, which can keep a stale frame after the window moves.
+struct VerticalPaneSplit<Top: View, Bottom: View>: View {
+    @Binding var height: CGFloat
+    let range: ClosedRange<CGFloat>
+    var minTop: CGFloat = 0
+    var showsBottom = true
+    @ViewBuilder let top: () -> Top
+    @ViewBuilder let bottom: () -> Bottom
+    @State private var startHeight: CGFloat?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let limit = max(range.lowerBound, min(range.upperBound, geometry.size.height - minTop - 1))
+            let bottomHeight = min(max(height, range.lowerBound), limit)
+            VStack(spacing: 0) {
+                top().frame(maxWidth: .infinity, maxHeight: .infinity)
+                if showsBottom {
+                    Rectangle()
+                        .fill(Color(nsColor: .separatorColor))
+                        .frame(height: 1)
+                        .overlay {
+                            Color.clear
+                                .frame(height: 9)
+                                .contentShape(Rectangle())
+                                .onHover { inside in
+                                    if inside { NSCursor.resizeUpDown.push() } else { NSCursor.pop() }
+                                }
+                                .gesture(
+                                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                                        .onChanged { drag in
+                                            let base = startHeight ?? height
+                                            startHeight = base
+                                            height = min(max(base - drag.translation.height, range.lowerBound), limit)
+                                        }
+                                        .onEnded { _ in startHeight = nil }
+                                )
+                        }
+                    bottom().frame(height: bottomHeight)
+                }
+            }
         }
     }
 }
