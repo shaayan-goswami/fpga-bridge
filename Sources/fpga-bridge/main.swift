@@ -185,12 +185,15 @@ struct Boards: ParsableCommand {
             return
         }
         let programmer = try Programmer.require()
-        let result = try programmer.detect()
-        let text = (result.stdout + result.stderr).trimmingCharacters(in: .whitespacesAndNewlines)
-        print(text.isEmpty ? "No output from openFPGALoader." : text)
-        if !result.succeeded {
-            print("\nNo board found. Check the USB cable (use a data cable) and that the board's power switch is on.")
+        let devices = try programmer.detect()
+        guard !devices.isEmpty else {
+            print("No board found. Check the USB cable (use a data cable) and that the board's power switch is on.")
             throw ExitCode.failure
+        }
+        for device in devices {
+            print("Found \(device.family) (\(device.model)), idcode \(device.idcode)")
+            let matches = Programmer.boards(matching: device).map(\.displayName)
+            if !matches.isEmpty { print("  Could be: \(matches.joined(separator: ", "))") }
         }
     }
 }

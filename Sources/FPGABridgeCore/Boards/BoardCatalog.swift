@@ -15,9 +15,9 @@ public enum BoardCatalog {
         Board(id: "nexys-a7-100", displayName: "Nexys A7-100T", part: "xc7a100tcsg324-1", family: "Artix-7",
               aliases: ["nexys-a7-100t", "nexys-a7"], loaderName: "nexys_a7_100"),
         Board(id: "cmod-a7-15", displayName: "Cmod A7-15T", part: "xc7a15tcpg236-1", family: "Artix-7",
-              aliases: ["cmod-a7-15t"], loaderName: "cmod_a7_15t"),
+              aliases: ["cmod-a7-15t"], loaderName: "cmoda7_15t"),
         Board(id: "cmod-a7-35", displayName: "Cmod A7-35T", part: "xc7a35tcpg236-1", family: "Artix-7",
-              aliases: ["cmod-a7-35t"], loaderName: "cmod_a7_35t"),
+              aliases: ["cmod-a7-35t"], loaderName: "cmoda7_35t"),
         Board(id: "arty-s7-25", displayName: "Arty S7-25", part: "xc7s25csga324-1", family: "Spartan-7", loaderName: "arty_s7_25"),
         Board(id: "arty-s7-50", displayName: "Arty S7-50", part: "xc7s50csga324-1", family: "Spartan-7", loaderName: "arty_s7_50"),
     ]

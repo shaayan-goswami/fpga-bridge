@@ -39,8 +39,8 @@ final class ProgrammerTests: XCTestCase {
                        ["-b", "basys3", "build/top.bit"])
         XCTAssertEqual(Programmer.arguments(bitstream: "build/top.bit", board: board, target: .flash),
                        ["-b", "basys3", "-f", "build/top.bit"])
-        XCTAssertEqual(Programmer.arguments(bitstream: "x.bit", board: nil, target: .sram), ["x.bit"],
-                       "without a board, openFPGALoader finds the cable itself")
+        XCTAssertEqual(Programmer.arguments(bitstream: "x.bit", board: nil, target: .sram), ["-c", "digilent", "x.bit"],
+                       "the default cable finds nothing on a Digilent board, so name it")
     }
 
     func testEveryBoardHasAUniqueLoaderName() {
@@ -48,6 +48,9 @@ final class ProgrammerTests: XCTestCase {
         XCTAssertEqual(names.count, BoardCatalog.all.count)
         XCTAssertEqual(Set(names).count, names.count)
         XCTAssertTrue(names.allSatisfy { $0 == $0.lowercased() && !$0.contains("-") }, "openFPGALoader names use underscores")
+        // Checked against `openFPGALoader --list-boards` (v1.1.1).
+        XCTAssertEqual(BoardCatalog.lookup("cmod-a7-35")?.loaderName, "cmoda7_35t")
+        XCTAssertEqual(BoardCatalog.lookup("cmod-a7-15")?.loaderName, "cmoda7_15t")
     }
 
     func testLocateFindsTheProgramOnThePathOrInTheFallbackFolders() throws {
@@ -78,12 +81,37 @@ final class ProgrammerTests: XCTestCase {
         XCTAssertEqual(try failing.program(bitstream: "t.bit", board: nil, target: .sram, output: { _ in }), 3)
     }
 
-    func testDetectReportsWhatTheLoaderSaw() throws {
-        let loader = try fakeLoader(status: 0, output: "found Xilinx xc7a35t")
-        let result = try loader.detect(board: BoardCatalog.lookup("basys3"))
-        XCTAssertTrue(result.succeeded)
-        XCTAssertTrue(result.stdout.contains("xc7a35t"))
+    /// What openFPGALoader v1.1.1 printed for a Basys 3.
+    private let basys3Detect = """
+        empty
+        Jtag frequency : requested 6.00MHz    -> real 6.00MHz
+        index 0:
+        \tidcode 0x362d093
+        \tmanufacturer xilinx
+        \tfamily artix a7 35t
+        \tmodel  xc7a35
+        \tirlength 6
+        """
+
+    func testDetectParsesTheChipsOnTheChain() throws {
+        let loader = try fakeLoader(status: 0, output: basys3Detect)
+        let devices = try loader.detect(board: BoardCatalog.lookup("basys3"))
+        XCTAssertEqual(devices, [Programmer.Device(idcode: "0x362d093", family: "artix a7 35t", model: "xc7a35")])
         XCTAssertEqual(try recordedArguments(), "-b basys3 --detect")
+        XCTAssertEqual(Programmer.boards(matching: devices[0]).map(\.id).sorted(), ["arty-a7-35", "basys3", "cmod-a7-35"],
+                       "the chip alone can't tell these boards apart, so all three are offered")
+    }
+
+    func testDetectingNothingIsAnEmptyListNotAnError() throws {
+        // openFPGALoader exits 0 when no chip answers.
+        let loader = try fakeLoader(status: 0, output: "empty\nJtag frequency : requested 6.00MHz")
+        XCTAssertEqual(try loader.detect(), [])
+        XCTAssertEqual(try recordedArguments(), "-c digilent --detect")
+    }
+
+    func testDetectThrowsWhenTheLoaderFails() throws {
+        let loader = try fakeLoader(status: 1, output: "unable to open ftdi device")
+        XCTAssertThrowsError(try loader.detect()) { XCTAssertTrue($0.userMessage.contains("unable to open ftdi device")) }
     }
 
     func testDoctorCheckSaysHowToInstallWhenMissing() throws {

@@ -43,21 +43,65 @@ public struct Programmer: Sendable {
         return result.stdout.split(separator: "\n").first.map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
-    /// Arguments that program `bitstream` onto `board`. Without a known board, openFPGALoader finds the cable on its own.
+    /// How to reach the board: its own name when known, else the Digilent cable. Left to itself openFPGALoader assumes
+    /// a generic FTDI cable and finds nothing on a Digilent board, while still exiting 0.
+    static func connection(for board: Board?) -> [String] {
+        if let name = board?.loaderName { return ["-b", name] }
+        return ["-c", "digilent"]
+    }
+
+    /// Arguments that program `bitstream` onto `board`.
     public static func arguments(bitstream: String, board: Board?, target: Target) -> [String] {
-        var args: [String] = []
-        if let name = board?.loaderName { args += ["-b", name] }
+        var args = connection(for: board)
         if target == .flash { args.append("-f") }
         args.append(bitstream)
         return args
     }
 
-    /// Lists what openFPGALoader can see on USB (`--detect`). A zero exit with output means a device answered.
-    public func detect(board: Board? = nil) throws -> CommandResult {
-        var args: [String] = []
-        if let name = board?.loaderName { args += ["-b", name] }
-        args.append("--detect")
-        return try Shell.run(executable, args, timeout: 30)
+    /// A chip found on the JTAG chain.
+    public struct Device: Equatable, Sendable {
+        public let idcode: String
+        public let family: String
+        public let model: String
+    }
+
+    /// What `--detect` saw. openFPGALoader exits 0 even when nothing answered, so the output is what says.
+    public func detect(board: Board? = nil) throws -> [Device] {
+        let result = try Shell.run(executable, Programmer.connection(for: board) + ["--detect"], timeout: 30)
+        guard result.succeeded else {
+            throw ProgrammerError.loaderFailed((result.stdout + result.stderr).trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return Programmer.devices(in: result.stdout)
+    }
+
+    /// Parses the "index 0: idcode 0x... family ... model ..." blocks of `--detect`.
+    static func devices(in output: String) -> [Device] {
+        var devices: [Device] = []
+        var idcode: String?, family = "", model = ""
+        func flush() {
+            if let idcode { devices.append(Device(idcode: idcode, family: family, model: model)) }
+            idcode = nil; family = ""; model = ""
+        }
+        for line in output.split(separator: "\n") {
+            let words = line.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
+            guard let key = words.first else { continue }
+            let rest = words.dropFirst().joined(separator: " ")
+            switch key {
+            case "index": flush()
+            case "idcode": idcode = rest
+            case "family": family = rest
+            case "model": model = rest
+            default: break
+            }
+        }
+        flush()
+        return devices
+    }
+
+    /// Catalog boards that carry this chip, matched on the part's family prefix (xc7a35 matches xc7a35tcpg236-1).
+    public static func boards(matching device: Device) -> [Board] {
+        guard !device.model.isEmpty else { return [] }
+        return BoardCatalog.all.filter { $0.part.lowercased().hasPrefix(device.model.lowercased()) }
     }
 
     /// Programs the board with output going to the terminal, or to `output` for a UI. Returns the exit status.
@@ -88,6 +132,7 @@ public struct Programmer: Sendable {
 public enum ProgrammerError: DescribedError {
     case notInstalled
     case noBitstream(String)
+    case loaderFailed(String)
 
     public var description: String {
         switch self {
@@ -95,6 +140,8 @@ public enum ProgrammerError: DescribedError {
             return "openFPGALoader isn't installed. Install it with: brew install openfpgaloader"
         case .noBitstream(let path):
             return "No bitstream at \(path). Run `fpga-bridge build` first, or pass the .bit file."
+        case .loaderFailed(let text):
+            return "openFPGALoader failed:\n\(text)"
         }
     }
 }
