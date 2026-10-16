@@ -29,7 +29,7 @@ fi
 echo "fake-vivado: $0"
 [ -d "$HOME_/.fpga-bridge/lock" ] || { echo "ERROR: the build ran without holding the lock"; exit 1; }
 # Every file the script reads must have been staged at the relative path it names.
-for f in $(grep -oE '\{[^}]+\}' build.tcl | tr -d '{}'); do
+for f in $(grep -E '^read_(verilog|vhdl|xdc)' build.tcl | grep -oE '\{[^}]+\}' | tr -d '{}'); do
   [ -f "$f" ] || { echo "ERROR: [Common 17-69] File '$f' does not exist"; exit 1; }
 done
 case "${FAKE_VIVADO_MODE:-pass}" in
