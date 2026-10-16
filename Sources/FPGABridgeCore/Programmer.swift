@@ -1,6 +1,6 @@
 import Foundation
 
-/// Programs the board plugged into this Mac, using openFPGALoader. The bitstream is built on the Windows machine and
+/// Programs the board plugged into this Mac, using openFPGALoader. The bitstream is built on the build machine and
 /// fetched into `build/`; nothing here talks to the remote.
 public struct Programmer: Sendable {
     public static let executableName = "openFPGALoader"

@@ -2,9 +2,9 @@
 
 Build FPGA designs from a Mac, even though Vivado doesn't run on macOS.
 
-fpga-bridge lets you write, simulate, and flash on your Mac while a remote Windows machine with Vivado does the heavy build in the background. It comes as a command-line tool (`fpga-bridge`) and a native Mac app (**FPGA Bridge**) that mirrors Vivado's layout and dialogs, so it feels familiar if you already know Vivado.
+fpga-bridge lets you write, simulate, and flash on your Mac while a remote Windows or Linux machine with Vivado does the heavy build in the background. It comes as a command-line tool (`fpga-bridge`) and a native Mac app (**FPGA Bridge**) that mirrors Vivado's layout and dialogs, so it feels familiar if you already know Vivado.
 
-> **Status:** early development, but the whole path works on real hardware: a design written on a Mac, built by Vivado 2025.2 on a Windows machine over Tailscale and SSH, fetched back, simulated, and flashed to a Digilent Basys 3. That is the only board and the only Vivado version tested so far. The app's own Run buttons (as opposed to the command line) have not yet been exercised against a real build machine. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done and what is not.
+> **Status:** early development, but the whole path works on real hardware: a design written on a Mac, built by Vivado 2025.2 on a Windows machine over Tailscale and SSH, fetched back, simulated, and flashed to a Digilent Basys 3. That is the only board and the only Vivado version tested on real hardware. A Linux build machine is supported and tested against a real shell and on a Linux CI runner, but not yet on a real Linux machine running Vivado. The app's own Run buttons (as opposed to the command line) have not yet been exercised against a real build machine. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done and what is not.
 
 ## Why
 
@@ -15,8 +15,8 @@ fpga-bridge takes a different approach: leave Vivado on a machine it officially 
 ## How It Works
 
 ```
- Mac (you work here)                    Build machine (Windows)
- -------------------                    -----------------------
+ Mac (you work here)                    Build machine (Windows or Linux)
+ -------------------                    --------------------------------
  1. Write Verilog/SV/VHDL
  2. Simulate locally (Icarus Verilog)
     and view the waveform
@@ -37,6 +37,8 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] `fpga-bridge sim`: compile and run the testbench on the Mac with Icarus Verilog and leave a waveform
 - [x] `fpga-bridge flash` and `boards`: detect the board and program it with openFPGALoader
 - [x] `fpga-bridge report`, `tcl` (run any Tcl on the build machine) and `unlock`
+- [x] Windows or Linux build machine, with a setup script for each (`windows/setup.ps1`, `linux/setup.sh`)
+- [x] Any Vivado version: nothing is pinned, and a project can record the version it expects to get a warning on a mismatch
 - [x] Robust remote handling: one build at a time with a lock, Ctrl-C cancels the remote Vivado too, keepalives, clear messages when the connection drops
 
 **Mac app**
@@ -54,7 +56,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [ ] Vivado's design views (Elaborated, Synthesized and Implemented Design, schematic, I/O planning), constraints wizards and the IP Catalog. These need Vivado's own GUI tooling.
 - [ ] Save As, Archive, Write Tcl, Find and Replace in Files, Sources context menus
 - [ ] VHDL and post-synthesis simulation, waveform markers and saved layouts
-- [ ] Zynq boards, other FPGA vendors, a Linux build machine
+- [ ] Zynq boards and other FPGA vendors
 - [ ] Signed and notarized releases, Homebrew install
 
 ## Requirements
@@ -67,8 +69,9 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - Tailscale (optional, for reaching the build machine from outside your home network)
 
 **On the build machine**
-- Windows with Vivado, installed by you (the free edition covers many boards)
-- OpenSSH Server enabled (the setup script does this)
+- Windows or Linux with Vivado, installed by you (the free edition covers many boards). Any Vivado version works.
+- An SSH server (the setup script enables it on Windows; on Linux it can install one with `--install-ssh`)
+- On Linux, Vivado must start from a login shell (`ssh <host> vivado -version` should work), because fpga-bridge runs it through `bash -lc`
 - Stays powered on and awake while you build
 
 **Hardware**
@@ -93,19 +96,29 @@ ssh-keygen -t ed25519
 cat ~/.ssh/id_ed25519.pub
 ```
 
-**3. Set up the Windows machine.** Copy `windows/setup.ps1` to it, then run it from an elevated (Administrator) PowerShell with your Mac's public key:
+**3. Set up the build machine.** Copy the setup script for its operating system to it. Install Tailscale on both machines first if you want to build away from home.
+
+*Windows:* run `windows/setup.ps1` from an elevated (Administrator) PowerShell with your Mac's public key:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
 .\setup.ps1 -PublicKey "<contents of id_ed25519.pub>"
 ```
 
-It enables OpenSSH, opens the firewall, authorizes your key, checks Tailscale, and finds Vivado. Run `hostname` (or use its Tailscale name) and `whoami` to get the name and user for the next step. Install Tailscale on both machines first if you want to build away from home.
+It enables OpenSSH, opens the firewall, authorizes your key, checks Tailscale, and finds Vivado. Run `hostname` (or use its Tailscale name) and `whoami` to get the name and user for the next step.
+
+*Linux:* run `linux/setup.sh` as your normal user (not root):
+
+```sh
+./setup.sh --public-key "<contents of id_ed25519.pub>"    # add --install-ssh if no SSH server is installed
+```
+
+It checks the SSH server, authorizes your key, looks for Tailscale, finds the newest Vivado (both the older `<root>/Vivado/<version>` and the newer `<root>/<version>/Vivado` layouts), checks that it starts from a login shell, and prints the `init` command for you.
 
 **4. Point fpga-bridge at it and check everything**
 
 ```sh
-fpga-bridge init --host <name or address> --user <windows user> --vivado "<path to vivado.bat>"
+fpga-bridge init --host <name or address> --user <user on the build machine> --vivado "<path to vivado.bat, or the vivado script on Linux>"
 fpga-bridge doctor
 ```
 
@@ -125,7 +138,7 @@ Or do the same from the app: open `dist/FPGA Bridge.app`, choose **New Project**
 
 | Command | What it does |
 | --- | --- |
-| `init` | Save the build machine's host, user, Vivado path (and SSH key) |
+| `init` | Save the build machine's host, user, Vivado path (and SSH key). `--os windows\|linux` if it can't be worked out from the path |
 | `doctor` | Check Tailscale, SSH, Vivado, openFPGALoader, Icarus Verilog and a waveform viewer |
 | `new` | Create `fpga-bridge.json`. `--board <id>` (see `--list-boards`) or `--part <part>`, `--top`, `--sources`, `--constraints` |
 | `build` | Copy, run Vivado, fetch results into `build/`, print timing and utilization |
@@ -150,6 +163,7 @@ More detail: [docs/setup.md](docs/setup.md), [docs/boards.md](docs/boards.md).
 - **SSH times out though the machine is reachable:** the Windows firewall rule must apply to every network type (a home network is often "Public"). The setup script creates it that way.
 - **The app says Offline but `doctor` passes:** update to the latest build. Tailscale's command-line tool needs the `TERM` variable that a Finder-launched app doesn't have; the app now sets it.
 - **"No application set to open sim.vcd":** nothing on the Mac opens waveforms. The app's Waveform tab works without anything installed; for an external viewer run `brew install surfer`.
+- **Linux: "Vivado is there but didn't start from a login shell":** fpga-bridge runs Vivado through `bash -lc`, so its license and environment settings must load from your login files (`~/.profile` or `~/.bash_profile`), not only `~/.bashrc`.
 - **A different board:** see [docs/boards.md](docs/boards.md). For a board that is not listed, use `--part`, and `flash` will use the Digilent cable setting.
 
 ## Roadmap
@@ -164,7 +178,7 @@ More detail: [docs/setup.md](docs/setup.md), [docs/boards.md](docs/boards.md).
 
 - Requires a separate machine that can run Vivado
 - If the build machine is off or offline, builds can't run
-- Verified only with a Basys 3 and Vivado 2025.2; other Digilent boards are set up but untested
+- Verified on real hardware only with a Basys 3, a Windows build machine and Vivado 2025.2. Other Digilent boards and a Linux build machine are supported but untested on real hardware.
 - Every build runs as one script, so synthesis, implementation and bitstream can't yet be run separately, and a live build can't be stopped from the app (the CLI's Ctrl-C works)
 - Simulation covers Verilog and SystemVerilog only
 - Some boards may need extra USB drivers or settings on macOS

@@ -12,8 +12,8 @@ Legend: `[x]` done, `[ ]` todo. Order within a milestone is roughly the order to
 ## Open decisions
 
 - [ ] README says "Python 3" and a Python script for the prototype, but the CLI is Swift. Update the README, or add Python only where needed (e.g. helper scripts).
-- [ ] Windows only first, or also support a Linux build machine? (Affects shell quoting, setup script, paths.)
-- [ ] Which Vivado version to pin and test against.
+- [x] Decided: Windows and Linux build machines. (Decided with the project owner, who has only a Windows machine to test on.)
+- [x] Decided: no pin. Any Vivado version should work; the owner tests on 2025.2. Reports are parsed header-first so naming differences between versions are tolerated.
 - [ ] README Quick Start and License lines are stale (LICENSE already exists, MIT).
 
 ## M0: Foundation (done)
@@ -47,7 +47,7 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 - [x] Fetch results back: bitstream, timing and utilization reports, full log
 - [ ] Non-zero exit and clear message on synthesis/implementation failure
 - [x] Parse timing summary (WNS/TNS/WHS/THS, failing endpoint counts) and utilization (LUT, FF, BRAM, DSP, IO) into a short summary; `fpga-bridge report` re-prints it
-- [ ] Replace the hand-written report fixtures with real Vivado output from the first real build
+- [x] Real Vivado 2025.2 timing and utilization reports are test fixtures (the hand-written ones stay for older layouts and failures)
 - [ ] Show the worst failing paths (needs `report_timing -max_paths` in `build.tcl`)
 - [ ] `build --strict`: exit non-zero when timing is not met
 - [ ] Incremental behavior: skip copying unchanged files; optional `--clean`
@@ -58,7 +58,7 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 - [ ] Queue instead of failing when busy (`build --wait`), and expire locks left by a crashed build
 - [x] Vivado version pin (`new --vivado-version`) with a warning when the build machine's configured install differs (version read from the install path)
 - [ ] Check the real version with `vivado -version` instead of trusting the path
-- [ ] Linux build machine support (if decided above)
+- [x] Linux build machine support: `linux/setup.sh`, Linux command lines (`bash -lc`, `pkill` cancel), the whole remote test suite runs against a real-shell Linux stand-in, and a Linux CI job. Not yet run on a real Linux machine with Vivado
 
 ## M2: Flashing
 

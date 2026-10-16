@@ -52,7 +52,7 @@ public struct Project: Codable, Equatable, Sendable {
         try encoder.encode(self).write(to: directory.appendingPathComponent(Project.fileName), options: .atomic)
     }
 
-    /// The name becomes a directory on Windows and part of a cmd.exe line, so keep it plain.
+    /// The name becomes a directory on the build machine and part of a shell line there, so keep it plain.
     /// `top` and `part` go straight into Tcl, so they get the same treatment.
     public func validate() throws {
         guard Project.isPlain(name) else { throw ProjectError.invalid("name must use only letters, digits, '_' and '-'") }

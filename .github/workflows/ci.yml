@@ -175,3 +175,110 @@ jobs:
           $keys = Get-Content "$env:ProgramData\ssh\administrators_authorized_keys" -ErrorAction SilentlyContinue
           if (-not ($keys -match 'ci@example')) { throw 'public key was not authorized' }
           Write-Host 'setup.ps1 smoke test passed'
+
+  # The Swift tests run the Linux command lines with macOS's bash and BSD tools. This job runs the exact same lines on
+  # a real Linux runner (GNU bash 5, GNU coreutils), the way sshd would (`$SHELL -c '<line>'`), and runs
+  # linux/setup.sh. Keep the lines identical to RemoteCommands.swift: CIWorkflowTests fails if they drift.
+  linux-cmd-lines:
+    name: Run remote command lines and setup.sh on real Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lock, prep, unlock, Vivado check and cancel
+        run: |
+          set -eu
+          home="$RUNNER_TEMP/fake-home"
+          mkdir -p "$home" /tmp/fpga-bridge-ci
+          cd "$home"
+
+          read -r -d '' ACQUIRE <<'EOF' || true
+          bash -lc 'mkdir -p .fpga-bridge && mkdir .fpga-bridge/lock && echo '\''ci@runner building demo since 2026-10-15T10:00:00Z'\'' > .fpga-bridge/lock/owner.txt'
+          EOF
+          read -r -d '' ACQUIRE_OTHER <<'EOF' || true
+          bash -lc 'mkdir -p .fpga-bridge && mkdir .fpga-bridge/lock && echo '\''other@runner building demo since 2026-10-15T11:00:00Z'\'' > .fpga-bridge/lock/owner.txt'
+          EOF
+          read -r -d '' READ_OWNER <<'EOF' || true
+          bash -lc 'cat .fpga-bridge/lock/owner.txt'
+          EOF
+          read -r -d '' PREP <<'EOF' || true
+          bash -lc 'mkdir -p .fpga-bridge && rm -rf .fpga-bridge/demo'
+          EOF
+          read -r -d '' RELEASE <<'EOF' || true
+          bash -lc 'rm -rf .fpga-bridge/lock'
+          EOF
+          read -r -d '' UNLOCK <<'EOF' || true
+          bash -lc 'rm -rf .fpga-bridge/lock'
+          EOF
+          read -r -d '' EXISTS <<'EOF' || true
+          bash -lc '[ -x '\''/tmp/fpga-bridge-ci/vivado'\'' ] && echo found || echo missing'
+          EOF
+          read -r -d '' BUILD <<'EOF' || true
+          bash -lc 'cd .fpga-bridge/demo && '\''/tmp/fpga-bridge-ci/vivado'\'' -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-a1b2c3d4'
+          EOF
+          read -r -d '' CANCEL <<'EOF' || true
+          bash -lc 'pkill -9 -f '\''[f]pgabridge-a1b2c3d4'\'''
+          EOF
+
+          # Runs a line the way sshd does: through the login shell with -c.
+          remote() { bash -c "$1"; }
+
+          # The lock is taken once, can be read, and is free again after release.
+          remote "$ACQUIRE"
+          if remote "$ACQUIRE_OTHER" 2>/dev/null; then echo "a second build took the lock"; exit 1; fi
+          [ "$(remote "$READ_OWNER")" = "ci@runner building demo since 2026-10-15T10:00:00Z" ]
+          remote "$RELEASE"
+          [ ! -e .fpga-bridge/lock ]
+          remote "$ACQUIRE"
+          remote "$UNLOCK"
+          [ ! -e .fpga-bridge/lock ]
+          remote "$UNLOCK"
+
+          # Prep clears a stale job directory.
+          mkdir -p .fpga-bridge/demo/out
+          remote "$PREP"
+          [ ! -e .fpga-bridge/demo ]
+
+          # A Vivado launcher is found only when it is executable.
+          [ "$(remote "$EXISTS")" = "missing" ]
+          printf '#!/bin/sh\npwd > args.txt\necho "$@" >> args.txt\n' > /tmp/fpga-bridge-ci/vivado
+          [ "$(remote "$EXISTS")" = "missing" ]
+          chmod +x /tmp/fpga-bridge-ci/vivado
+          [ "$(remote "$EXISTS")" = "found" ]
+
+          # The build line runs the launcher inside the job directory, with the job's marker.
+          mkdir -p .fpga-bridge/demo
+          remote "$BUILD"
+          grep -q 'fpgabridge-a1b2c3d4' .fpga-bridge/demo/args.txt
+          grep -q '.fpga-bridge/demo' .fpga-bridge/demo/args.txt
+
+          # Cancel kills the job with the marker and leaves another job alone.
+          bash -c "exec -a 'fake-vivado -tclargs fpgabridge-a1b2c3d4' sleep 120" &
+          marked=$!
+          bash -c "exec -a 'fake-vivado -tclargs fpgabridge-deadbeef' sleep 120" &
+          other=$!
+          sleep 1
+          remote "$CANCEL"
+          sleep 1
+          if kill -0 "$marked" 2>/dev/null; then echo "the marked job survived"; exit 1; fi
+          kill -0 "$other"
+          kill "$other"
+          echo "all Linux command lines behaved"
+      - name: linux/setup.sh finds Vivado in both install layouts and prints the init command
+        run: |
+          set -eu
+          tools="$RUNNER_TEMP/tools"
+          mkdir -p "$tools/Vivado/2023.2/bin" "$tools/2025.2/Vivado/bin" "$RUNNER_TEMP/bin"
+          printf '#!/bin/sh\necho "vivado v2023.2"\n' > "$tools/Vivado/2023.2/bin/vivado"
+          printf '#!/bin/sh\necho "vivado v2025.2 (64-bit)"\n' > "$tools/2025.2/Vivado/bin/vivado"
+          chmod +x "$tools/Vivado/2023.2/bin/vivado" "$tools/2025.2/Vivado/bin/vivado"
+          export HOME="$RUNNER_TEMP/home"; mkdir -p "$HOME"
+          export FPGA_BRIDGE_VIVADO_ROOTS="$tools"
+          out="$(linux/setup.sh --public-key 'ssh-ed25519 AAAAKey ci@runner')"
+          echo "$out"
+          echo "$out" | grep -q "fpga-bridge init --host .* --user $USER --vivado \"$tools/2025.2/Vivado/bin/vivado\" --os linux"
+          echo "$out" | grep -q "it starts: vivado v2025.2"
+          grep -q AAAAKey "$HOME/.ssh/authorized_keys"
+          [ "$(stat -c %a "$HOME/.ssh/authorized_keys")" = "600" ]
+          [ "$(stat -c %a "$HOME/.ssh")" = "700" ]
+          # Newest first, by version number.
+          [ "$(bash -c 'source linux/setup.sh; find_vivado' | head -n1)" = "$tools/2025.2/Vivado/bin/vivado" ]

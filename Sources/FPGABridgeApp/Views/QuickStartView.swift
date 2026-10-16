@@ -73,7 +73,7 @@ struct QuickStartView: View {
             AppIconView(size: 76)
             VStack(alignment: .leading, spacing: 4) {
                 Text("FPGA Bridge").font(.largeTitle.weight(.bold))
-                Text("Vivado projects on your Mac. Builds run on your Windows machine.")
+                Text("Vivado projects on your Mac. Builds run on a separate Windows or Linux machine.")
                     .font(.title3)
                     .foregroundStyle(.secondary)
             }

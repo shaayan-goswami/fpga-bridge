@@ -3,6 +3,8 @@ import XCTest
 
 /// Runs the real `Remote` and `Doctor` code against stub `ssh`/`scp` scripts (see FakeRemote/) that act as a Windows
 /// build machine. The stubs only accept the exact command lines fpga-bridge should send.
+/// `LinuxFakeRemoteTests` below runs every one of these tests again against a Linux build machine, whose stub runs the
+/// commands in a real shell.
 /// Collects text from a callback that runs on another thread.
 final class LogBox: @unchecked Sendable {
     private let lock = NSLock()
@@ -11,14 +13,18 @@ final class LogBox: @unchecked Sendable {
     var value: String { lock.lock(); defer { lock.unlock() }; return text }
 }
 
-final class FakeRemoteTests: XCTestCase {
-    static let vivadoPath = #"C:\Program Files\Xilinx\Vivado\2023.2\bin\vivado.bat"#
+class FakeRemoteTests: XCTestCase {
+    class var vivadoPath: String { #"C:\Program Files\Xilinx\Vivado\2023.2\bin\vivado.bat"# }
+    /// A Vivado path that doesn't exist on the fake machine.
+    class var otherVivadoPath: String { #"C:\somewhere\else\vivado.bat"# }
+    class var os: BuildOS { .windows }
+    var commands: RemoteCommands { RemoteCommands(Self.os) }
 
     var tmp: URL!
     var remoteHome: URL!
     var log: URL!
     var originalPath: String!
-    let envKeys = ["FAKE_HOME", "FAKE_LOG", "FAKE_REPORT_DIR", "FAKE_VIVADO_PATH",
+    let envKeys = ["FAKE_HOME", "FAKE_LOG", "FAKE_REPORT_DIR", "FAKE_VIVADO_PATH", "FAKE_VIVADO_BIN",
                    "FAKE_SSH_FAIL", "FAKE_VIVADO_MODE", "FAKE_SCP_FAIL"]
 
     override func setUpWithError() throws {
@@ -30,11 +36,20 @@ final class FakeRemoteTests: XCTestCase {
         let reports = tmp.appendingPathComponent("reports")
         for dir in [bin, remoteHome!, reports] { try fm.createDirectory(at: dir, withIntermediateDirectories: true) }
 
-        for tool in ["ssh", "scp"] {
+        // The Linux stub for `ssh` is installed under the name `ssh`; Fpga-bridge never knows the difference.
+        for (tool, installedAs) in [(Self.os == .linux ? "ssh-linux" : "ssh", "ssh"), ("scp", "scp")] {
             let source = try XCTUnwrap(Bundle.module.url(forResource: tool, withExtension: nil, subdirectory: "FakeRemote"))
-            let dest = bin.appendingPathComponent(tool)
+            let dest = bin.appendingPathComponent(installedAs)
             try fm.copyItem(at: source, to: dest)
             try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dest.path)
+        }
+        if Self.os == .linux {
+            let launcher = tmp.appendingPathComponent("tools/Xilinx/Vivado/2023.2/bin/vivado")
+            try fm.createDirectory(at: launcher.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fm.copyItem(at: try XCTUnwrap(Bundle.module.url(forResource: "vivado-linux", withExtension: nil, subdirectory: "FakeRemote")),
+                            to: launcher)
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: launcher.path)
+            setenv("FAKE_VIVADO_BIN", launcher.path, 1)
         }
         for (fixture, name) in [("timing_pass", "timing_summary.rpt"), ("utilization_7series", "utilization.rpt")] {
             let url = try XCTUnwrap(Bundle.module.url(forResource: fixture, withExtension: "rpt", subdirectory: "Fixtures"))
@@ -111,10 +126,12 @@ final class FakeRemoteTests: XCTestCase {
     }
 
     func testDoctorReportsMissingVivado() {
-        setenv("FAKE_VIVADO_PATH", #"C:\somewhere\else\vivado.bat"#, 1)
+        setenv("FAKE_VIVADO_PATH", Self.otherVivadoPath, 1)
         let checks = Doctor.run(config: config, tailscale: tailscale())
         XCTAssertEqual(checks.map(\.level), [.ok, .ok, .fail], "\(checks)")
-        XCTAssertTrue(checks.last?.detail.contains("not found on Windows") == true)
+        XCTAssertTrue(checks.last?.detail.contains("not found on \(Self.os.displayName)") == true, checks.last?.detail ?? "")
+        XCTAssertTrue(checks.last?.detail.contains(Self.os == .windows ? "windows\\setup.ps1" : "linux/setup.sh") == true,
+                      "it names the setup script for this OS")
     }
 
     func testDoctorStopsBeforeSSHWhenTailscaleIsStopped() {
@@ -185,13 +202,18 @@ final class FakeRemoteTests: XCTestCase {
         XCTAssertEqual(calls.map { String($0.prefix(3)) }, ["ssh", "ssh", "scp", "ssh", "scp", "ssh"], "\(calls)")
         // Indexing below would crash the whole test run if the sequence is wrong, hiding every other failure.
         guard calls.count == 6 else { return }
-        XCTAssertTrue(calls[0].contains("mkdir .fpga-bridge\\lock"), "lock is taken first")
-        XCTAssertTrue(calls[1].contains("rmdir /s /q .fpga-bridge\\demo"), "stale remote job dir must be cleared")
+        XCTAssertTrue(calls[0].contains("mkdir \(commands.lockDir)"), "lock is taken first")
+        XCTAssertTrue(calls[1].contains(commands.removeDirectory(commands.path(".fpga-bridge", "demo"))), "stale remote job dir must be cleared")
         XCTAssertTrue(calls[2].contains("-r") && calls[2].contains("me@buildbox:.fpga-bridge/"), "directory upload needs -r")
-        XCTAssertTrue(calls[3].contains(#"call "\#(Self.vivadoPath)" -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-"#),
-                      "the Vivado path has spaces and must stay quoted")
+        XCTAssertTrue(calls[3].contains(" -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-"))
+        XCTAssertTrue(calls[3].contains(Self.vivadoPath), "the configured Vivado path is used")
+        if Self.os == .windows {
+            XCTAssertTrue(calls[3].contains(#"call "\#(Self.vivadoPath)" -mode batch"#), "the Vivado path has spaces and must stay quoted")
+        } else {
+            XCTAssertTrue(calls[3].hasPrefix("ssh") && calls[3].contains("bash -lc"), "Linux lines go through bash -lc")
+        }
         XCTAssertTrue(calls[4].contains("-r") && calls[4].contains("me@buildbox:.fpga-bridge/demo/out"))
-        XCTAssertTrue(calls[5].contains("rmdir /s /q .fpga-bridge\\lock"), "lock is released last")
+        XCTAssertTrue(calls[5].contains(commands.removeDirectory(commands.lockDir)), "lock is released last")
     }
 
     func testBuildFailureReturnsExitStatusAndFetchesNothing() throws {
@@ -344,10 +366,17 @@ final class FakeRemoteTests: XCTestCase {
         let run = try XCTUnwrap(calls.first { $0.contains("-tclargs") })
         let token = try XCTUnwrap(run.range(of: "fpgabridge-[a-f0-9]{8}", options: .regularExpression)
             .map { String(run[$0].dropFirst("fpgabridge-".count)) })
-        let cancel = try XCTUnwrap(calls.first { $0.contains("taskkill") }, "no cancel command was sent: \(calls)")
-        XCTAssertTrue(cancel.contains("'\(token)*'"), "cancel must target this job: \(cancel)")
+        let cancel = try XCTUnwrap(calls.first { $0.contains(Self.os == .windows ? "taskkill" : "pkill") }, "no cancel command was sent: \(calls)")
         XCTAssertFalse(cancel.contains("fpgabridge-\(token)"), "the cancel command must not match itself")
-        XCTAssertEqual(try String(contentsOf: remoteFile(".cancelled"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines), token)
+        if Self.os == .windows {
+            XCTAssertTrue(cancel.contains("'\(token)*'"), "cancel must target this job: \(cancel)")
+            XCTAssertEqual(try String(contentsOf: remoteFile(".cancelled"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines), token)
+        } else {
+            // The Linux stub really ran `pkill`: the fake Vivado must be gone.
+            let pid = try XCTUnwrap(Int32(try String(contentsOf: remoteFile(".pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+            for _ in 0..<100 where kill(pid, 0) == 0 { Thread.sleep(forTimeInterval: 0.05) }
+            XCTAssertNotEqual(kill(pid, 0), 0, "pkill left the fake Vivado (pid \(pid)) running")
+        }
 
         XCTAssertFalse(lockExists, "lock must be released after cancelling")
         XCTAssertEqual(calls.filter { $0.hasPrefix("scp") }.count, 1, "no results fetch after cancelling")
@@ -365,7 +394,7 @@ final class FakeRemoteTests: XCTestCase {
         setenv("FAKE_VIVADO_MODE", "lost", 1)
         let (project, root) = try makeProject()
         XCTAssertThrowsError(try Remote(config: config).build(project: project, root: root)) { error in
-            XCTAssertEqual(error as? RemoteError, .connectionLost(jobDir: ".fpga-bridge\\demo"))
+            XCTAssertEqual(error as? RemoteError, .connectionLost(jobDir: commands.path(".fpga-bridge", "demo")))
             XCTAssertTrue("\(error)".contains("fpga-bridge unlock"))
         }
         XCTAssertFalse(calls.filter { $0.hasPrefix("scp") }.count > 1, "no fetch after a lost connection")
@@ -377,7 +406,8 @@ final class FakeRemoteTests: XCTestCase {
         XCTAssertTrue(calls.allSatisfy { $0.contains("ServerAliveInterval=15") && $0.contains("ServerAliveCountMax=4") }, "\(calls)")
     }
 
-    func testJobCommandsCarryTheMarkerOnlyWhereIntended() {
+    func testJobCommandsCarryTheMarkerOnlyWhereIntended() throws {
+        try XCTSkipUnless(Self.os == .windows, "the Linux command lines are checked in RemoteCommandsTests")
         let build = Remote.buildCommand(vivadoPath: Self.vivadoPath, jobDir: #".fpga-bridge\demo"#, token: "a1b2c3d4")
         XCTAssertTrue(build.hasSuffix("-tclargs fpgabridge-a1b2c3d4"))
         let cancel = Remote.cancelCommand(token: "a1b2c3d4")
@@ -452,13 +482,15 @@ final class FakeRemoteTests: XCTestCase {
 
         let leftovers = try FileManager.default.contentsOfDirectory(atPath: remoteFile(".fpga-bridge").path)
         XCTAssertTrue(leftovers.isEmpty, "job file was not deleted: \(leftovers)")
-        let run = try XCTUnwrap(calls.first { $0.contains("-source .fpga-bridge\\job-") })
-        XCTAssertTrue(run.contains(#"call "\#(Self.vivadoPath)""#))
+        let run = try XCTUnwrap(calls.first { $0.contains("-source " + commands.path(".fpga-bridge", "job-")) })
+        XCTAssertTrue(run.contains(Self.vivadoPath))
+        if Self.os == .windows { XCTAssertTrue(run.contains(#"call "\#(Self.vivadoPath)""#)) }
     }
 
     // MARK: The harness itself
 
     func testFakeSSHRejectsCommandsItDoesNotKnow() throws {
+        try XCTSkipUnless(Self.os == .windows, "the Linux stub runs real shell commands")
         let result = try Remote(config: config).exec("format c:")
         XCTAssertEqual(result.status, 127)
         XCTAssertTrue(result.stderr.contains("unhandled command"))
@@ -471,4 +503,12 @@ final class FakeRemoteTests: XCTestCase {
         XCTAssertNotEqual(result.status, 0)
         XCTAssertTrue(result.stderr.contains("not a regular file"))
     }
+}
+
+/// The same tests against a Linux build machine. The stub `ssh` runs each command in a real shell, with a fake
+/// Vivado launcher, so these check the Linux command lines by running them.
+final class LinuxFakeRemoteTests: FakeRemoteTests {
+    override class var vivadoPath: String { "/tools/Xilinx/Vivado/2023.2/bin/vivado" }
+    override class var otherVivadoPath: String { "/somewhere/else/vivado" }
+    override class var os: BuildOS { .linux }
 }

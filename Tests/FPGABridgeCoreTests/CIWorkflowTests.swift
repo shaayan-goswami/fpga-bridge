@@ -25,4 +25,32 @@ final class CIWorkflowTests: XCTestCase {
             XCTAssertTrue(text.contains(command), "ci.yml no longer contains the \(name) command line:\n\(command)")
         }
     }
+
+    /// The `linux-cmd-lines` job does the same for the Linux lines, on a real Linux runner.
+    func testWorkflowRunsTheSameLinuxCommandLinesTheCodeSends() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let workflow = root.appendingPathComponent(".github/workflows/ci.yml")
+        guard let text = try? String(contentsOf: workflow, encoding: .utf8) else {
+            throw XCTSkip("workflow not found at \(workflow.path)")
+        }
+        XCTAssertTrue(text.contains("linux-cmd-lines:"), "the Linux job is missing from ci.yml")
+
+        let linux = RemoteCommands(.linux)
+        let vivado = "/tmp/fpga-bridge-ci/vivado"
+        let commands: [String: String] = [
+            "acquire": linux.acquireLock(owner: "ci@runner building demo since 2026-10-15T10:00:00Z"),
+            "acquire (other owner)": linux.acquireLock(owner: "other@runner building demo since 2026-10-15T11:00:00Z"),
+            "read owner": linux.readOwner,
+            "prep": linux.prep(jobDir: ".fpga-bridge/demo"),
+            "release": linux.releaseLock,
+            "unlock": linux.unlock,
+            "vivado exists": linux.vivadoExists(vivado),
+            "build": linux.build(vivadoPath: vivado, jobDir: ".fpga-bridge/demo", token: "a1b2c3d4"),
+            "cancel": linux.cancel(token: "a1b2c3d4"),
+        ]
+        for (name, command) in commands {
+            XCTAssertTrue(text.contains(command), "ci.yml no longer contains the Linux \(name) command line:\n\(command)")
+        }
+    }
 }

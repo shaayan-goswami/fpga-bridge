@@ -1,13 +1,16 @@
 import Foundation
 
-/// Talks to the Windows machine over SSH. The remote shell is Windows' default `cmd.exe`.
+/// Talks to the build machine over SSH. On Windows the remote shell is `cmd.exe`; on Linux commands go through
+/// `bash -lc`. `RemoteCommands` writes the lines for each.
 public struct Remote: Sendable {
     public let config: BridgeConfig
 
-    /// Scratch directory on the Windows side, relative to the user's profile (the SSH session's working directory).
+    /// Scratch directory on the build machine, relative to the user's home (the SSH session's working directory).
     static let remoteDir = ".fpga-bridge"
 
     public init(config: BridgeConfig) { self.config = config }
+
+    var commands: RemoteCommands { RemoteCommands(config.buildOS) }
 
     var target: String { "\(config.user)@\(config.host)" }
 
@@ -24,13 +27,13 @@ public struct Remote: Sendable {
         try Shell.run("ssh", ["-o", "BatchMode=yes"] + sshOptions + [target, command], timeout: timeout)
     }
 
-    /// Builds the cmd.exe line that runs Vivado in batch mode.
+    /// Builds the cmd.exe line that runs Vivado in batch mode on Windows.
     /// `call` keeps cmd from stripping the quotes around a path that contains spaces.
     static func vivadoCommand(vivadoPath: String, tclFile: String) -> String {
         "call \"\(vivadoPath)\" -mode batch -nojournal -nolog -source \(tclFile)"
     }
 
-    /// Copies a Tcl script to the Windows machine, runs it with Vivado in batch mode, and streams the output.
+    /// Copies a Tcl script to the build machine, runs it with Vivado in batch mode, and streams the output.
     /// Returns Vivado's exit status.
     public func runTcl(script: String, log: (@Sendable (String) -> Void)? = nil) throws -> Int32 {
         let name = "job-\(UUID().uuidString.prefix(8)).tcl"
@@ -38,7 +41,7 @@ public struct Remote: Sendable {
         try script.write(to: local, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: local) }
 
-        let mkdir = try exec("if not exist \(Remote.remoteDir) mkdir \(Remote.remoteDir)")
+        let mkdir = try exec(commands.ensureScratch())
         guard mkdir.succeeded else { throw RemoteError.ssh(mkdir.stderr) }
 
         let remoteRelative = "\(Remote.remoteDir)/\(name)"
@@ -46,11 +49,11 @@ public struct Remote: Sendable {
             "scp", ["-o", "BatchMode=yes"] + sshOptions + [local.path, "\(target):\(remoteRelative)"], timeout: 30)
         guard scp.succeeded else { throw RemoteError.ssh(scp.stderr) }
 
-        let windowsPath = "\(Remote.remoteDir)\\\(name)"
+        let remotePath = commands.path(Remote.remoteDir, name)
         let status = try Shell.stream(
-            "ssh", sshOptions + [target, Remote.vivadoCommand(vivadoPath: config.vivadoPath, tclFile: windowsPath)],
+            "ssh", sshOptions + [target, commands.vivado(vivadoPath: config.vivadoPath, tclFile: remotePath)],
             output: log)
-        _ = try? exec("del \(windowsPath)")
+        _ = try? exec(commands.deleteFile(remotePath))
         return status
     }
 }
@@ -100,8 +103,8 @@ extension Remote {
         try acquireLock(project: project.name)
         defer { releaseLock() }
 
-        let remoteProject = "\(Remote.remoteDir)\\\(project.name)"
-        let prep = try exec(Remote.prepCommand(jobDir: remoteProject))
+        let remoteProject = commands.path(Remote.remoteDir, project.name)
+        let prep = try exec(commands.prep(jobDir: remoteProject))
         guard prep.succeeded else { throw RemoteError.ssh(prep.stderr) }
 
         log("Copying \(sources.count + constraints.count) files to \(config.host)...\n")
@@ -112,7 +115,7 @@ extension Remote {
 
         log("Running Vivado... (Ctrl-C cancels)\n")
         let token = Remote.makeJobToken()
-        let run = Remote.buildCommand(vivadoPath: config.vivadoPath, jobDir: remoteProject, token: token)
+        let run = commands.build(vivadoPath: config.vivadoPath, jobDir: remoteProject, token: token)
         let status = try Shell.stream("ssh", sshOptions + [target, run], onInterrupt: {
             log("\nCancelling: stopping Vivado on \(config.host)...\n")
             cancelRemoteJob(token: token)
@@ -132,9 +135,9 @@ extension Remote {
         return 0
     }
 
-    // MARK: cmd.exe command lines
+    // MARK: cmd.exe command lines (Windows)
     //
-    // These run on Windows through cmd.exe. CI runs them through a real cmd.exe (see .github/workflows/ci.yml), and a
+    // These run on Windows through cmd.exe. The Linux equivalents are in `RemoteCommands`. CI runs them through a real cmd.exe (see .github/workflows/ci.yml), and a
     // test checks that the workflow contains exactly these strings.
 
     /// Creates the scratch directory if needed, then clears a previous copy of the job directory.
@@ -178,13 +181,13 @@ extension Remote {
     }
 
     func cancelRemoteJob(token: String) {
-        _ = try? exec(Remote.cancelCommand(token: token), timeout: 30)
+        _ = try? exec(commands.cancel(token: token), timeout: 30)
     }
 
     // MARK: Lock
 
     /// Who holds the lock, for the "machine is busy" message. Only plain characters, because it is echoed through
-    /// cmd.exe, and always ends in a letter (a digit before `>` would be read as a file handle).
+    /// cmd.exe or sh, and always ends in a letter (a digit before `>` would be read as a file handle in cmd.exe).
     static func ownerLine(project: String, date: Date = Date(),
                           machine: String = ProcessInfo.processInfo.hostName, user: String = NSUserName()) -> String {
         let formatter = ISO8601DateFormatter()
@@ -197,11 +200,11 @@ extension Remote {
 
     func acquireLock(project: String) throws {
         let owner = Remote.ownerLine(project: project)
-        let result = try exec(Remote.acquireLockCommand(owner: owner))
+        let result = try exec(commands.acquireLock(owner: owner))
         if result.succeeded { return }
         // 255 means SSH itself failed (bad key, host down), not that the lock exists.
         if result.status == 255 { throw RemoteError.ssh(result.stderr) }
-        guard let holder = try? exec(Remote.readOwnerCommand), holder.succeeded else {
+        guard let holder = try? exec(commands.readOwner), holder.succeeded else {
             // The lock directory exists but has no owner file (just created, or left by hand).
             throw RemoteError.busy(owner: nil)
         }
@@ -209,12 +212,12 @@ extension Remote {
     }
 
     func releaseLock() {
-        _ = try? exec(Remote.releaseLockCommand)
+        _ = try? exec(commands.releaseLock)
     }
 
     /// Removes the lock regardless of who holds it. For a lock left behind by a crashed build or lost connection.
     public func unlock() throws {
-        let result = try exec(Remote.unlockCommand)
+        let result = try exec(commands.unlock)
         guard result.succeeded else { throw RemoteError.ssh(result.stderr) }
     }
 }

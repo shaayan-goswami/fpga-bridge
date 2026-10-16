@@ -38,6 +38,44 @@ final class ReportTests: XCTestCase {
         XCTAssertFalse(t.constraintsMet)
     }
 
+    // MARK: Real Vivado output
+    //
+    // These two files are what Vivado 2025.2 (win64) wrote for the demo_top design on a Basys 3, unedited apart from the
+    // machine's name. The other fixtures are hand-written, so these are the ones that show the parsers work on real output.
+
+    func testRealVivado2025Timing() throws {
+        let t = try TimingSummary.parse(fixture("timing_vivado2025"))
+        XCTAssertEqual(t.wns, 6.356)
+        XCTAssertEqual(t.whs, 0.131)
+        XCTAssertEqual(t.tns, 0)
+        XCTAssertEqual(t.tnsFailingEndpoints, 0)
+        XCTAssertTrue(t.isTimed)
+        XCTAssertTrue(t.constraintsMet)
+    }
+
+    func testRealVivado2025Utilization() throws {
+        let u = try UtilizationSummary.parse(fixture("utilization_vivado2025"))
+        XCTAssertEqual(u.usage(.lut), ResourceUsage(kind: .lut, used: 26, available: 20800))
+        XCTAssertEqual(u.usage(.ff), ResourceUsage(kind: .ff, used: 48, available: 41600))
+        XCTAssertEqual(u.usage(.bram), ResourceUsage(kind: .bram, used: 0, available: 50))
+        XCTAssertEqual(u.usage(.dsp), ResourceUsage(kind: .dsp, used: 0, available: 90))
+    }
+
+    func testRealVivado2025ReportsRenderTheSummary() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("rv-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for (fixtureName, fileName) in [("timing_vivado2025", BuildSummary.timingReport), ("utilization_vivado2025", BuildSummary.utilizationReport)] {
+            try fixture(fixtureName).write(to: dir.appendingPathComponent(fileName), atomically: true, encoding: .utf8)
+        }
+        let summary = BuildSummary.load(from: dir)
+        XCTAssertTrue(summary.notes.isEmpty, "\(summary.notes)")
+        XCTAssertEqual(summary.render(), """
+            Timing     MET   setup WNS +6.356 ns   hold WHS +0.131 ns
+            Resources  LUT 26/20800 (0.1%)   FF 48/41600 (0.1%)   BRAM 0/50 (0.0%)   DSP 0/90 (0.0%)
+            """)
+    }
+
     func testTimingGarbageThrows() throws {
         XCTAssertThrowsError(try TimingSummary.parse(fixture("timing_garbage")))
     }

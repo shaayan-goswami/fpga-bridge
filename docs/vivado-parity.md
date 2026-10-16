@@ -69,7 +69,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
 | Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
-| Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado) |
+| Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado). Decision: keep mirroring Vivado for the design views, fed by Tcl data from the build machine |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
 | Create Block Design… | Not possible (see §6) | — |

@@ -1,6 +1,8 @@
 # Setup and usage (current CLI)
 
-**1. On the Windows machine**, install [Tailscale](https://tailscale.com/download) and sign in, then run from an elevated PowerShell:
+**1. On the build machine.** Windows or Linux both work; follow the section for yours (Linux is 1b, below).
+
+**1a. Windows.** Install [Tailscale](https://tailscale.com/download) and sign in, then run from an elevated PowerShell:
 
 ```powershell
 .\windows\setup.ps1 -PublicKey "<contents of ~/.ssh/id_ed25519.pub from your Mac>"
@@ -13,6 +15,18 @@ Tailscale it still sets everything up, but prints no `init` line: use the machin
 
 If the OpenSSH feature won't install ("component store has been corrupted"), run
 `DISM /Online /Cleanup-Image /RestoreHealth` and `sfc /scannow` as Administrator, restart, and run it again.
+
+**1b. Linux.** Install [Tailscale](https://tailscale.com/download) if you want to build from outside your network, then run as your normal user (not root):
+
+```sh
+./linux/setup.sh --public-key "<contents of ~/.ssh/id_ed25519.pub from your Mac>"
+```
+
+Add `--install-ssh` if the machine has no SSH server (it uses `apt`, `dnf`, `yum` or `pacman` with `sudo`). The script authorizes your key (in `~/.ssh/authorized_keys`, with the permissions sshd needs), finds the newest Vivado, checks that it starts from a login shell, and prints the `fpga-bridge init` command. Without Tailscale it prints the machine's address on your network instead, which only works from the same network.
+
+Vivado is run through `bash -lc`, so it must work from a login shell: `ssh <host> vivado -version` (using the full path) should print a version. If it needs a license server or environment variables, set them in `~/.profile` or `~/.bash_profile`, not only `~/.bashrc`.
+
+Vivado installs on Linux are looked for in `/tools/Xilinx`, `/tools/AMD`, `/opt/Xilinx`, `/opt/AMD`, `/usr/local/Xilinx`, `~/Xilinx` and `~/AMD`, in both folder layouts, plus `$XILINX_VIVADO` and anything on `PATH`.
 
 **2. On the Mac** (Tailscale installed and signed in to the same tailnet):
 

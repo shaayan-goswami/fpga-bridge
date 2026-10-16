@@ -2,27 +2,30 @@ import ArgumentParser
 import FPGABridgeCore
 import Foundation
 
+extension BuildOS: ExpressibleByArgument {}
+
 struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
-        abstract: "Run Vivado on a remote Windows machine from your Mac, over Tailscale and SSH.",
+        abstract: "Run Vivado on a remote Windows or Linux machine from your Mac, over Tailscale and SSH.",
         subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
 struct Init: ParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Save the Windows machine's details. windows\\setup.ps1 prints this command for you.")
+        abstract: "Save the build machine's details. The setup script on that machine (windows\\setup.ps1 or linux/setup.sh) prints this command for you.")
 
-    @Option(help: "Tailscale name or IP of the Windows machine.") var host: String
-    @Option(help: "Windows username.") var user: String
-    @Option(help: "Full path to vivado.bat on Windows.") var vivado: String
+    @Option(help: "Tailscale name or IP of the build machine.") var host: String
+    @Option(help: "Username on the build machine.") var user: String
+    @Option(help: "Full path to Vivado on the build machine: vivado.bat on Windows, the vivado script on Linux.") var vivado: String
     @Option(help: "SSH private key to use (default: ssh's usual keys).") var key: String?
+    @Option(help: "Build machine's operating system: windows or linux. Default: worked out from the Vivado path.") var os: BuildOS?
 
     func run() throws {
-        let config = BridgeConfig(host: host, user: user, vivadoPath: vivado, sshKeyPath: key)
+        let config = BridgeConfig(host: host, user: user, vivadoPath: vivado, sshKeyPath: key, os: os)
         try config.save()
-        print("Saved \(BridgeConfig.defaultURL.path)")
+        print("Saved \(BridgeConfig.defaultURL.path) (build machine: \(config.buildOS.displayName))")
         print("Next: fpga-bridge doctor")
     }
 }
@@ -42,7 +45,7 @@ struct Doctor: ParsableCommand {
 }
 
 struct Tcl: ParsableCommand {
-    static let configuration = CommandConfiguration(abstract: "Run a Tcl script in Vivado batch mode on the Windows machine.")
+    static let configuration = CommandConfiguration(abstract: "Run a Tcl script in Vivado batch mode on the build machine.")
 
     @Argument(help: "Path to a local .tcl file.") var file: String?
     @Option(name: .shortAndLong, help: "Inline Tcl to run instead of a file.") var command: String?
@@ -248,7 +251,7 @@ struct Boards: ParsableCommand {
 
 struct Unlock: ParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Release the build lock on the Windows machine.",
+        abstract: "Release the build lock on the build machine.",
         discussion: "Only one build runs on the build machine at a time. Use this if a build was lost (crash, dropped connection) and left the lock behind.")
 
     func run() throws {

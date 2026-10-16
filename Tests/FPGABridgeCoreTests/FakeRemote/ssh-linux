@@ -1,0 +1,37 @@
+#!/bin/bash
+# Fake `ssh` for tests of a LINUX build machine. Unlike the Windows stub, which only recognizes exact cmd.exe lines,
+# this one really runs what it is sent, in a real POSIX shell with $FAKE_HOME standing in for the user's home. That
+# checks quoting, the lock, and `pkill` for real instead of by string comparison.
+#
+# Environment: FAKE_HOME, FAKE_LOG, FAKE_SSH_FAIL as in the Windows stub, plus
+#   FAKE_VIVADO_PATH   the Vivado path the config names (it doesn't exist on this machine)
+#   FAKE_VIVADO_BIN    the real fake launcher to run in its place
+set -u
+HOME_="${FAKE_HOME:?FAKE_HOME not set}"
+LOG="${FAKE_LOG:-/dev/null}"
+
+echo "ssh $*" >> "$LOG"
+
+target=""; cmd=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o|-i) shift 2; continue ;;
+    -*) shift; continue ;;
+    *) if [ -z "$target" ]; then target="$1"; else cmd="$1"; fi ;;
+  esac
+  shift
+done
+
+case "${FAKE_SSH_FAIL:-}" in
+  permission) echo "$target: Permission denied (publickey,password,keyboard-interactive)." >&2; exit 255 ;;
+  refused) echo "ssh: connect to host ${target#*@} port 22: Connection refused" >&2; exit 255 ;;
+esac
+
+# The configured path is "/tools/Xilinx/...", which can't exist here: run the fake launcher instead.
+if [ -n "${FAKE_VIVADO_PATH:-}" ] && [ -n "${FAKE_VIVADO_BIN:-}" ]; then
+  cmd="${cmd//$FAKE_VIVADO_PATH/$FAKE_VIVADO_BIN}"
+fi
+
+cd "$HOME_" || exit 1
+export HOME="$HOME_"
+exec /bin/bash -c "$cmd"
