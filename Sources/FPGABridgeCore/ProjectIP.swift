@@ -54,7 +54,7 @@ public struct ProjectIP: Codable, Equatable, Sendable, Identifiable {
     }
 
     /// Values go inside Tcl braces: nothing that could close them or start a substitution.
-    static func isPlainValue(_ value: String) -> Bool {
+    public static func isPlainValue(_ value: String) -> Bool {
         value.range(of: #"^[A-Za-z0-9_.+\-:,/ ]*$"#, options: .regularExpression) != nil
     }
 

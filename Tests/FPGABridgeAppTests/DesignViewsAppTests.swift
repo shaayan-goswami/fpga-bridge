@@ -39,11 +39,12 @@ final class DesignViewsAppTests: ExampleSandboxTestCase {
 
     // MARK: Flow Navigator
 
-    func testTheDesignItemsAreAvailableAndTheIPCatalogStillIsNot() {
+    func testEveryFlowNavigatorItemIsNowAvailable() {
+        XCTAssertEqual(FlowItem.allCases.filter { !$0.isAvailable }, [], "nothing is greyed out any more")
         XCTAssertTrue(FlowItem.openElaboratedDesign.isAvailable)
         XCTAssertTrue(FlowItem.openSynthesizedDesign.isAvailable)
         XCTAssertTrue(FlowItem.openImplementedDesign.isAvailable)
-        XCTAssertFalse(FlowItem.ipCatalog.isAvailable)
+        XCTAssertTrue(FlowItem.ipCatalog.isAvailable)
         XCTAssertEqual(FlowItem.openElaboratedDesign.designStage, .rtl)
         XCTAssertEqual(FlowItem.openSynthesizedDesign.designStage, .synth)
         XCTAssertEqual(FlowItem.openImplementedDesign.designStage, .impl)

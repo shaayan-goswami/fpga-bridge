@@ -71,6 +71,9 @@ extension AppModel {
                 try? await Task.sleep(nanoseconds: 50_000_000)
             }
             while simulation.isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
+        case "ipcatalog", "ipcustomize":
+            if DebugHooks.openPath == nil { openExampleProject() }
+            openIPCatalog()
         case "design-rtl", "design-synth", "design-impl":
             // Wait for the previous build's data to load from build/, then open the view.
             let stage = DesignStage(rawValue: String(DebugHooks.scenario!.dropFirst("design-".count))) ?? .synth

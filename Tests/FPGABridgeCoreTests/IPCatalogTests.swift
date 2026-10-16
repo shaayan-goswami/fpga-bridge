@@ -17,6 +17,14 @@ final class IPCatalogTests: XCTestCase {
         XCTAssertEqual(Set(catalog.definitions.map(\.vlnv)).count, catalog.definitions.count, "no duplicates")
     }
 
+    func testDefinitionsThatAreNotAddableIPAreLeftOut() throws {
+        let catalog = try realCatalog()
+        XCTAssertEqual(catalog.definitions.count, 366, "376 entries, less the 10 interface, signal and module_ref definitions")
+        XCTAssertFalse(catalog.definitions.contains { $0.library.hasSuffix(".param") })
+        XCTAssertTrue(catalog.definitions.allSatisfy { !$0.taxonomy.contains("\"") }, "no stray quote characters left as categories")
+        XCTAssertEqual(Set(catalog.definitions.map(\.library)), ["ip", "inline_hdl"])
+    }
+
     func testAKnownIPHasItsDetails() throws {
         let counter = try XCTUnwrap(try realCatalog().definitions.first { $0.name == "c_counter_binary" })
         XCTAssertEqual(counter.vlnv, "xilinx.com:ip:c_counter_binary:12.0")

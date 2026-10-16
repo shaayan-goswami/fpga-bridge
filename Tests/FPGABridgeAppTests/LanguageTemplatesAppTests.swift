@@ -14,7 +14,6 @@ final class LanguageTemplatesAppTests: ExampleSandboxTestCase {
     func testTheFlowNavigatorItemOpensTheTemplatesTab() {
         let (model, _) = makeModel()
         XCTAssertTrue(FlowItem.languageTemplates.isAvailable)
-        XCTAssertFalse(FlowItem.ipCatalog.isAvailable, "still needs Vivado's IP tooling")
         model.perform(.languageTemplates)
         XCTAssertEqual(model.selectedTab, .templates)
         XCTAssertEqual(model.title(of: .templates), "Language Templates")

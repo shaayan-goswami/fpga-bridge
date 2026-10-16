@@ -99,6 +99,9 @@ public struct IPCatalog: Equatable, Sendable {
             if f.count >= 3, f[1] == "VIVADO" { vivado = f[2]; continue }
             // marker, "IP", vlnv, name, display, taxonomy, description, license, supported
             guard f.count >= 9, f[1] == "IP", !f[2].isEmpty else { continue }
+            // Interface and signal definitions (`interface.param`, `signal.param`, ...) are in Vivado's list but are not IP
+            // you can add, and its own catalog doesn't show them.
+            if f[2].split(separator: ":").dropFirst().first?.hasSuffix(".param") == true { continue }
             definitions.append(IPDefinition(vlnv: f[2], name: f[3], displayName: f[4].isEmpty ? f[3] : f[4], taxonomy: f[5],
                                             description: f[6], requiresLicense: f[7] == "1", supported: f[8] == "1"))
         }

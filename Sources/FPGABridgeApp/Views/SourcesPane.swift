@@ -79,8 +79,7 @@ struct SourcesPane: View {
             .listStyle(.inset)
             .surfaceBackground()
         case .ipSources:
-            ContentUnavailableView("No IP", systemImage: "puzzlepiece.extension",
-                                   description: Text("IP from the IP Catalog isn't supported yet."))
+            IPSourcesList()
         case .libraries:
             List {
                 DisclosureGroup("xil_defaultlib") {

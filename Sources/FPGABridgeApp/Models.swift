@@ -75,7 +75,6 @@ enum FlowItem: String, CaseIterable, Identifiable {
     /// What the item says when it can't be used yet.
     var unavailableReason: String? {
         switch self {
-        case .ipCatalog: "The IP Catalog needs Vivado's own IP tooling and isn't available yet"
         default: nil
         }
     }
@@ -185,6 +184,7 @@ enum WorkspaceTab: Hashable, Identifiable {
     case file(String)
     case report(String)
     case design(DesignStage)
+    case ipCatalog
     case hardware
     case templates
     case simulation

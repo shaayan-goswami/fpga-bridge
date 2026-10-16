@@ -11,6 +11,7 @@ final class AppModel: ObservableObject {
     let hardware: HardwareManager
     let simulation: SimulationManager
     let waveform = WaveformModel()
+    private let ipBackend: IPBackend
     private let persist: Bool
 
     // Project
@@ -66,8 +67,9 @@ final class AppModel: ObservableObject {
 
     /// `hardware` defaults to a pretend board so tests never touch a real one.
     init(backend: Backend, hardware: HardwareBackend = DemoHardware(speed: 0),
-         simulation: SimulationBackend = DemoSimulation(speed: 0), persist: Bool) {
+         simulation: SimulationBackend = DemoSimulation(speed: 0), ips: IPBackend = DemoIPBackend(speed: 0), persist: Bool) {
         self.backend = backend
+        self.ipBackend = ips
         self.hardware = HardwareManager(backend: hardware)
         self.simulation = SimulationManager(backend: simulation)
         self.persist = persist
@@ -80,10 +82,11 @@ final class AppModel: ObservableObject {
     static func make() -> AppModel {
         if !DebugHooks.forceDemo, let config = try? BridgeConfig.load() {
             return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), simulation: LiveSimulation(),
-                            persist: DebugHooks.persistRecents)
+                            ips: LiveIPBackend(config: config), persist: DebugHooks.persistRecents)
         }
         return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), hardware: DemoHardware(speed: DebugHooks.demoSpeed),
-                        simulation: DemoSimulation(speed: DebugHooks.demoSpeed), persist: DebugHooks.persistRecents)
+                        simulation: DemoSimulation(speed: DebugHooks.demoSpeed), ips: DemoIPBackend(speed: DebugHooks.demoSpeed),
+                        persist: DebugHooks.persistRecents)
     }
 
     func start() async {
@@ -403,11 +406,92 @@ final class AppModel: ObservableObject {
         case .settings: showSettings = true
         case .addSources: showAddSources = true
         case .openHardwareManager: open(.hardware)
+        case .ipCatalog: openIPCatalog()
         case .openElaboratedDesign, .openSynthesizedDesign, .openImplementedDesign:
             if let stage = item.designStage { openDesign(stage) }
         case .languageTemplates: open(.templates)
         case .runSimulation: runSimulation()
         default: if let kind = item.runKind { run(kind) }
+        }
+    }
+
+    // MARK: IP Catalog
+
+    enum IPLoad: Equatable {
+        case idle
+        case loading
+        case failed(String)
+    }
+
+    @Published private(set) var ipCatalog: IPCatalog?
+    @Published private(set) var ipLoad = IPLoad.idle
+    /// Instantiation templates already fetched, by instance name and configuration, so reopening one is instant.
+    @Published private(set) var ipTemplates: [String: IPScriptOutput] = [:]
+
+    /// Shows the IP Catalog, loading it from the build machine the first time.
+    func openIPCatalog() {
+        open(.ipCatalog)
+        if ipCatalog == nil, ipLoad != .loading { loadIPCatalog() }
+    }
+
+    func loadIPCatalog(refresh: Bool = false) {
+        guard let part = project?.part, ipLoad != .loading else { return }
+        ipLoad = .loading
+        Task {
+            do {
+                ipCatalog = try await ipBackend.catalog(part: part, refresh: refresh)
+                ipLoad = .idle
+            } catch {
+                ipLoad = .failed(error.userMessage)
+            }
+        }
+    }
+
+    /// The settings of an IP with their defaults, for the Customize IP sheet.
+    func ipProperties(of definition: IPDefinition) async throws -> [IPProperty] {
+        guard let part = project?.part else { return [] }
+        return try await ipBackend.properties(of: definition, part: part)
+    }
+
+    private func templateKey(_ ip: ProjectIP) -> String {
+        ip.vlnv + "|" + ip.name + "|" + ip.config.keys.sorted().map { "\($0)=\(ip.config[$0] ?? "")" }.joined(separator: ",")
+    }
+
+    /// The instantiation templates for an IP as configured. Throws what Vivado said if it refuses the settings.
+    func ipTemplate(for ip: ProjectIP) async throws -> IPScriptOutput {
+        let key = templateKey(ip)
+        if let cached = ipTemplates[key] { return cached }
+        guard let part = project?.part else { return IPScriptOutput() }
+        let result = try await ipBackend.template(for: ip, part: part)
+        ipTemplates[key] = result
+        return result
+    }
+
+    /// Adds an IP to the project once Vivado has accepted its settings, then writes the project file.
+    func addIP(_ ip: ProjectIP) async throws {
+        guard var updated = project, let projectURL else { return }
+        try ip.validate()
+        guard !(updated.ips ?? []).contains(where: { $0.name == ip.name }) else {
+            throw ProjectIP.IPError.invalid("the project already has an IP called '\(ip.name)'")
+        }
+        _ = try await ipTemplate(for: ip)              // Vivado checks the settings; nothing is saved if it refuses
+        updated.ips = (updated.ips ?? []) + [ip]
+        try updated.validate()
+        try updated.save(to: projectURL)
+        echoTcl("create_ip -name \(ip.vlnvParts?[2] ?? ip.vlnv) -vendor \(ip.vlnvParts?[0] ?? "") -library \(ip.vlnvParts?[1] ?? "") -version \(ip.vlnvParts?[3] ?? "") -module_name \(ip.name)")
+        reloadProjectAfterChange(outOfDate: [.synthesis, .implementation])
+    }
+
+    func removeIP(named name: String) {
+        guard var updated = project, let projectURL, (updated.ips ?? []).contains(where: { $0.name == name }) else { return }
+        updated.ips = (updated.ips ?? []).filter { $0.name != name }
+        if updated.ips?.isEmpty == true { updated.ips = nil }
+        do {
+            try updated.save(to: projectURL)
+            echoTcl("remove_files [get_files \(name).xci]")
+            reloadProjectAfterChange(outOfDate: [.synthesis, .implementation])
+        } catch {
+            errorMessage = "\(error.userMessage)"
         }
     }
 
@@ -542,6 +626,9 @@ final class AppModel: ObservableObject {
         reports = []
         designs = [:]
         pendingDesign = nil
+        ipCatalog = nil
+        ipTemplates = [:]
+        ipLoad = .idle
         timing = nil
         utilization = nil
         lastOutcome = nil
@@ -800,6 +887,7 @@ final class AppModel: ObservableObject {
         case .report(let id): report(id).map { "\($0.title) – \($0.run.runName)" } ?? "Report"
         case .hardware: "Hardware Manager"
         case .design(let stage): stage.title
+        case .ipCatalog: "IP Catalog"
         case .templates: "Language Templates"
         case .simulation: "Simulation"
         case .waveform: "Waveform"
@@ -813,6 +901,7 @@ final class AppModel: ObservableObject {
         case .report: "doc.plaintext"
         case .hardware: "cable.connector.horizontal"
         case .design(let stage): stage == .rtl ? "square.stack.3d.up" : "rectangle.on.rectangle"
+        case .ipCatalog: "puzzlepiece.extension"
         case .templates: "doc.text.magnifyingglass"
         case .simulation: "waveform.path.ecg"
         case .waveform: "waveform"

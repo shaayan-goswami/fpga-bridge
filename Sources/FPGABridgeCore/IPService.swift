@@ -6,6 +6,11 @@ public struct IPProperty: Equatable, Sendable, Identifiable {
     public let name: String
     public let value: String
 
+    public init(name: String, value: String) {
+        self.name = name
+        self.value = value
+    }
+
     public var id: String { name }
     /// The name without the prefix: `Output_Width`.
     public var title: String { name.hasPrefix("CONFIG.") ? String(name.dropFirst("CONFIG.".count)) : name }
@@ -19,6 +24,13 @@ public struct IPScriptOutput: Equatable, Sendable {
     public var vhdlTemplate: [String] = []
     /// A failure the script caught, in Vivado's words.
     public var error: String?
+
+    public init(properties: [IPProperty] = [], verilogTemplate: [String] = [], vhdlTemplate: [String] = [], error: String? = nil) {
+        self.properties = properties
+        self.verilogTemplate = verilogTemplate
+        self.vhdlTemplate = vhdlTemplate
+        self.error = error
+    }
 }
 
 /// The Tcl and the parsing for the IP features that run on the build machine: listing an IP's settings and fetching its
