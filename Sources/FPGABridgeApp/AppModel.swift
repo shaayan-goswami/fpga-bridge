@@ -8,6 +8,7 @@ import SwiftUI
 @MainActor
 final class AppModel: ObservableObject {
     let backend: Backend
+    let hardware: HardwareManager
     private let persist: Bool
 
     // Project
@@ -57,18 +58,22 @@ final class AppModel: ObservableObject {
     private var tclBuffer = LineBuffer()
     private var fileCache: [String: String] = [:]
 
-    init(backend: Backend, persist: Bool) {
+    /// `hardware` defaults to a pretend board so tests never touch a real one.
+    init(backend: Backend, hardware: HardwareBackend = DemoHardware(speed: 0), persist: Bool) {
         self.backend = backend
+        self.hardware = HardwareManager(backend: hardware)
         self.persist = persist
         recentProjects = loadRecents()
         tclLines = [ConsoleLine(text: "# FPGA Bridge Tcl console. Commands run in Vivado on the build machine.", kind: .output)]
+        self.hardware.console = { [weak self] text, kind in self?.tclLines.append(ConsoleLine(text: text, kind: kind)) }
     }
 
     static func make() -> AppModel {
         if !DebugHooks.forceDemo, let config = try? BridgeConfig.load() {
-            return AppModel(backend: LiveBackend(config: config), persist: DebugHooks.persistRecents)
+            return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), persist: DebugHooks.persistRecents)
         }
-        return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), persist: DebugHooks.persistRecents)
+        return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), hardware: DemoHardware(speed: DebugHooks.demoSpeed),
+                        persist: DebugHooks.persistRecents)
     }
 
     func start() async {
@@ -346,8 +351,33 @@ final class AppModel: ObservableObject {
         switch item {
         case .settings: showSettings = true
         case .addSources: showAddSources = true
+        case .openHardwareManager: open(.hardware)
         default: if let kind = item.runKind { run(kind) }
         }
+    }
+
+    // MARK: Hardware
+
+    /// The board the project was created for, which tells the loader what cable to use.
+    var projectBoard: Board? { project?.board.flatMap { BoardCatalog.lookup($0) } }
+
+    /// `build/<top>.bit`, where `fpga-bridge build` puts the bitstream.
+    var defaultBitstreamPath: String {
+        guard let project, let projectURL else { return "" }
+        return projectURL.appendingPathComponent(Remote.localOutputDir).appendingPathComponent("\(project.top).bit").path
+    }
+
+    func autoConnectHardware() {
+        consoleTab = .tclConsole
+        let board = projectBoard
+        Task { await hardware.openTarget(board: board) }
+    }
+
+    func programHardware(bitstream: String, kind: ProgramKind) {
+        consoleTab = .tclConsole
+        consoleVisible = true
+        let board = projectBoard
+        Task { await hardware.program(bitstream: bitstream, board: board, kind: kind) }
     }
 
     /// Vivado's behavior: each step runs what it depends on if that is missing or out-of-date.
@@ -607,6 +637,7 @@ final class AppModel: ObservableObject {
         case .summary: "Project Summary"
         case .file(let path): (path as NSString).lastPathComponent
         case .report(let id): report(id).map { "\($0.title) – \($0.run.runName)" } ?? "Report"
+        case .hardware: "Hardware Manager"
         }
     }
 
@@ -615,6 +646,7 @@ final class AppModel: ObservableObject {
         case .summary: "square.grid.2x2"
         case .file(let path): (path as NSString).pathExtension.lowercased() == "xdc" ? "pin" : "doc.text"
         case .report: "doc.plaintext"
+        case .hardware: "cable.connector.horizontal"
         }
     }
 

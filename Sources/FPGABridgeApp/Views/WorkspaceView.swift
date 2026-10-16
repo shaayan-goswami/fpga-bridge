@@ -13,6 +13,7 @@ struct WorkspaceView: View {
                 case .summary: ProjectSummaryView()
                 case .file(let path): SourceEditorView(path: path)
                 case .report(let id): ReportView(id: id)
+                case .hardware: HardwareManagerView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var hardware: HardwareManager
 
     var body: some View {
         Group {
@@ -21,6 +22,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $model.showAddSources) {
             AddSourcesSheet().environmentObject(model)
+        }
+        .sheet(item: $hardware.sheet) { kind in
+            ProgramDeviceSheet(kind: kind).environmentObject(model).environmentObject(model.hardware)
         }
         .alert(model.unsavedPrompt?.title ?? "", isPresented: Binding(
             get: { model.unsavedPrompt != nil },

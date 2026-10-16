@@ -63,6 +63,21 @@ public struct Programmer: Sendable {
         public let idcode: String
         public let family: String
         public let model: String
+
+        public init(idcode: String, family: String, model: String) {
+            self.idcode = idcode
+            self.family = family
+            self.model = model
+        }
+
+        /// The part as Vivado names a hardware device: "xc7a35t" for model "xc7a35" in family "artix a7 35t".
+        /// openFPGALoader leaves the trailing "t" (transceivers) off the model but keeps it in the family.
+        public var partName: String {
+            guard !model.isEmpty else { return family }
+            let lastWord = family.split(separator: " ").last.map(String.init) ?? ""
+            let hasT = lastWord.range(of: #"^\d+t$"#, options: .regularExpression) != nil
+            return model.lowercased() + (hasT && !model.lowercased().hasSuffix("t") ? "t" : "")
+        }
     }
 
     /// What `--detect` saw. openFPGALoader exits 0 even when nothing answered, so the output is what says.

@@ -50,6 +50,14 @@ extension AppModel {
         case "built":
             openExampleProject()
             run(.bitstream)
+        case "hardware", "hardware-closed", "programdevice":
+            openExampleProject()
+            open(.hardware)
+            if DebugHooks.scenario != "hardware-closed" {
+                autoConnectHardware()
+                while hardware.target != .open { try? await Task.sleep(nanoseconds: 50_000_000) }
+            }
+            if DebugHooks.scenario == "programdevice" { hardware.sheet = .device }
         case "settings":
             openExampleProject()
             showSettings = true

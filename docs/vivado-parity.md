@@ -26,7 +26,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | --- | --- | --- |
 | Getting Started page: Quick Start (Create Project, Open Project, Open Example Project) | Mac | Done |
 | Recent Projects list | Mac | Done |
-| Tasks (Manage IP, Open Hardware Manager, Vivado Store) | Mac / Local tool | Prototype (Hardware Manager disabled until P4) |
+| Tasks (Manage IP, Open Hardware Manager, Vivado Store) | Mac / Local tool | Prototype (Hardware Manager works; the others are disabled) |
 | Learning Center (Documentation, Quick Take Videos, Release Notes) | Mac (links to our docs and AMD's) | Prototype |
 | Example projects list (Open Example Project wizard with templates) | Mac | Prototype (one example) |
 
@@ -67,7 +67,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |
 | Run Simulation ▸ Behavioral / Post-Synthesis / Post-Implementation | Local tool | Todo (behavioral only; post-synth needs a netlist export, Remote) |
 | Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado) |
-| Open Hardware Manager | Local tool | Todo |
+| Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
+| Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
 | Create Block Design… | Not possible (see §6) | — |
 
 ### Tools

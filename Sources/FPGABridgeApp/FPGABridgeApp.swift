@@ -12,6 +12,7 @@ struct FPGABridgeApp: App {
         Window("FPGA Bridge", id: "main") {
             ContentView()
                 .environmentObject(model)
+                .environmentObject(model.hardware)
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
                 .task {
@@ -130,8 +131,8 @@ struct AppCommands: Commands {
             Button("Reset Runs") { model.resetRuns() }
                 .disabled(!model.hasProject || model.isRunning)
             Divider()
-            Button("Open Hardware Manager") {}
-                .disabled(true)
+            Button("Open Hardware Manager") { model.open(.hardware) }
+                .disabled(!model.hasProject)
         }
 
         CommandMenu("Reports") {

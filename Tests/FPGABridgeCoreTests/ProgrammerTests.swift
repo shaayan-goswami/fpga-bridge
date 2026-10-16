@@ -102,6 +102,14 @@ final class ProgrammerTests: XCTestCase {
                        "the chip alone can't tell these boards apart, so all three are offered")
     }
 
+    func testPartNameFollowsVivadosHardwareDeviceNames() {
+        XCTAssertEqual(Programmer.Device(idcode: "0x362d093", family: "artix a7 35t", model: "xc7a35").partName, "xc7a35t")
+        XCTAssertEqual(Programmer.Device(idcode: "0x37c4093", family: "spartan 7 25", model: "xc7s25").partName, "xc7s25")
+        XCTAssertEqual(Programmer.Device(idcode: "0x1", family: "artix a7 100t", model: "xc7a100t").partName, "xc7a100t",
+                       "no doubled t")
+        XCTAssertEqual(Programmer.Device(idcode: "0x1", family: "mystery", model: "").partName, "mystery")
+    }
+
     func testDetectingNothingIsAnEmptyListNotAnError() throws {
         // openFPGALoader exits 0 when no chip answers.
         let loader = try fakeLoader(status: 0, output: "empty\nJtag frequency : requested 6.00MHz")

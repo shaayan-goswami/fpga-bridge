@@ -98,7 +98,7 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
 - [ ] P1 Flow parity (separate runs with checkpoints, Launch Runs, completion popups, run settings and strategies)
 - [ ] P2 Projects and editing (Sources context menus, File and Edit menus, Replace in Files, go to line; the editor and Define Module are done)
 - [ ] P3 Reports and analysis
-- [ ] P4 Program and debug (Hardware Manager via openFPGALoader)
+- [x] P4 Program and debug: Hardware Manager screen, Program Device and Program Configuration Memory sheets (debug cores stay on Windows)
 - [ ] P5 Simulation (Verilator/Icarus, waveform viewer)
 - [ ] P6 Design views (Netlist, I/O Ports, constraints editors, IP Catalog)
 - [ ] P7 Workspace polish (Window/Layout/View/Help, layouts, Quick Access, tool settings)

@@ -79,7 +79,6 @@ enum FlowItem: String, CaseIterable, Identifiable {
         case .runSimulation: "Simulation with Verilator is planned"
         case .openElaboratedDesign, .openSynthesizedDesign, .openImplementedDesign:
             "Vivado's schematic and netlist viewers can't run on the Mac. Use the reports instead."
-        case .openHardwareManager: "Programming from the Mac with openFPGALoader is planned"
         default: nil
         }
     }
@@ -170,6 +169,7 @@ enum WorkspaceTab: Hashable, Identifiable {
     case summary
     case file(String)
     case report(String)
+    case hardware
 
     var id: Self { self }
     var isCloseable: Bool { self != .summary }
