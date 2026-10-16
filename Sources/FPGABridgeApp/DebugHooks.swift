@@ -23,7 +23,8 @@ enum DebugHooks {
     static var forceDemo: Bool { env["FPGA_BRIDGE_DEMO"] != nil }
     static var demoSpeed: Double { Double(env["FPGA_BRIDGE_DEMO_SPEED"] ?? "") ?? 1 }
     static var persistRecents: Bool { env["FPGA_BRIDGE_NO_PERSIST"] == nil }
-    static var examplesDirectory: URL? { env["FPGA_BRIDGE_EXAMPLES_DIR"].map { URL(fileURLWithPath: $0) } }
+    /// Read live, not from the cached `env`, so a test can point each run at its own folder.
+    static var examplesDirectory: URL? { getenv("FPGA_BRIDGE_EXAMPLES_DIR").map { URL(fileURLWithPath: String(cString: $0)) } }
     static var openPath: String? { env["FPGA_BRIDGE_OPEN"] }
     static var scenario: String? { env["FPGA_BRIDGE_SCENARIO"] }
     static var consoleTab: ConsoleTab? { env["FPGA_BRIDGE_CONSOLE_TAB"].flatMap(ConsoleTab.init(rawValue:)) }

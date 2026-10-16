@@ -36,7 +36,7 @@ final class ScriptedSimulation: SimulationBackend, @unchecked Sendable {
 }
 
 @MainActor
-final class SimulationManagerTests: XCTestCase {
+final class SimulationManagerTests: ExampleSandboxTestCase {
     let project = Project(name: "p", top: "top", part: "x", sources: ["src"], constraints: [])
     let directory = URL(fileURLWithPath: "/tmp/p")
 

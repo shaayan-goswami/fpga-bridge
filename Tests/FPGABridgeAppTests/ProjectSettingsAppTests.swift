@@ -3,7 +3,7 @@ import XCTest
 @testable import FPGABridgeApp
 
 @MainActor
-final class ProjectSettingsAppTests: XCTestCase {
+final class ProjectSettingsAppTests: ExampleSandboxTestCase {
     func makeModel() async throws -> AppModel {
         let model = AppModel(backend: DemoBackend(speed: 0), persist: false)
         model.openExampleProject()

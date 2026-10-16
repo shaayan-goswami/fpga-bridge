@@ -28,7 +28,7 @@ final class FakeHardware: HardwareBackend, @unchecked Sendable {
 }
 
 @MainActor
-final class HardwareManagerTests: XCTestCase {
+final class HardwareManagerTests: ExampleSandboxTestCase {
     func makeManager(_ hardware: FakeHardware) -> (HardwareManager, () -> [ConsoleLine]) {
         let manager = HardwareManager(backend: hardware)
         var lines: [ConsoleLine] = []

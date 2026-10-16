@@ -3,7 +3,7 @@ import XCTest
 @testable import FPGABridgeApp
 
 @MainActor
-final class WaveformModelTests: XCTestCase {
+final class WaveformModelTests: ExampleSandboxTestCase {
     let vcd = """
     $timescale 1ns $end
     $scope module tb $end

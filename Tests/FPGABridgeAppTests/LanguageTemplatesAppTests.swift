@@ -3,7 +3,7 @@ import XCTest
 @testable import FPGABridgeApp
 
 @MainActor
-final class LanguageTemplatesAppTests: XCTestCase {
+final class LanguageTemplatesAppTests: ExampleSandboxTestCase {
     func makeModel() -> (AppModel, String) {
         let model = AppModel(backend: DemoBackend(speed: 0), persist: false)
         model.openExampleProject()
