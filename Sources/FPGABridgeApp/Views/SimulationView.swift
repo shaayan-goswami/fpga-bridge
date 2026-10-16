@@ -115,8 +115,10 @@ private struct WaveformRow: View {
             }
             Spacer()
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-            Button("Open Waveform") { model.openWaveform(url) }
-                .help("Opens the waveform in Surfer or GTKWave.")
+            Button("Open in Surfer") { model.openWaveform(url) }
+                .help("Opens the file in Surfer or GTKWave, outside this app.")
+            Button("View Waveform") { Task { await model.showWaveform(url) } }
+                .buttonStyle(.borderedProminent)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

@@ -66,6 +66,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Reset Runs dialog (with "delete generated files") | Mac | Prototype (no dialog yet) |
 | Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |
 | Run Simulation ▸ Behavioral (Simulation tab: banner, log, Stop, Run Again, Open Waveform; Flow menu item) | Local tool | Done (Verilog and SystemVerilog, verified with Icarus Verilog 13) |
+| Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
+| Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
 | Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado) |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
@@ -184,7 +186,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Hardware Manager debug cores (ILA, VIO, JTAG-to-AXI) | Needs Xilinx `hw_server`, which has no macOS build | Program and flash the board with openFPGALoader; debug cores stay a Windows task |
 | Device view and floorplanning | Needs Vivado's device database and renderer in the GUI | Pin planning via the I/O Ports table (Remote data); placement reports |
 | IP Integrator block design editor | A full graphical editor backed by Vivado's IP engine | Open and validate block designs remotely, edit their Tcl; a visual editor is a stretch goal |
-| Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Icarus Verilog; a native waveform viewer is still to do |
+| Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Icarus Verilog; the native waveform viewer is done (markers and saved layouts are still to do) |
 | Vitis, HLS, licensing dialogs | Separate products | Out of scope |
 
 ---

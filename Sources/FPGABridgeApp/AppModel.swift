@@ -10,6 +10,7 @@ final class AppModel: ObservableObject {
     let backend: Backend
     let hardware: HardwareManager
     let simulation: SimulationManager
+    let waveform = WaveformModel()
     private let persist: Bool
 
     // Project
@@ -111,6 +112,7 @@ final class AppModel: ObservableObject {
             let loaded = try Project.load(from: directory)
             cancelRun()
             simulation.reset()
+            waveform.clear()
             drafts = [:]
             project = loaded
             projectURL = directory
@@ -131,6 +133,7 @@ final class AppModel: ObservableObject {
         afterResolvingUnsaved {
             self.cancelRun()
             self.simulation.reset()
+            self.waveform.clear()
             self.drafts = [:]
             self.echoTcl("close_project")
             self.discardProject()
@@ -390,7 +393,17 @@ final class AppModel: ObservableObject {
         guard let project, let projectURL, !simulation.isRunning else { return }
         consoleTab = .tclConsole
         open(.simulation)
-        Task { await simulation.run(project: project, directory: projectURL) }
+        Task {
+            let outcome = await simulation.run(project: project, directory: projectURL)
+            // Like Vivado, show the waveform when a simulation finishes.
+            if outcome?.result == .finished, let file = outcome?.waveform { await showWaveform(file) }
+        }
+    }
+
+    /// Loads a waveform file into the Waveform tab and shows it.
+    func showWaveform(_ url: URL) async {
+        open(.waveform)
+        await waveform.load(url)
     }
 
     // MARK: Hardware
@@ -707,6 +720,7 @@ final class AppModel: ObservableObject {
         case .hardware: "Hardware Manager"
         case .templates: "Language Templates"
         case .simulation: "Simulation"
+        case .waveform: "Waveform"
         }
     }
 
@@ -718,6 +732,7 @@ final class AppModel: ObservableObject {
         case .hardware: "cable.connector.horizontal"
         case .templates: "doc.text.magnifyingglass"
         case .simulation: "waveform.path.ecg"
+        case .waveform: "waveform"
         }
     }
 

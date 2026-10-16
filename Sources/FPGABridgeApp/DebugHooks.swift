@@ -65,6 +65,19 @@ extension AppModel {
                 try? await Task.sleep(nanoseconds: 50_000_000)
             }
             while simulation.isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
+        case "waveform", "waveform-zoom":
+            if DebugHooks.openPath == nil { openExampleProject() }
+            runSimulation()
+            while !(simulation.isRunning || { if case .done = simulation.state { return true } else { return false } }()) {
+                try? await Task.sleep(nanoseconds: 50_000_000)
+            }
+            while simulation.isRunning || waveform.isLoading || waveform.waveform == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
+            if let id = waveform.waveform?.signals.firstIndex(where: { $0.name == "clk" }) { waveform.selected = id }
+            waveform.setCursor(tick: waveform.endTime * 0.4)
+            if DebugHooks.scenario == "waveform-zoom" {
+                waveform.zoom(by: 9, anchor: 0.4)
+                waveform.setCursor(tick: waveform.viewStart + waveform.span * 0.5)
+            }
         case "templates":
             openExampleProject()
             if let top = sourceTree.first?.children?.first?.path { openFile(top) }

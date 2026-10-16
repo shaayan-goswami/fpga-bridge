@@ -171,6 +171,7 @@ enum WorkspaceTab: Hashable, Identifiable {
     case hardware
     case templates
     case simulation
+    case waveform
 
     var id: Self { self }
     var isCloseable: Bool { self != .summary }

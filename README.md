@@ -32,7 +32,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [ ] One-command remote builds (copy, build, fetch results)
 - [ ] Live build log streamed back to the Mac
 - [ ] Parsed timing and resource utilization summary
-- [x] Local simulation with Icarus Verilog (`fpga-bridge sim`, and the app's Run Simulation); waveforms open in Surfer or GTKWave
+- [x] Local simulation with Icarus Verilog (`fpga-bridge sim`, and the app's Run Simulation); waveforms open in the app's own viewer, or in Surfer
 - [ ] Board programming from the Mac with openFPGALoader
 - [ ] Native Mac app (editor, project view, build button)
 

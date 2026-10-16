@@ -16,6 +16,7 @@ struct WorkspaceView: View {
                 case .hardware: HardwareManagerView()
                 case .templates: LanguageTemplatesView()
                 case .simulation: SimulationView()
+                case .waveform: WaveformView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -14,6 +14,7 @@ struct FPGABridgeApp: App {
                 .environmentObject(model)
                 .environmentObject(model.hardware)
                 .environmentObject(model.simulation)
+                .environmentObject(model.waveform)
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
                 .task {
