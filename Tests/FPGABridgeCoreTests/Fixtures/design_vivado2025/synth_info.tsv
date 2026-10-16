@@ -1,0 +1,5 @@
+stage	synth
+design	design_1
+part	xc7a35tcpg236-1
+top	demo_top
+vivado	2025.2

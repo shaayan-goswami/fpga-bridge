@@ -18,6 +18,9 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
     public var synthesis = Synthesis()
     public var implementation = Implementation()
     public var bitstream = Bitstream()
+    /// Have the build also write the netlist, the I/O ports and a set of reports at each stage, which the app's
+    /// Elaborated, Synthesized and Implemented Design views show. Costs a little build time and some files to fetch.
+    public var collectDesignData = true
 
     public init() {}
 
@@ -28,9 +31,10 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
         synthesis = try c.value(.synthesis, Synthesis())
         implementation = try c.value(.implementation, Implementation())
         bitstream = try c.value(.bitstream, Bitstream())
+        collectDesignData = try c.value(.collectDesignData, true)
     }
 
-    private enum CodingKeys: String, CodingKey { case language, simulation, synthesis, implementation, bitstream }
+    private enum CodingKeys: String, CodingKey { case language, simulation, synthesis, implementation, bitstream, collectDesignData }
 
     /// True when nothing differs from Vivado's defaults.
     public var isDefault: Bool { self == ProjectSettings() }
