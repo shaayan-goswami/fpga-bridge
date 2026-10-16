@@ -23,7 +23,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showAddSources) {
             AddSourcesSheet().environmentObject(model)
         }
-        .sheet(item: $hardware.sheet) { kind in
+        .sheet(item: Binding(get: { hardware.sheetHost == "main" ? hardware.sheet : nil }, set: { hardware.sheet = $0 })) { kind in
             ProgramDeviceSheet(kind: kind).environmentObject(model).environmentObject(model.hardware)
         }
         .alert(model.unsavedPrompt?.title ?? "", isPresented: Binding(

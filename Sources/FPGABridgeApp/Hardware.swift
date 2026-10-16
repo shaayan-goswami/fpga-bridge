@@ -101,6 +101,22 @@ final class HardwareManager: ObservableObject {
     @Published var sheet: ProgramKind?
     @Published private(set) var isProgramming = false
 
+    /// Everything the manager has said, for the log under the Hardware Manager.
+    @Published private(set) var lines: [ConsoleLine] = []
+
+    /// Which window asked for the Program sheet, so only that window shows it ("main" or "standalone").
+    var sheetHost = "main"
+
+    func present(_ kind: ProgramKind, host: String) {
+        sheetHost = host
+        sheet = kind
+    }
+
+    private func emit(_ text: String, _ kind: ConsoleLine.Kind) {
+        lines.append(ConsoleLine(text: text, kind: kind))
+        console(text, kind)
+    }
+
     /// Where messages go (the Tcl console). Set by `AppModel`.
     var console: (String, ConsoleLine.Kind) -> Void = { _, _ in }
 
@@ -117,28 +133,28 @@ final class HardwareManager: ObservableObject {
     func openTarget(board: Board?) async {
         guard target != .opening, !isProgramming else { return }
         target = .opening
-        console("open_hw_target", .command)
+        emit("open_hw_target", .command)
         do {
             let found = try await backend.detect(board: board)
             devices = found.enumerated().map { HardwareDevice(index: $0.offset, device: $0.element) }
             guard !devices.isEmpty else {
                 target = .failed("No board found. Check the USB cable (it must carry data) and that the board's power switch is on.")
-                console("ERROR: no hardware target found", .error)
+                emit("ERROR: no hardware target found", .error)
                 return
             }
             target = .open
             selectedID = devices.first?.id
-            console("INFO: found \(devices.count) device\(devices.count == 1 ? "" : "s"): \(devices.map(\.name).joined(separator: ", "))", .info)
+            emit("INFO: found \(devices.count) device\(devices.count == 1 ? "" : "s"): \(devices.map(\.name).joined(separator: ", "))", .info)
         } catch {
             devices = []
             target = .failed(error.userMessage)
-            console("ERROR: \(error.userMessage)", .error)
+            emit("ERROR: \(error.userMessage)", .error)
         }
     }
 
     func closeTarget() {
         guard !isProgramming else { return }
-        console("close_hw_target", .command)
+        emit("close_hw_target", .command)
         target = .closed
         devices = []
         selectedID = nil
@@ -153,8 +169,8 @@ final class HardwareManager: ObservableObject {
         status[device.id] = .programming
         buffer = LineBuffer()
         let flashNote = kind.persistent ? " (configuration memory)" : ""
-        console("program_hw_devices [get_hw_devices \(device.name)]\(flashNote)", .command)
-        console("INFO: programming \(device.name) with \((bitstream as NSString).lastPathComponent)", .info)
+        emit("program_hw_devices [get_hw_devices \(device.name)]\(flashNote)", .command)
+        emit("INFO: programming \(device.name) with \((bitstream as NSString).lastPathComponent)", .info)
 
         // The loader writes from its own thread. Hopping through the main queue keeps chunks in order.
         let status = await backend.program(bitstream: bitstream, board: board, persist: kind.persistent) { chunk in
@@ -168,11 +184,11 @@ final class HardwareManager: ObservableObject {
         isProgramming = false
         if status == 0 {
             self.status[device.id] = .programmed(Date(), persistent: kind.persistent)
-            console("INFO: programmed \(device.name)", .info)
+            emit("INFO: programmed \(device.name)", .info)
             return true
         }
         self.status[device.id] = .failed
-        console("ERROR: programming \(device.name) failed (exit status \(status))", .error)
+        emit("ERROR: programming \(device.name) failed (exit status \(status))", .error)
         return false
     }
 
@@ -190,6 +206,6 @@ final class HardwareManager: ObservableObject {
         guard !text.isEmpty else { return }
         let isProgress = text.contains("[") && text.contains("%]") || text.range(of: #"\]\s+\d+(\.\d+)?%"#, options: .regularExpression) != nil
         if isProgress && !text.contains("100.00%") { return }
-        console(text, ConsoleLine.classify(text))
+        emit(text, ConsoleLine.classify(text))
     }
 }

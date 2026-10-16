@@ -4,6 +4,7 @@ import SwiftUI
 /// Glass here, with the desktop showing through; the project window is near-black.
 struct QuickStartView: View {
     @EnvironmentObject private var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         ZStack {
@@ -29,7 +30,9 @@ struct QuickStartView: View {
                                     Task { await model.start() }
                                 }
                                 QuickActionRow(symbol: "cable.connector.horizontal", title: "Open Hardware Manager",
-                                               subtitle: "Planned: program boards from the Mac", isEnabled: false) {}
+                                               subtitle: "Program a connected board, no project needed", tint: Accent.remote) {
+                                    openWindow(id: "hardware")
+                                }
                             }
                             section("Learning Center") {
                                 QuickActionRow(symbol: "book", title: "Documentation",

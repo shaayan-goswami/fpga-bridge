@@ -2,7 +2,17 @@ import FPGABridgeCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Vivado's Hardware Manager: a banner to open a target, the devices on it, and their properties.
+/// Which window a Hardware Manager is in. The Program sheet is shown only by the window that asked for it.
+private struct HardwareHostKey: EnvironmentKey { static let defaultValue = "main" }
+
+extension EnvironmentValues {
+    var hardwareHost: String {
+        get { self[HardwareHostKey.self] }
+        set { self[HardwareHostKey.self] = newValue }
+    }
+}
+
+/// Vivado's Hardware Manager: a banner to open a target, the devices on it, their properties, and a log.
 struct HardwareManagerView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var hardware: HardwareManager
@@ -19,7 +29,47 @@ struct HardwareManagerView: View {
                 DeviceProperties()
                     .background(Theme.surface)
             }
+            Divider()
+            HardwareLog()
+                .frame(height: 130)
         }
+    }
+}
+
+/// What the Hardware Manager has done and said, so a failure is visible even with no console on screen.
+private struct HardwareLog: View {
+    @EnvironmentObject private var hardware: HardwareManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Log")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 14)
+                .frame(height: 26)
+            Divider()
+            if hardware.lines.isEmpty {
+                Text("Nothing yet.").font(.callout).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Theme.surface)
+            } else {
+                ConsoleLines(lines: hardware.lines)
+            }
+        }
+    }
+}
+
+/// The Hardware Manager in a window of its own, for programming a board with no project open (Quick Start).
+struct HardwareManagerWindow: View {
+    @EnvironmentObject private var hardware: HardwareManager
+
+    var body: some View {
+        HardwareManagerView()
+            .environment(\.hardwareHost, "standalone")
+            .background(Theme.surface)
+            .sheet(item: Binding(get: { hardware.sheetHost == "standalone" ? hardware.sheet : nil }, set: { hardware.sheet = $0 })) { kind in
+                ProgramDeviceSheet(kind: kind)
+            }
     }
 }
 
@@ -146,6 +196,7 @@ private struct HardwareTree: View {
 private struct DeviceRow: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var hardware: HardwareManager
+    @Environment(\.hardwareHost) private var host
     let device: HardwareDevice
 
     var body: some View {
@@ -156,8 +207,8 @@ private struct DeviceRow: View {
             StatusPill(status: hardware.status(of: device))
         }
         .contextMenu {
-            Button(ProgramKind.device.title + "…") { hardware.selectedID = device.id; hardware.sheet = .device }
-            Button(ProgramKind.memory.title + "…") { hardware.selectedID = device.id; hardware.sheet = .memory }
+            Button(ProgramKind.device.title + "…") { hardware.selectedID = device.id; hardware.present(.device, host: host) }
+            Button(ProgramKind.memory.title + "…") { hardware.selectedID = device.id; hardware.present(.memory, host: host) }
         }
     }
 }
@@ -181,6 +232,7 @@ private struct StatusPill: View {
 private struct DeviceProperties: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var hardware: HardwareManager
+    @Environment(\.hardwareHost) private var host
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -198,9 +250,9 @@ private struct DeviceProperties: View {
                             InfoRow(label: "Status", value: statusText(hardware.status(of: device)))
                         }
                         HStack(spacing: 10) {
-                            Button(ProgramKind.device.title + "…") { hardware.sheet = .device }
+                            Button(ProgramKind.device.title + "…") { hardware.present(.device, host: host) }
                                 .buttonStyle(.bordered)
-                            Button(ProgramKind.memory.title + "…") { hardware.sheet = .memory }
+                            Button(ProgramKind.memory.title + "…") { hardware.present(.memory, host: host) }
                                 .buttonStyle(.bordered)
                         }
                         .disabled(hardware.isProgramming)

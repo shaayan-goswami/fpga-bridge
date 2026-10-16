@@ -26,6 +26,16 @@ struct FPGABridgeApp: App {
         .windowToolbarStyle(.unified(showsTitle: true))
         .commands { AppCommands(model: model) }
 
+        // Programming a board needs no project, so Quick Start can open the Hardware Manager by itself.
+        Window("Hardware Manager", id: "hardware") {
+            HardwareManagerWindow()
+                .environmentObject(model)
+                .environmentObject(model.hardware)
+                .frame(minWidth: 860, minHeight: 560)
+                .modifier(AppearanceRoot())
+        }
+        .defaultSize(width: 980, height: 660)
+
         Settings {
             AppSettingsView()
         }

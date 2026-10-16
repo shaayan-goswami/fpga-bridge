@@ -131,6 +131,35 @@ final class HardwareManagerTests: XCTestCase {
         XCTAssertNil(manager.selectedID)
     }
 
+    func testTheManagerKeepsItsOwnLogForAWindowWithNoConsole() async {
+        let hardware = FakeHardware()
+        hardware.programOutput = ["Open file DONE\n", "Done\n"]
+        let manager = HardwareManager(backend: hardware)   // no console connected, as in the standalone window
+        await manager.openTarget(board: nil)
+        await manager.program(bitstream: "/tmp/a.bit", board: nil, kind: .device)
+        let text = manager.lines.map(\.text)
+        XCTAssertEqual(text.first, "open_hw_target")
+        XCTAssertTrue(text.contains("Open file DONE") && text.contains("Done"), "\(text)")
+        XCTAssertEqual(text.last, "INFO: programmed xc7a35t_0")
+    }
+
+    func testAFailureIsInTheLogWithoutAnyConsole() async {
+        let hardware = FakeHardware()
+        hardware.detectError = ProgrammerError.notInstalled
+        let manager = HardwareManager(backend: hardware)
+        await manager.openTarget(board: nil)
+        XCTAssertTrue(manager.lines.contains { $0.kind == .error && $0.text.contains("brew install openfpgaloader") }, "\(manager.lines.map(\.text))")
+    }
+
+    func testTheProgramSheetBelongsToTheWindowThatAskedForIt() {
+        let manager = HardwareManager(backend: FakeHardware())
+        manager.present(.memory, host: "standalone")
+        XCTAssertEqual(manager.sheet, .memory)
+        XCTAssertEqual(manager.sheetHost, "standalone", "the main window must not also show it")
+        manager.present(.device, host: "main")
+        XCTAssertEqual(manager.sheetHost, "main")
+    }
+
     // MARK: Through the app model
 
     func testTheFlowNavigatorItemOpensTheHardwareManagerTab() throws {
