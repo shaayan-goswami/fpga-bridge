@@ -10,12 +10,16 @@ public struct Board: Equatable, Identifiable, Sendable {
     public let family: String
     /// Other accepted spellings, beyond what `BoardCatalog.normalize` already folds together.
     public let aliases: [String]
+    /// The name openFPGALoader knows this board by (`-b`), which tells it the cable and how to reach the chip.
+    public let loaderName: String?
 
-    public init(id: String, displayName: String, part: String, family: String, aliases: [String] = []) {
+    public init(id: String, displayName: String, part: String, family: String, aliases: [String] = [],
+                loaderName: String? = nil) {
         self.id = id
         self.displayName = displayName
         self.part = part
         self.family = family
         self.aliases = aliases
+        self.loaderName = loaderName
     }
 }

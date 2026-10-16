@@ -6,7 +6,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -32,7 +32,7 @@ struct Doctor: ParsableCommand {
 
     func run() throws {
         let config = try BridgeConfig.load()
-        let checks = FPGABridgeCore.Doctor.run(config: config)
+        let checks = FPGABridgeCore.Doctor.run(config: config) + [Programmer.check()]
         for check in checks {
             let mark = check.level == .ok ? "ok  " : check.level == .warn ? "warn" : "FAIL"
             print("[\(mark)] \(check.name): \(check.detail)")
@@ -129,6 +129,69 @@ struct Build: ParsableCommand {
         if status != 0 { throw ExitCode(status) }
         print("")
         print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+    }
+}
+
+struct Flash: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Program the board plugged into this Mac with the last built bitstream.",
+        discussion: """
+            Uses openFPGALoader (brew install openfpgaloader). By default the design is loaded into the FPGA and is \
+            lost at power-off; --persist writes the board's flash so it loads at every power-on.
+            """)
+
+    @Argument(help: "A .bit file. Default: build/<top>.bit from the last build.") var bitstream: String?
+    @Option(help: "Board id (see `fpga-bridge boards --list`). Default: the board the project was created for.") var board: String?
+    @Flag(help: "Write the board's flash instead of loading the FPGA directly.") var persist = false
+
+    func run() throws {
+        let programmer = try Programmer.require()
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let project = try? Project.load(from: root)
+
+        let boardID = board ?? project?.board
+        var selected: Board?
+        if let boardID {
+            guard let found = BoardCatalog.lookup(boardID) else {
+                throw ValidationError("Unknown board '\(boardID)'. See `fpga-bridge boards --list`.")
+            }
+            selected = found
+        }
+
+        let path: String
+        if let bitstream {
+            guard FileManager.default.fileExists(atPath: bitstream) else { throw ProgrammerError.noBitstream(bitstream) }
+            path = bitstream
+        } else {
+            guard let project else { throw ProjectError.missing(root.appendingPathComponent(Project.fileName).path) }
+            path = try Programmer.bitstreamPath(for: project, root: root)
+        }
+
+        print("Programming \(selected?.displayName ?? "the connected board") with \(path)" + (persist ? " (flash)" : ""))
+        let status = try programmer.program(bitstream: path, board: selected, target: persist ? .flash : .sram)
+        if status != 0 { throw ExitCode(status) }
+    }
+}
+
+struct Boards: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Show the boards plugged into this Mac, or list the boards this tool knows.")
+
+    @Flag(help: "List the supported boards instead of probing USB.") var list = false
+
+    func run() throws {
+        if list {
+            print(BoardCatalog.table())
+            return
+        }
+        let programmer = try Programmer.require()
+        let result = try programmer.detect()
+        let text = (result.stdout + result.stderr).trimmingCharacters(in: .whitespacesAndNewlines)
+        print(text.isEmpty ? "No output from openFPGALoader." : text)
+        if !result.succeeded {
+            print("\nNo board found. Check the USB cable (use a data cable) and that the board's power switch is on.")
+            throw ExitCode.failure
+        }
     }
 }
 

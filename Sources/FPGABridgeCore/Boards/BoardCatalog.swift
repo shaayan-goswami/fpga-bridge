@@ -7,19 +7,19 @@ import Foundation
 /// and Zynq boards (need processor-system handling).
 public enum BoardCatalog {
     public static let all: [Board] = [
-        Board(id: "basys3", displayName: "Basys 3", part: "xc7a35tcpg236-1", family: "Artix-7"),
+        Board(id: "basys3", displayName: "Basys 3", part: "xc7a35tcpg236-1", family: "Artix-7", loaderName: "basys3"),
         Board(id: "arty-a7-35", displayName: "Arty A7-35", part: "xc7a35ticsg324-1L", family: "Artix-7",
-              aliases: ["arty-a7-35t"]),
+              aliases: ["arty-a7-35t"], loaderName: "arty_a7_35t"),
         Board(id: "arty-a7-100", displayName: "Arty A7-100", part: "xc7a100tcsg324-1", family: "Artix-7",
-              aliases: ["arty-a7-100t"]),
+              aliases: ["arty-a7-100t"], loaderName: "arty_a7_100t"),
         Board(id: "nexys-a7-100", displayName: "Nexys A7-100T", part: "xc7a100tcsg324-1", family: "Artix-7",
-              aliases: ["nexys-a7-100t", "nexys-a7"]),
+              aliases: ["nexys-a7-100t", "nexys-a7"], loaderName: "nexys_a7_100"),
         Board(id: "cmod-a7-15", displayName: "Cmod A7-15T", part: "xc7a15tcpg236-1", family: "Artix-7",
-              aliases: ["cmod-a7-15t"]),
+              aliases: ["cmod-a7-15t"], loaderName: "cmod_a7_15t"),
         Board(id: "cmod-a7-35", displayName: "Cmod A7-35T", part: "xc7a35tcpg236-1", family: "Artix-7",
-              aliases: ["cmod-a7-35t"]),
-        Board(id: "arty-s7-25", displayName: "Arty S7-25", part: "xc7s25csga324-1", family: "Spartan-7"),
-        Board(id: "arty-s7-50", displayName: "Arty S7-50", part: "xc7s50csga324-1", family: "Spartan-7"),
+              aliases: ["cmod-a7-35t"], loaderName: "cmod_a7_35t"),
+        Board(id: "arty-s7-25", displayName: "Arty S7-25", part: "xc7s25csga324-1", family: "Spartan-7", loaderName: "arty_s7_25"),
+        Board(id: "arty-s7-50", displayName: "Arty S7-50", part: "xc7s50csga324-1", family: "Spartan-7", loaderName: "arty_s7_50"),
     ]
 
     /// Case-insensitive lookup that ignores punctuation and spaces, so "Arty_A7-35" finds "arty-a7-35".
