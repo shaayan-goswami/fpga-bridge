@@ -114,6 +114,15 @@ final class HardeningTests: XCTestCase {
         XCTAssertNoThrow(try project.resolveSources(in: root))
     }
 
+    /// `fpga-bridge new` writes "." as the source and constraint folder, so a project's own directory must be accepted.
+    /// (Found by the first real build: the symlink check refused ".".)
+    func testTheProjectDirectoryItselfIsAValidEntry() throws {
+        let (_, root) = try makeProject()
+        let project = Project(name: "p", top: "a", part: "x", sources: ["."], constraints: ["."])
+        XCTAssertEqual(try project.resolveSources(in: root), ["src/a.v"])
+        XCTAssertNoThrow(try project.resolveConstraints(in: root))
+    }
+
     func testEquivalentPathSpellingsCountOnce() throws {
         let (_, root) = try makeProject()
         let project = Project(name: "p", top: "a", part: "x", sources: ["src/a.v", "./src/a.v", "src/../src/a.v"], constraints: [])

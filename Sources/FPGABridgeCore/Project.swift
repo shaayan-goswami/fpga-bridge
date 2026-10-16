@@ -134,9 +134,12 @@ public struct Project: Codable, Equatable, Sendable {
         return result.sorted()
     }
 
-    /// True if the file, with symlinks followed, is still under the project directory.
+    /// True if the file, with symlinks followed, is the project directory or under it. The project directory itself
+    /// counts: "." is the default source entry.
     private static func isInside(_ url: URL, root: URL) -> Bool {
-        url.resolvingSymlinksInPath().path.hasPrefix(root.resolvingSymlinksInPath().path + "/")
+        let path = url.resolvingSymlinksInPath().path
+        let base = root.resolvingSymlinksInPath().path
+        return path == base || path.hasPrefix(base + "/")
     }
 
     private static func relative(_ url: URL, to root: URL) -> String {
