@@ -18,11 +18,14 @@ public struct Project: Codable, Equatable, Sendable {
     public var simulationSources: [String]?
     /// Target language, "Verilog" or "VHDL" (what new files are created as).
     public var targetLanguage: String?
+    /// The testbench module to simulate. Left out, the simulator picks the one nothing instantiates.
+    public var simulationTop: String?
 
     public static let fileName = "fpga-bridge.json"
 
     public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil,
-                vivadoVersion: String? = nil, simulationSources: [String]? = nil, targetLanguage: String? = nil) {
+                vivadoVersion: String? = nil, simulationSources: [String]? = nil, targetLanguage: String? = nil,
+                simulationTop: String? = nil) {
         self.name = name
         self.top = top
         self.part = part
@@ -32,6 +35,7 @@ public struct Project: Codable, Equatable, Sendable {
         self.vivadoVersion = vivadoVersion
         self.simulationSources = simulationSources
         self.targetLanguage = targetLanguage
+        self.simulationTop = simulationTop
     }
 
     public static func load(from directory: URL) throws -> Project {
@@ -55,6 +59,9 @@ public struct Project: Codable, Equatable, Sendable {
         guard Project.isPlain(top) else { throw ProjectError.invalid("top must use only letters, digits, '_' and '-'") }
         guard Project.isPlain(part) else { throw ProjectError.invalid("part must use only letters, digits, '_' and '-'") }
         guard !sources.isEmpty else { throw ProjectError.invalid("sources must list at least one file or directory") }
+        if let simulationTop, !Project.isPlain(simulationTop) {
+            throw ProjectError.invalid("simulationTop must use only letters, digits, '_' and '-'")
+        }
         if let vivadoVersion, Project.version(in: "/Vivado/\(vivadoVersion)/") == nil {
             throw ProjectError.invalid("vivadoVersion must look like 2023.2")
         }

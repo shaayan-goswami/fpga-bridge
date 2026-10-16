@@ -102,6 +102,58 @@ public enum Shell {
         return process.terminationStatus
     }
 
+    /// Set from any thread to ask a running child to stop.
+    public final class StopFlag: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value = false
+        public init() {}
+        public var isSet: Bool { lock.withLock { value } }
+        public func set() { lock.withLock { value = true } }
+    }
+
+    /// Conventional exit status for "timed out" (as `timeout(1)` uses).
+    public static let timedOutStatus: Int32 = 124
+
+    /// Runs a command with its output going to `output`, in `directory`. The child is terminated when `stop` is set
+    /// (status `interruptedStatus`) or after `timeout` seconds (status `timedOutStatus`). For work a UI starts and
+    /// may need to cancel, such as a simulation that never finishes.
+    public static func stream(
+        _ executable: String, _ arguments: [String], in directory: URL? = nil,
+        stop: StopFlag, timeout: TimeInterval? = nil, output: @escaping @Sendable (String) -> Void
+    ) throws -> Int32 {
+        let process = makeProcess(executable, arguments)
+        process.currentDirectoryURL = directory
+        let capture = OutputCapture(process: process, handler: output)
+        do { try process.run() } catch { throw ShellError.launchFailed(executable, error) }
+        capture.started()
+
+        enum Reason { case none, stopped, timedOut }
+        let reason = LockedBox(Reason.none)
+        let started = Date()
+        DispatchQueue.global().async {
+            while process.isRunning {
+                if stop.isSet { reason.set(.stopped); process.terminate(); return }
+                if let timeout, Date().timeIntervalSince(started) > timeout { reason.set(.timedOut); process.terminate(); return }
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+        }
+        process.waitUntilExit()
+        capture.finish()
+        switch reason.value {
+        case .stopped: return interruptedStatus
+        case .timedOut: return timedOutStatus
+        case .none: return process.terminationStatus
+        }
+    }
+
+    private final class LockedBox<T>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: T
+        init(_ value: T) { stored = value }
+        var value: T { lock.withLock { stored } }
+        func set(_ new: T) { lock.withLock { stored = new } }
+    }
+
     /// Reads a child's combined stdout/stderr on a background queue until the pipe closes.
     private final class OutputCapture {
         private let pipe = Pipe()

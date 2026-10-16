@@ -6,7 +6,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Flash.self, Boards.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -32,7 +32,7 @@ struct Doctor: ParsableCommand {
 
     func run() throws {
         let config = try BridgeConfig.load()
-        let checks = FPGABridgeCore.Doctor.run(config: config) + [Programmer.check()]
+        let checks = FPGABridgeCore.Doctor.run(config: config) + [Programmer.check(), Simulator.check()]
         for check in checks {
             let mark = check.level == .ok ? "ok  " : check.level == .warn ? "warn" : "FAIL"
             print("[\(mark)] \(check.name): \(check.detail)")
@@ -129,6 +129,48 @@ struct Build: ParsableCommand {
         if status != 0 { throw ExitCode(status) }
         print("")
         print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+    }
+}
+
+struct Sim: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Simulate the project's testbench on this Mac with Icarus Verilog.",
+        discussion: """
+            Runs the project's design and simulation sources (Verilog and SystemVerilog) and leaves a waveform in \
+            build/sim/sim.vcd, which Surfer or GTKWave can open. Needs: brew install icarus-verilog
+            """)
+
+    @Option(help: "Testbench module to simulate. Default: the project's simulationTop, or the one nothing instantiates.") var top: String?
+    @Option(help: "Stop a simulation that hasn't finished after this many seconds.") var timeout: Double = 120
+
+    func run() throws {
+        let simulator = try Simulator.require()
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let plan = try Simulator.plan(project: try Project.load(from: root), root: root, top: top)
+
+        // Ctrl-C stops the simulation instead of leaving it running.
+        let stop = Shell.StopFlag()
+        signal(SIGINT, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
+        source.setEventHandler { stop.set() }
+        source.resume()
+        defer { source.cancel() }
+
+        print("Simulating \(plan.top) (\(plan.sources.count) files)")
+        fflush(stdout)
+        let result = try simulator.simulate(plan, stop: stop, timeout: timeout) { chunk in
+            FileHandle.standardOutput.write(Data(chunk.utf8))
+        }
+        print("")
+        if result.succeeded {
+            print("Simulation finished" + (result.finishedAt.map { " at \($0) of simulated time" } ?? ""))
+            if let waveform = result.waveform { print("Waveform: \(waveform.path)") }
+            return
+        }
+        if result.wasStopped { print("Stopped.") }
+        else if result.timedOut { print("Timed out after \(Int(timeout)) seconds. Does the testbench call $finish?") }
+        else { print(result.stage == .compile ? "Compile failed." : "Simulation failed (exit status \(result.status)).") }
+        throw ExitCode(result.status == 0 ? 1 : result.status)
     }
 }
 
