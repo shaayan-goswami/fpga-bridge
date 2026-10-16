@@ -1,0 +1,40 @@
+
+****** Vivado v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 16 19:02:46 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+FPGABRIDGE-IP	CFG	CONFIG.AINIT_Value	0
+FPGABRIDGE-IP	CFG	CONFIG.CE	false
+FPGABRIDGE-IP	CFG	CONFIG.CLK_INTF.FREQ_HZ	10000000
+FPGABRIDGE-IP	CFG	CONFIG.CLK_INTF.INSERT_VIP	0
+FPGABRIDGE-IP	CFG	CONFIG.Count_Mode	UP
+FPGABRIDGE-IP	CFG	CONFIG.Fb_Latency	0
+FPGABRIDGE-IP	CFG	CONFIG.Fb_Latency_Configuration	Manual
+FPGABRIDGE-IP	CFG	CONFIG.Final_Count_Value	1
+FPGABRIDGE-IP	CFG	CONFIG.Implementation	Fabric
+FPGABRIDGE-IP	CFG	CONFIG.Increment_Value	1
+FPGABRIDGE-IP	CFG	CONFIG.Latency	1
+FPGABRIDGE-IP	CFG	CONFIG.Latency_Configuration	Manual
+FPGABRIDGE-IP	CFG	CONFIG.Load	false
+FPGABRIDGE-IP	CFG	CONFIG.Load_Sense	Active_High
+FPGABRIDGE-IP	CFG	CONFIG.Output_Width	16
+FPGABRIDGE-IP	CFG	CONFIG.Restrict_Count	false
+FPGABRIDGE-IP	CFG	CONFIG.SCLR	false
+FPGABRIDGE-IP	CFG	CONFIG.SCLR_INTF.INSERT_VIP	0
+FPGABRIDGE-IP	CFG	CONFIG.SINIT	false
+FPGABRIDGE-IP	CFG	CONFIG.SINIT_Value	0
+FPGABRIDGE-IP	CFG	CONFIG.SSET	false
+FPGABRIDGE-IP	CFG	CONFIG.SyncCtrlPriority	Reset_Overrides_Set
+FPGABRIDGE-IP	CFG	CONFIG.Sync_CE_Priority	Sync_Overrides_CE
+FPGABRIDGE-IP	CFG	CONFIG.Sync_Threshold_Output	false
+FPGABRIDGE-IP	CFG	CONFIG.Threshold_Value	1
+
+source {.fpga-bridge\job-24A580D8.tcl}
+# set_part {xc7a35tcpg236-1}
+INFO: [Coretcl 2-1500] The part has been set to 'xc7a35tcpg236-1' for the current project only. Run set_part -help for more details. To evaluate different speed grades in the current design, use the set_speed_grade command, or use the open_checkpoint -part command to change the part used by an existing checkpoint design.
+set_part: Time (s): cpu = 00:00:10 ; elapsed = 00:00:08 . Memory (MB): peak = 536.371 ; gain = 226.633
+# file mkdir ipwork_3b2291cf
+# if {[catch {

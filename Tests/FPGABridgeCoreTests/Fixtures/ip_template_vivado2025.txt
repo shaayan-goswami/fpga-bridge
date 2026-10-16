@@ -1,0 +1,161 @@
+
+****** Vivado v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 16 19:03:01 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// (c) Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// (c) Copyright 2022-2026 Advanced Micro Devices, Inc. All rights reserved.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// 
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// This file contains confidential and proprietary information
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// of AMD and is protected under U.S. and international copyright
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// and other intellectual property laws.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// 
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// DISCLAIMER
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// This disclaimer is not a license and does not grant any
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// rights to the materials distributed herewith. Except as
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// otherwise provided in a valid license issued to you by
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// AMD, and to the maximum extent permitted by applicable
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// WITH ALL FAULTS, AND AMD HEREBY DISCLAIMS ALL WARRANTIES
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// (2) AMD shall not be liable (whether in contract or tort,
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// including negligence, or under any other theory of
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// liability) for any loss or damage of any kind or nature
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// related to, arising under or in connection with these
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// materials, including for any direct, or any indirect,
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// special, incidental, or consequential loss or damage
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// (including loss of data, profits, goodwill, or any type of
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// loss or damage suffered as a result of any action brought
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// by a third party) even if such damage or loss was
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// reasonably foreseeable or AMD had been advised of the
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// possibility of the same.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// 
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// CRITICAL APPLICATIONS
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// AMD products are not designed or intended to be fail-
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// safe, or for use in any application requiring fail-safe
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// performance, such as life-support or safety devices or
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// systems, Class III medical devices, nuclear facilities,
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// applications related to the deployment of airbags, or any
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// other applications that could lead to death, personal
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// injury, or severe property or environmental damage
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// (individually and collectively, "Critical
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// Applications"). Customer assumes the sole risk and
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// liability of any use of AMD products in Critical
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// Applications, subject only to applicable laws and
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// regulations governing limitations on product liability.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// 
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// PART OF THIS FILE AT ALL TIMES.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// 
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// DO NOT MODIFY THIS FILE.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// IP VLNV: xilinx.com:ip:c_counter_binary:12.0
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// IP Revision: 22
+FPGABRIDGE-IP	TEMPLATE_VERILOG	
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// The following must be inserted into your Verilog file for this
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// core to be instantiated. Change the instance name and port connections
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// (in parentheses) to your own signal names.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	
+FPGABRIDGE-IP	TEMPLATE_VERILOG	//----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
+FPGABRIDGE-IP	TEMPLATE_VERILOG	cnt8 your_instance_name (
+FPGABRIDGE-IP	TEMPLATE_VERILOG	  .CLK(CLK),  // input wire CLK
+FPGABRIDGE-IP	TEMPLATE_VERILOG	  .Q(Q)      // output wire [7 : 0] Q
+FPGABRIDGE-IP	TEMPLATE_VERILOG	);
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// INST_TAG_END ------ End INSTANTIATION Template ---------
+FPGABRIDGE-IP	TEMPLATE_VERILOG	
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// You must compile the wrapper file cnt8.v when simulating
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// the core, cnt8. When compiling the wrapper file, be sure to
+FPGABRIDGE-IP	TEMPLATE_VERILOG	// reference the Verilog simulation library.
+FPGABRIDGE-IP	TEMPLATE_VERILOG	
+FPGABRIDGE-IP	TEMPLATE_VERILOG	
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- (c) Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- (c) Copyright 2022-2026 Advanced Micro Devices, Inc. All rights reserved.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- 
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- This file contains confidential and proprietary information
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- of AMD and is protected under U.S. and international copyright
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- and other intellectual property laws.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- 
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- DISCLAIMER
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- This disclaimer is not a license and does not grant any
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- rights to the materials distributed herewith. Except as
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- otherwise provided in a valid license issued to you by
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- AMD, and to the maximum extent permitted by applicable
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- WITH ALL FAULTS, AND AMD HEREBY DISCLAIMS ALL WARRANTIES
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- (2) AMD shall not be liable (whether in contract or tort,
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- including negligence, or under any other theory of
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- liability) for any loss or damage of any kind or nature
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- related to, arising under or in connection with these
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- materials, including for any direct, or any indirect,
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- special, incidental, or consequential loss or damage
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- (including loss of data, profits, goodwill, or any type of
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- loss or damage suffered as a result of any action brought
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- by a third party) even if such damage or loss was
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- reasonably foreseeable or AMD had been advised of the
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- possibility of the same.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- 
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- CRITICAL APPLICATIONS
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- AMD products are not designed or intended to be fail-
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- safe, or for use in any application requiring fail-safe
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- performance, such as life-support or safety devices or
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- systems, Class III medical devices, nuclear facilities,
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- applications related to the deployment of airbags, or any
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- other applications that could lead to death, personal
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- injury, or severe property or environmental damage
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- (individually and collectively, "Critical
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- Applications"). Customer assumes the sole risk and
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- liability of any use of AMD products in Critical
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- Applications, subject only to applicable laws and
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- regulations governing limitations on product liability.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- 
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- PART OF THIS FILE AT ALL TIMES.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- 
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- DO NOT MODIFY THIS FILE.
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- IP VLNV: xilinx.com:ip:c_counter_binary:12.0
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- IP Revision: 22
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- The following code must appear in the VHDL architecture header.
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	------------- Begin Cut here for COMPONENT Declaration ------ COMP_TAG
+FPGABRIDGE-IP	TEMPLATE_VHDL	COMPONENT cnt8
+FPGABRIDGE-IP	TEMPLATE_VHDL	  PORT (
+FPGABRIDGE-IP	TEMPLATE_VHDL	    CLK : IN STD_LOGIC;
+FPGABRIDGE-IP	TEMPLATE_VHDL	    Q : OUT STD_LOGIC_VECTOR(7 DOWNTO 0) 
+FPGABRIDGE-IP	TEMPLATE_VHDL	  );
+FPGABRIDGE-IP	TEMPLATE_VHDL	END COMPONENT;
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- COMP_TAG_END ------ End COMPONENT Declaration ------------
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- The following code must appear in the VHDL architecture
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- body. Substitute your own instance name and net names.
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	------------- Begin Cut here for INSTANTIATION Template ----- INST_TAG
+FPGABRIDGE-IP	TEMPLATE_VHDL	your_instance_name : cnt8
+FPGABRIDGE-IP	TEMPLATE_VHDL	  PORT MAP (
+FPGABRIDGE-IP	TEMPLATE_VHDL	    CLK => CLK,
+FPGABRIDGE-IP	TEMPLATE_VHDL	    Q => Q
+FPGABRIDGE-IP	TEMPLATE_VHDL	  );
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- INST_TAG_END ------ End INSTANTIATION Template ---------
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- You must compile the wrapper file cnt8.vhd when simulating
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- the core, cnt8. When compiling the wrapper file, be sure to
+FPGABRIDGE-IP	TEMPLATE_VHDL	-- reference the VHDL simulation library.
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+FPGABRIDGE-IP	TEMPLATE_VHDL	
+
+source {.fpga-bridge\job-98B47564.tcl}
+# set_part {xc7a35tcpg236-1}
+INFO: [Coretcl 2-1500] The part has been set to 'xc7a35tcpg236-1' for the current project only. Run set_part -help for more details. To evaluate different speed grades in the current design, use the set_speed_grade command, or use the open_checkpoint -part command to change the part used by an existing checkpoint design.
+set_part: Time (s): cpu = 00:00:09 ; elapsed = 00:00:08 . Memory (MB): peak = 534.812 ; gain = 228.312
+# file mkdir ipwork_28e98068
+# if {[catch {

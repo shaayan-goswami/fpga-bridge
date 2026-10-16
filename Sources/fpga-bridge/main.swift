@@ -179,11 +179,13 @@ struct IPCommand: ParsableCommand {
     struct Config: ParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Show an IP's settings and their default values.")
         @Argument(help: "The IP's name or full vendor:library:name:version.") var ip: String
+        @Flag(name: .customLong("tcl"), help: "Print the Tcl that would be run on the build machine, without running it.") var printScript = false
 
         func run() throws {
             let (project, _) = try IPCommand.project()
             let service = try IPCommand.service()
             let definition = try IPCommand.find(ip, in: try service.catalog(part: project.part))
+            if printScript { print(IPScripts.propertiesScript(vlnv: definition.vlnv, part: project.part)); return }
             print("\(definition.displayName)  \(definition.vlnv)\n")
             for p in try service.properties(of: definition, part: project.part) { print("\(p.name) = \(p.value)") }
         }
@@ -234,10 +236,12 @@ struct IPCommand: ParsableCommand {
     struct Show: ParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Print an IP's instantiation template and settings.")
         @Argument(help: "The IP's instance name.") var name: String
+        @Flag(name: .customLong("tcl"), help: "Print the Tcl that would be run on the build machine, without running it.") var printScript = false
 
         func run() throws {
             let (project, _) = try IPCommand.project()
             guard let ip = (project.ips ?? []).first(where: { $0.name == name }) else { throw ValidationError("The project has no IP called '\(name)'.") }
+            if printScript { print(IPScripts.templateScript(ip: ip, part: project.part)); return }
             print("\(ip.vlnv)")
             for key in ip.config.keys.sorted() { print("  \(key) = \(ip.config[key] ?? "")") }
             let template = try IPCommand.service().template(for: ip, part: project.part)

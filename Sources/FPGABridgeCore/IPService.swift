@@ -88,19 +88,28 @@ public enum IPScripts {
         return result
     }
 
-    /// The part of a `.veo` or `.vho` that is meant to be copied into a design: between "Begin Cut here" and the end
-    /// marker, without the licence text above it.
+    /// The parts of a `.veo` or `.vho` that are meant to be copied into a design: each stretch between a "Begin Cut here"
+    /// line and its `_TAG_END` line, without the licence text. Verilog has one (the instance); VHDL has two (the
+    /// component declaration and the instance), which are joined with a blank line.
     public static func cutSection(of lines: [String]) -> String {
-        guard let begin = lines.firstIndex(where: { $0.contains("Begin Cut here for") }) else { return "" }
-        var body: [String] = []
-        for line in lines[(begin + 1)...] {
-            if line.contains("INST_TAG_END") || (line.contains("End") && line.contains("Template") && line.contains("---")) { break }
-            body.append(line)
+        var sections: [[String]] = []
+        var current: [String]?
+        for line in lines {
+            if line.contains("Begin Cut here for") { current = []; continue }
+            if line.contains("_TAG_END") {
+                if let done = current { sections.append(done) }
+                current = nil
+                continue
+            }
+            current?.append(line)
         }
-        // Drop blank lines at both ends.
-        while body.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { body.removeFirst() }
-        while body.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { body.removeLast() }
-        return body.joined(separator: "\n") + (body.isEmpty ? "" : "\n")
+        let texts = sections.map { section -> String in
+            var body = section
+            while body.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { body.removeFirst() }
+            while body.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { body.removeLast() }
+            return body.joined(separator: "\n")
+        }.filter { !$0.isEmpty }
+        return texts.isEmpty ? "" : texts.joined(separator: "\n\n") + "\n"
     }
 }
 
