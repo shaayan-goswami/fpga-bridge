@@ -256,6 +256,35 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
         }
     }
 
+    /// For the settings screen: is this a valid macro (`NAME` or `NAME=VALUE`)?
+    public static func isValidDefine(_ s: String) -> Bool { isAssignment(s, valueRequired: false) }
+    /// Is this a valid generic (`NAME=VALUE`)?
+    public static func isValidGeneric(_ s: String) -> Bool { isAssignment(s, valueRequired: true) }
+    /// Is this a plain folder inside the project?
+    public static func isValidIncludeDirectory(_ dir: String) -> Bool {
+        !dir.isEmpty && !dir.hasPrefix("/") && !dir.split(separator: "/").contains("..")
+            && dir.range(of: #"^[A-Za-z0-9_\-./ ]+$"#, options: .regularExpression) != nil
+    }
+    /// Is this free text safe to put on a Tcl line (flags and values only)?
+    public static func isValidOptionText(_ s: String) -> Bool { isPlainOptions(s) }
+
+    /// The same settings with whitespace trimmed and blank rows dropped, which is what a form leaves behind.
+    public func cleaned() -> ProjectSettings {
+        func list(_ items: [String]) -> [String] { items.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
+        func text(_ s: String) -> String { s.split(whereSeparator: { $0 == " " }).joined(separator: " ") }
+        var c = self
+        c.language.defines = list(language.defines)
+        c.language.generics = list(language.generics)
+        c.language.includeDirectories = list(language.includeDirectories)
+        c.simulation.runtimeArguments = text(simulation.runtimeArguments)
+        c.synthesis.moreOptions = text(synthesis.moreOptions)
+        c.implementation.optMoreOptions = text(implementation.optMoreOptions)
+        c.implementation.placeMoreOptions = text(implementation.placeMoreOptions)
+        c.implementation.routeMoreOptions = text(implementation.routeMoreOptions)
+        c.bitstream.moreOptions = text(bitstream.moreOptions)
+        return c
+    }
+
     /// Letters, digits and `_`, not starting with a digit.
     static func isIdentifier(_ s: String) -> Bool {
         s.range(of: #"^[A-Za-z_][A-Za-z0-9_]*$"#, options: .regularExpression) != nil

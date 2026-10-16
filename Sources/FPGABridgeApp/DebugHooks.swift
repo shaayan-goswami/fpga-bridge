@@ -14,6 +14,7 @@ import SwiftUI
 ///   FPGA_BRIDGE_SCENARIO=name      start in a prepared state (see applyLaunchScenario)
 ///   FPGA_BRIDGE_CONSOLE_TAB=name   select a console tab
 ///   FPGA_BRIDGE_WIZARD_STEP=n      start the New Project wizard on step n
+///   FPGA_BRIDGE_SETTINGS_PAGE=name open Project Settings on this page (General, Simulation, ...)
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -27,6 +28,7 @@ enum DebugHooks {
     static var scenario: String? { env["FPGA_BRIDGE_SCENARIO"] }
     static var consoleTab: ConsoleTab? { env["FPGA_BRIDGE_CONSOLE_TAB"].flatMap(ConsoleTab.init(rawValue:)) }
     static var wizardStartStep: Int? { env["FPGA_BRIDGE_WIZARD_STEP"].flatMap(Int.init) }
+    static var settingsPage: String? { env["FPGA_BRIDGE_SETTINGS_PAGE"] }
     #else
     static let forceDemo = false
     static let demoSpeed = 1.0
@@ -36,6 +38,7 @@ enum DebugHooks {
     static let scenario: String? = nil
     static let consoleTab: ConsoleTab? = nil
     static let wizardStartStep: Int? = nil
+    static let settingsPage: String? = nil
     #endif
 }
 

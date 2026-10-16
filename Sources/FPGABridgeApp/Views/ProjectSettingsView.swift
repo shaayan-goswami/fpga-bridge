@@ -28,12 +28,14 @@ struct ProjectSettingsView: View {
         }
     }
 
-    @State private var page: Page? = .general
+    @State private var page: Page? = DebugHooks.settingsPage.flatMap(Page.init(rawValue:)) ?? .general
     @State private var top = ""
     @State private var board = ""
     @State private var part = ""
     @State private var language = "Verilog"
     @State private var vivadoVersion = ""
+    @State private var settings = ProjectSettings()
+    @State private var simulationTop = ""
     @State private var loaded = false
 
     var body: some View {
@@ -50,22 +52,32 @@ struct ProjectSettingsView: View {
                 Group {
                     switch page ?? .general {
                     case .general: general
-                    default: notConfigurable(page ?? .general)
+                    case .simulation: SimulationSettingsPage(settings: $settings, simulationTop: $simulationTop, context: context)
+                    case .elaboration: ElaborationSettingsPage(settings: $settings, context: context)
+                    case .synthesis: SynthesisSettingsPage(settings: $settings, context: context)
+                    case .implementation: ImplementationSettingsPage(settings: $settings, context: context)
+                    case .bitstream: BitstreamSettingsPage(settings: $settings, context: context)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             Divider()
             HStack {
+                if let problem = settingsProblem {
+                    Label(problem, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout)
+                        .foregroundStyle(Accent.error)
+                        .lineLimit(2)
+                }
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Apply") { apply() }
-                Button("OK") { apply(); dismiss() }.keyboardShortcut(.defaultAction)
+                Button("Apply") { apply() }.disabled(settingsProblem != nil)
+                Button("OK") { apply(); dismiss() }.keyboardShortcut(.defaultAction).disabled(settingsProblem != nil)
             }
             .controlSize(.large)
             .padding(14)
         }
-        .frame(width: 780, height: 520)
+        .frame(width: 780, height: 660)
         .onAppear(perform: load)
     }
 
@@ -117,14 +129,16 @@ struct ProjectSettingsView: View {
         .formStyle(.grouped)
     }
 
-    private func notConfigurable(_ page: Page) -> some View {
-        ContentUnavailableView {
-            Label("\(page.rawValue) Settings", systemImage: page.symbol)
-        } description: {
-            Text(page == .simulation
-                 ? "Simulation with Verilator is planned."
-                 : "Runs use Vivado's default \(page.rawValue.lowercased()) strategy. Changing it isn't supported yet.")
-        }
+    /// What the pages need to know about the project.
+    private var context: SettingsContext {
+        let testbenches = (try? model.project?.resolveSimulationSources(in: model.projectURL ?? URL(fileURLWithPath: "/"))) ?? []
+        return SettingsContext(projectURL: model.projectURL, settings: settings, top: top, part: part, sourceModules: modules,
+                               testbenchModules: testbenches.flatMap { ProjectCreator.declaredModules(in: model.contents(of: $0)) }.sorted())
+    }
+
+    /// Why the settings can't be applied yet, if they can't.
+    private var settingsProblem: String? {
+        do { try settings.cleaned().validate(); return nil } catch { return error.userMessage }
     }
 
     private var modules: [String] {
@@ -141,13 +155,16 @@ struct ProjectSettingsView: View {
         part = project.part
         language = project.targetLanguage ?? "Verilog"
         vivadoVersion = project.vivadoVersion ?? ""
+        settings = project.settings ?? ProjectSettings()
+        simulationTop = project.simulationTop ?? ""
     }
 
     private func apply() {
         let version = vivadoVersion.trimmingCharacters(in: .whitespaces)
         model.applySettings(top: top.trimmingCharacters(in: .whitespaces), part: part.trimmingCharacters(in: .whitespaces),
                             board: board.isEmpty ? nil : board, language: language,
-                            vivadoVersion: version.isEmpty ? nil : version)
+                            vivadoVersion: version.isEmpty ? nil : version,
+                            settings: settings.cleaned(), simulationTop: simulationTop.isEmpty ? nil : simulationTop)
     }
 }
 

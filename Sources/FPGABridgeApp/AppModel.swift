@@ -212,26 +212,61 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// Project Settings > General.
-    func applySettings(top: String, part: String, board: String?, language: String, vivadoVersion: String?) {
+    /// Project Settings: General, and the Elaboration, Simulation, Synthesis, Implementation and Bitstream pages.
+    func applySettings(top: String, part: String, board: String?, language: String, vivadoVersion: String?,
+                       settings: ProjectSettings? = nil, simulationTop: String? = nil) {
         guard var updated = project, let projectURL else { return }
+        let original = updated
         updated.top = top
         updated.part = part
         updated.board = board
         updated.targetLanguage = language
         updated.vivadoVersion = vivadoVersion
+        if let settings {
+            updated.settings = settings.isDefault ? nil : settings
+            updated.simulationTop = simulationTop
+        }
         do {
             try updated.validate()
             try updated.save(to: projectURL)
             if updated.part != project?.part { echoTcl("set_property part \(part) [current_project]") }
             if updated.top != project?.top { echoTcl("set_property top \(top) [current_fileset]") }
-            reloadProjectAfterChange()
+            if settings != nil { echoSettingsChanges(from: original, to: updated) }
+            reloadProjectAfterChange(outOfDate: Self.runsAffected(by: original, updated))
         } catch {
             errorMessage = "\(error.userMessage)"
         }
     }
 
-    private func reloadProjectAfterChange() {
+    /// Tells the console what the next run will do differently: the real Tcl lines that changed.
+    private func echoSettingsChanges(from old: Project, to new: Project) {
+        func lines(_ project: Project) -> [String] {
+            project.buildScript(sources: [], constraints: []).split(separator: "\n").map(String.init)
+                .filter { !$0.hasPrefix("#") && !$0.hasPrefix("file mkdir") && !$0.hasPrefix("report_") }
+        }
+        let before = Set(lines(old))
+        let changed = lines(new).filter { !before.contains($0) }
+        if !changed.isEmpty {
+            tclLines.append(ConsoleLine(text: "INFO: the next run will use: " + changed.joined(separator: "; "), kind: .info))
+        }
+        if old.settings?.simulation != new.settings?.simulation || old.simulationTop != new.simulationTop {
+            tclLines.append(ConsoleLine(text: "INFO: simulation settings changed; the next simulation will use them", kind: .info))
+        }
+    }
+
+    /// Which finished runs a change to the project makes out-of-date. Simulation settings touch no run, a bitstream
+    /// setting only the implementation run (the bitstream is its last step), and anything that changes the design
+    /// itself (top, part, language and synthesis options) both.
+    static func runsAffected(by old: Project, _ new: Project) -> [RunKind] {
+        let both: [RunKind] = [.synthesis, .implementation]
+        if old.top != new.top || old.part != new.part { return both }
+        let a = old.settings ?? ProjectSettings(), b = new.settings ?? ProjectSettings()
+        if a.language != b.language || a.synthesis != b.synthesis { return both }
+        if a.implementation != b.implementation || a.bitstream != b.bitstream { return [.implementation] }
+        return []
+    }
+
+    private func reloadProjectAfterChange(outOfDate kinds: [RunKind] = [.synthesis, .implementation]) {
         guard let projectURL else { return }
         do {
             project = try Project.load(from: projectURL)
@@ -241,11 +276,11 @@ final class AppModel: ObservableObject {
         }
         fileCache = [:]
         rebuildSourceTree()
-        markOutOfDate()
+        markOutOfDate(kinds)
     }
 
-    private func markOutOfDate() {
-        for kind in [RunKind.synthesis, .implementation] where runs[kind]?.status == .complete {
+    private func markOutOfDate(_ kinds: [RunKind] = [.synthesis, .implementation]) {
+        for kind in kinds where runs[kind]?.status == .complete {
             runs[kind]?.outOfDate = true
         }
     }

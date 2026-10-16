@@ -161,6 +161,34 @@ final class ProjectSettingsTests: XCTestCase {
         XCTAssertThrowsError(try JSONDecoder().decode(ProjectSettings.self, from: Data(#"{"synthesis":{"flattenHierarchy":"sideways"}}"#.utf8)))
     }
 
+    func testCleanedTrimsAndDropsBlankRows() {
+        var s = ProjectSettings()
+        s.language.defines = ["  FAST ", "", "   "]
+        s.language.generics = [" W=1"]
+        s.language.includeDirectories = ["", "inc "]
+        s.synthesis.moreOptions = "  -no_lc   -x  "
+        s.simulation.runtimeArguments = " +a   +b "
+        let c = s.cleaned()
+        XCTAssertEqual(c.language.defines, ["FAST"])
+        XCTAssertEqual(c.language.generics, ["W=1"])
+        XCTAssertEqual(c.language.includeDirectories, ["inc"])
+        XCTAssertEqual(c.synthesis.moreOptions, "-no_lc -x")
+        XCTAssertEqual(c.simulation.runtimeArguments, "+a +b")
+        XCTAssertNoThrow(try c.validate())
+        XCTAssertEqual(ProjectSettings().cleaned(), ProjectSettings(), "defaults stay defaults")
+    }
+
+    func testTheFormChecksAgreeWithValidation() {
+        XCTAssertTrue(ProjectSettings.isValidDefine("A=1") && ProjectSettings.isValidDefine("A"))
+        XCTAssertFalse(ProjectSettings.isValidDefine("A B") || ProjectSettings.isValidDefine("1A") || ProjectSettings.isValidDefine("A="))
+        XCTAssertTrue(ProjectSettings.isValidGeneric("W=8"))
+        XCTAssertFalse(ProjectSettings.isValidGeneric("W"))
+        XCTAssertTrue(ProjectSettings.isValidIncludeDirectory("src/headers"))
+        XCTAssertFalse(ProjectSettings.isValidIncludeDirectory("../x") || ProjectSettings.isValidIncludeDirectory("/etc"))
+        XCTAssertTrue(ProjectSettings.isValidOptionText("-no_lc -x 5"))
+        XCTAssertFalse(ProjectSettings.isValidOptionText("[exec x]"))
+    }
+
     // MARK: Validation: these reach a Tcl script on the build machine
 
     func testValuesThatCouldBeTclAreRefused() {
