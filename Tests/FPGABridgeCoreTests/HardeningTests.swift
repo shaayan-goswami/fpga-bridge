@@ -123,6 +123,14 @@ final class HardeningTests: XCTestCase {
         XCTAssertNoThrow(try project.resolveConstraints(in: root))
     }
 
+    func testTheVivadoVersionIsReadFromBothInstallLayouts() {
+        XCTAssertEqual(Project.version(in: #"C:\Xilinx\Vivado\2023.2\bin\vivado.bat"#), "2023.2")
+        XCTAssertEqual(Project.version(in: #"C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat"#), "2025.2")
+        XCTAssertEqual(Project.version(in: "/opt/Xilinx/Vivado/2022.1/bin/vivado"), "2022.1")
+        XCTAssertNil(Project.version(in: #"C:\tools\vivado.bat"#))
+        XCTAssertNil(Project.version(in: #"C:\2025.2\other\vivado.bat"#))
+    }
+
     func testEquivalentPathSpellingsCountOnce() throws {
         let (_, root) = try makeProject()
         let project = Project(name: "p", top: "a", part: "x", sources: ["src/a.v", "./src/a.v", "src/../src/a.v"], constraints: [])

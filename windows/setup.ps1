@@ -145,9 +145,23 @@ foreach ($root in $roots) {
     }
 }
 
+foreach ($root in $roots) {
+    # Since 2025: <install root>\<version>\Vivado\bin, e.g. C:\AMDDesignTools\2025.2.
+    foreach ($base in 'AMDDesignTools', 'AMD', 'Xilinx', 'Program Files\AMD', 'Program Files\Xilinx') {
+        $dir = Join-Path $root $base
+        if (Test-Path $dir) {
+            $found += Get-ChildItem $dir -Directory -ErrorAction SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'Vivado\bin\vivado.bat' } |
+                Where-Object { Test-Path $_ }
+        }
+    }
+}
+
 function Get-VivadoVersion($path) {
     # ...\Vivado\2023.2\bin\vivado.bat -> [version]'2023.2'
+    # From 2025 the version comes first: ...\2025.2\Vivado\bin\vivado.bat
     $name = Split-Path (Split-Path (Split-Path $path -Parent) -Parent) -Leaf
+    if ($name -eq 'Vivado') { $name = Split-Path (Split-Path (Split-Path (Split-Path $path -Parent) -Parent) -Parent) -Leaf }
     $v = $null
     if ([version]::TryParse($name, [ref]$v)) { return $v } else { return [version]'0.0' }
 }

@@ -168,6 +168,7 @@ struct Flash: ParsableCommand {
         }
 
         print("Programming \(selected?.displayName ?? "the connected board") with \(path)" + (persist ? " (flash)" : ""))
+        fflush(stdout)  // so this line comes before the loader's output when piped
         let status = try programmer.program(bitstream: path, board: selected, target: persist ? .flash : .sram)
         if status != 0 { throw ExitCode(status) }
     }

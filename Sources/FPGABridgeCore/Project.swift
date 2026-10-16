@@ -71,9 +71,16 @@ public struct Project: Codable, Equatable, Sendable {
             : "this project is pinned to Vivado \(pinned), but the build machine is set up for \(actual) (\(vivadoPath))"
     }
 
+    /// Reads the version from either layout: `...\Vivado\2023.2\bin\vivado.bat` (up to 2024) or
+    /// `...\2025.2\Vivado\bin\vivado.bat` (2025 on).
     public static func version(in path: String) -> String? {
-        guard let match = path.range(of: #"[\\/]Vivado[\\/](\d{4}\.\d+)[\\/]"#, options: .regularExpression) else { return nil }
-        return path[match].split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init)
+        let parts = path.split(whereSeparator: { $0 == "/" || $0 == "\\" }).map(String.init)
+        func isVersion(_ s: String) -> Bool { s.range(of: #"^\d{4}\.\d+$"#, options: .regularExpression) != nil }
+        for (index, part) in parts.enumerated() where isVersion(part) {
+            if index > 0, parts[index - 1] == "Vivado" { return part }
+            if index + 1 < parts.count, parts[index + 1] == "Vivado" { return part }
+        }
+        return nil
     }
 
     /// Letters, digits, '_' and '-' only. No spaces: Vivado itself misbehaves on them.

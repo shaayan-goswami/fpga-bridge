@@ -62,11 +62,11 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 
 ## M2: Flashing
 
-- [x] Detect openFPGALoader; guide install (`brew install openfpgaloader`). Written and tested against a stand-in, not yet run against the real tool
-- [x] `fpga-bridge flash`: program the last built bitstream (SRAM). Same caveat
-- [x] `fpga-bridge flash --persist`: write the board's flash. Same caveat
+- [x] Detect openFPGALoader; guide install (`brew install openfpgaloader`). Verified with openFPGALoader 1.1.1
+- [x] `fpga-bridge flash`: program the last built bitstream (SRAM). Verified on a real board (loaded a blinky design built remotely)
+- [ ] `fpga-bridge flash --persist`: written, not yet run on hardware
 - [x] `fpga-bridge boards`: show what's plugged in (`--list` for the supported boards)
-- [ ] Check the `loaderName` of each board against `openFPGALoader --list-boards`; they were written from memory
+- [x] Checked each board's `loaderName` against `openFPGALoader --list-boards` (fixed the two Cmod names)
 - [ ] macOS USB/driver issues for Digilent (FTDI) boards: document and test, including any Apple driver conflicts
 - [x] `doctor` checks that openFPGALoader is installed
 

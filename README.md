@@ -4,7 +4,7 @@ Build FPGA designs from a Mac, even though Vivado doesn't run on macOS.
 
 fpga-bridge lets you write, simulate, and flash on your Mac while a remote Windows or Linux machine with Vivado does the heavy build in the background.
 
-> **Status:** early development. The `fpga-bridge` CLI and the Mac app (a prototype that mirrors Vivado's layout) are built and tested against a fake remote. Neither has been run against a real Vivado or Windows machine yet. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done. Features marked with an unchecked box are not built yet.
+> **Status:** early development. The `fpga-bridge` CLI and the Mac app (a prototype that mirrors Vivado's layout) are built and tested against a fake remote. The CLI has been run end to end once on real hardware (Windows machine with Vivado 2025.2, Basys 3-class Artix-7 35T board): build, fetch, report and flash. The app has not been run against it yet. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done. Features marked with an unchecked box are not built yet.
 
 ## Why
 
