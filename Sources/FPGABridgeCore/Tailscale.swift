@@ -65,12 +65,19 @@ public enum Tailscale {
         return nil
     }
 
-    public static func status() throws -> TailscaleStatus {
-        guard let cli = cliPath() else { throw TailscaleError.notInstalled }
-        let result = try Shell.run(cli, ["status", "--json"])
+    /// The app's binary runs as a command-line tool only when TERM is set, which is how it tells a terminal from a
+    /// double-click. A GUI app (this one, launched from the Finder) has no TERM, so without this it tries to start
+    /// Tailscale's own window and fails with "The Tailscale GUI failed to start".
+    static let cliEnvironment = ["TERM": "dumb"]
+
+    public static func status(cli path: String? = nil) throws -> TailscaleStatus {
+        guard let cli = path ?? cliPath() else { throw TailscaleError.notInstalled }
+        let result = try Shell.run(cli, ["status", "--json"], environment: cliEnvironment)
         // A stopped daemon still prints JSON with a BackendState, so try parsing before failing on exit status.
         if let status = try? TailscaleStatus.parse(json: Data(result.stdout.utf8)) { return status }
-        throw TailscaleError.unavailable(result.stderr.trimmingCharacters(in: .whitespacesAndNewlines))
+        // Say what the tool said, wherever it said it.
+        let detail = [result.stderr, result.stdout].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.first { !$0.isEmpty }
+        throw TailscaleError.unavailable(detail ?? "exit status \(result.status) with no output")
     }
 }
 

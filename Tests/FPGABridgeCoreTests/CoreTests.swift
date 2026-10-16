@@ -24,6 +24,43 @@ final class CoreTests: XCTestCase {
         XCTAssertNil(status.peer(matching: "other"))
     }
 
+    /// A stand-in Tailscale that, like the real app binary, only works as a CLI when TERM is "dumb"-or-set and
+    /// otherwise tries to start its GUI.
+    func fakeTailscale(_ body: String) throws -> String {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("ts-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let path = dir.appendingPathComponent("Tailscale")
+        try "#!/bin/sh\n\(body)\n".write(to: path, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path.path)
+        return path.path
+    }
+
+    func testTailscaleIsCalledWithATermSoTheAppBinaryActsAsACLI() throws {
+        // Passes only if our override is applied, whatever TERM this test process happens to have.
+        let cli = try fakeTailscale(#"""
+        [ "$TERM" = "dumb" ] || { echo "The Tailscale GUI failed to start"; exit 1; }
+        echo '{"BackendState":"Running"}'
+        """#)
+        XCTAssertTrue(try Tailscale.status(cli: cli).isRunning)
+    }
+
+    func testAFailureSaysWhatTailscalePrintedEvenOnStdout() throws {
+        let onStdout = try fakeTailscale(#"echo "The Tailscale GUI failed to start"; exit 1"#)
+        XCTAssertThrowsError(try Tailscale.status(cli: onStdout)) {
+            XCTAssertTrue($0.userMessage.contains("The Tailscale GUI failed to start"), $0.userMessage)
+        }
+        let silent = try fakeTailscale("exit 3")
+        XCTAssertThrowsError(try Tailscale.status(cli: silent)) {
+            XCTAssertTrue($0.userMessage.contains("exit status 3"), $0.userMessage)
+        }
+    }
+
+    func testShellRunAddsEnvironmentVariables() throws {
+        let result = try Shell.run("/usr/bin/env", [], environment: ["FPGA_BRIDGE_TEST_VAR": "hello"])
+        XCTAssertTrue(result.stdout.contains("FPGA_BRIDGE_TEST_VAR=hello"))
+        XCTAssertTrue(result.stdout.contains("PATH="), "the rest of the environment is kept")
+    }
+
     func testTailscaleStoppedState() throws {
         let status = try TailscaleStatus.parse(json: Data(#"{"BackendState":"Stopped"}"#.utf8))
         XCTAssertFalse(status.isRunning)

@@ -22,8 +22,13 @@ public enum ShellError: DescribedError {
 
 public enum Shell {
     /// Runs a command and captures its output. `executable` may be an absolute path or a name looked up on PATH.
-    public static func run(_ executable: String, _ arguments: [String], timeout: TimeInterval = 15) throws -> CommandResult {
+    /// `environment` is added to this process's own, for tools that behave differently without certain variables.
+    public static func run(_ executable: String, _ arguments: [String], timeout: TimeInterval = 15,
+                           environment: [String: String] = [:]) throws -> CommandResult {
         let process = makeProcess(executable, arguments)
+        if !environment.isEmpty {
+            process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }
+        }
         let outPipe = Pipe()
         let errPipe = Pipe()
         process.standardOutput = outPipe
