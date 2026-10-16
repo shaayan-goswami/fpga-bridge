@@ -7,7 +7,12 @@
 ```
 
 It enables OpenSSH, authorizes your Mac's key, checks Tailscale, finds the newest Vivado, and prints the Mac command below.
-(Not yet tested on a real Windows machine.)
+(Tested once on a real Windows machine. It needed two fixes that are now in the script: Vivado's newer
+`<root>\<version>\Vivado` install layout, and an sshd installed another way than the Windows feature. Without
+Tailscale it still sets everything up, but prints no `init` line: use the machine's name or address.)
+
+If the OpenSSH feature won't install ("component store has been corrupted"), run
+`DISM /Online /Cleanup-Image /RestoreHealth` and `sfc /scannow` as Administrator, restart, and run it again.
 
 **2. On the Mac** (Tailscale installed and signed in to the same tailnet):
 
