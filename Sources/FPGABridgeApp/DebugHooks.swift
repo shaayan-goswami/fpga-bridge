@@ -58,6 +58,13 @@ extension AppModel {
                 while hardware.target != .open { try? await Task.sleep(nanoseconds: 50_000_000) }
             }
             if DebugHooks.scenario == "programdevice" { hardware.sheet = .device }
+        case "simulation":
+            openExampleProject()
+            runSimulation()
+            while !(simulation.isRunning || { if case .done = simulation.state { return true } else { return false } }()) {
+                try? await Task.sleep(nanoseconds: 50_000_000)
+            }
+            while simulation.isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
         case "templates":
             openExampleProject()
             if let top = sourceTree.first?.children?.first?.path { openFile(top) }

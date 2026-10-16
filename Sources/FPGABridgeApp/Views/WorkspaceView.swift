@@ -15,6 +15,7 @@ struct WorkspaceView: View {
                 case .report(let id): ReportView(id: id)
                 case .hardware: HardwareManagerView()
                 case .templates: LanguageTemplatesView()
+                case .simulation: SimulationView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

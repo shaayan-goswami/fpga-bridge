@@ -72,9 +72,11 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 
 ## M3: Simulation
 
-- [ ] Detect Verilator and Surfer; guide install
-- [ ] `fpga-bridge sim`: build and run a Verilator testbench locally
-- [ ] Emit VCD/FST waveforms and open in Surfer
+- [x] Detect Icarus Verilog; guide install (`brew install icarus-verilog`). Icarus first for its instant start; Verilator is still an option for big designs
+- [ ] Detect a waveform viewer (Surfer, GTKWave); today Open Waveform uses whatever handles `.vcd`
+- [x] `fpga-bridge sim`: compile and run the testbench locally (Verilog and SystemVerilog; VHDL needs GHDL)
+- [x] Emit a VCD waveform to `build/sim/sim.vcd` (no change to the testbench needed)
+- [ ] FST waveforms, VHDL via GHDL, post-synthesis simulation
 - [ ] Project file section for testbench sources and top
 
 ## M4: Mac app (SwiftUI on `FPGABridgeCore`)
@@ -99,7 +101,7 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
 - [ ] P2 Projects and editing (Sources context menus, File and Edit menus, Replace in Files, go to line; the editor and Define Module are done)
 - [ ] P3 Reports and analysis
 - [x] P4 Program and debug: Hardware Manager screen, Program Device and Program Configuration Memory sheets (debug cores stay on Windows)
-- [ ] P5 Simulation (Verilator/Icarus, waveform viewer)
+- [x] P5 Simulation: Run Simulation tab with log, Stop, and Open Waveform. Still to do: simulation settings, a native waveform viewer
 - [ ] P6 Design views (Netlist, I/O Ports, constraints editors, IP Catalog)
 - [ ] P7 Workspace polish (Window/Layout/View/Help, layouts, Quick Access, tool settings)
 - [ ] P8 Stretch (schematic, block design viewer)

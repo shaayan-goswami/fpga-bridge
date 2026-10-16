@@ -13,6 +13,7 @@ struct FPGABridgeApp: App {
             ContentView()
                 .environmentObject(model)
                 .environmentObject(model.hardware)
+                .environmentObject(model.simulation)
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
                 .task {
@@ -131,6 +132,8 @@ struct AppCommands: Commands {
             Button("Reset Runs") { model.resetRuns() }
                 .disabled(!model.hasProject || model.isRunning)
             Divider()
+            Button("Run Simulation") { model.runSimulation() }
+                .disabled(!model.hasProject || model.simulation.isRunning)
             Button("Open Hardware Manager") { model.open(.hardware) }
                 .disabled(!model.hasProject)
         }

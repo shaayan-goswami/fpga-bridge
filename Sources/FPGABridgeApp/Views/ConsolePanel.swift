@@ -84,7 +84,7 @@ private struct ConsoleTabButton: View {
     }
 }
 
-private struct ConsoleLines: View {
+struct ConsoleLines: View {
     let lines: [ConsoleLine]
     var showCommandMarker = false
     @AppStorage(AppearanceKey.consoleFontSize) private var fontSize = 12.0

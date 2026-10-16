@@ -18,7 +18,7 @@ fpga-bridge takes a different approach: leave Vivado on a machine it officially 
  Mac (you work here)                    Build machine (Windows/Linux)
  -------------------                    -----------------------------
  1. Write Verilog/SV
- 2. Run local simulation (Verilator)
+ 2. Run local simulation (Icarus Verilog)
  3. Hit build  ----- files over SSH ---->  4. Vivado runs in batch mode
                                            5. Bitstream + reports created
  6. Results + live log  <---- SSH -------
@@ -32,7 +32,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [ ] One-command remote builds (copy, build, fetch results)
 - [ ] Live build log streamed back to the Mac
 - [ ] Parsed timing and resource utilization summary
-- [ ] Local simulation with Verilator and waveform viewing in Surfer
+- [x] Local simulation with Icarus Verilog (`fpga-bridge sim`, and the app's Run Simulation); waveforms open in Surfer or GTKWave
 - [ ] Board programming from the Mac with openFPGALoader
 - [ ] Native Mac app (editor, project view, build button)
 
@@ -40,7 +40,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 
 **On your Mac**
 - macOS 14 or later, and the Swift toolchain (Xcode) to build from source
-- Verilator and Surfer (simulation and waveforms)
+- Icarus Verilog (simulation) and Surfer or GTKWave (waveforms)
 - openFPGALoader (check that your board is on its supported list)
 - Tailscale (optional, for reaching the build machine from outside your home network)
 
@@ -70,7 +70,7 @@ Not available yet. This section will cover:
 
 1. **CLI prototype:** a Tcl build script plus a Swift CLI that copies files over SSH, runs the Vivado build, and pulls results back
 2. **Basic Mac app:** editor, build button, live log, parsed timing and utilization summary
-3. **Simulation and flashing:** one-click Verilator runs and board programming
+3. **Simulation and flashing:** one-click Icarus Verilog runs and board programming
 4. **Polish:** easier first-run setup, support for more boards, user testing
 
 ## Known Limitations

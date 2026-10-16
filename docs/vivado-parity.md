@@ -13,7 +13,7 @@ Debugging*, UG910 *Getting Started*) and Vivado's documented Tcl commands, not f
 | --- | --- |
 | **Mac** | Built natively in the app; no Vivado needed. |
 | **Remote** | Vivado computes it on the build machine (batch Tcl); the app shows the result natively. |
-| **Local tool** | A Mac tool does Vivado's job (openFPGALoader for programming, Verilator/Icarus for simulation). |
+| **Local tool** | A Mac tool does Vivado's job (openFPGALoader for programming, Icarus Verilog for simulation). |
 | **Not possible** | Can't work on a Mac; the row says why and what we offer instead. |
 
 Status values: **Done**, **Prototype** (works, not complete), **Todo**.
@@ -65,7 +65,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | Todo |
 | Reset Runs dialog (with "delete generated files") | Mac | Prototype (no dialog yet) |
 | Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |
-| Run Simulation ▸ Behavioral / Post-Synthesis / Post-Implementation | Local tool | Todo (behavioral only; post-synth needs a netlist export, Remote) |
+| Run Simulation ▸ Behavioral (Simulation tab: banner, log, Stop, Run Again, Open Waveform; Flow menu item) | Local tool | Done (Verilog and SystemVerilog, verified with Icarus Verilog 13) |
+| Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
 | Open Elaborated / Synthesized / Implemented Design | Remote | Todo (opens Netlist, Schematic, I/O views fed by Vivado) |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
@@ -183,7 +184,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Hardware Manager debug cores (ILA, VIO, JTAG-to-AXI) | Needs Xilinx `hw_server`, which has no macOS build | Program and flash the board with openFPGALoader; debug cores stay a Windows task |
 | Device view and floorplanning | Needs Vivado's device database and renderer in the GUI | Pin planning via the I/O Ports table (Remote data); placement reports |
 | IP Integrator block design editor | A full graphical editor backed by Vivado's IP engine | Open and validate block designs remotely, edit their Tcl; a visual editor is a stretch goal |
-| Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Verilator/Icarus and a native waveform viewer |
+| Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Icarus Verilog; a native waveform viewer is still to do |
 | Vitis, HLS, licensing dialogs | Separate products | Out of scope |
 
 ---
@@ -203,7 +204,7 @@ Each phase is usable on its own and is tested before the next one starts.
    DRC, methodology, power, clock reports; Messages search, grouping by ID, suppression, jump to source line.
 4. **P4: Program and debug.** Hardware Manager with openFPGALoader: detect boards, Program Device, configuration
    memory (.mcs/.bin from Vivado, flashed locally).
-5. **P5: Simulation.** Run Simulation ▸ Behavioral with Verilator/Icarus; simulation settings; native waveform viewer.
+5. **P5: Simulation.** Run Simulation ▸ Behavioral with Icarus is done; simulation settings and a native waveform viewer are to do.
 6. **P6: Design views.** Open Elaborated/Synthesized/Implemented Design: Netlist, Properties, I/O Ports and package
    pins, Constraints Wizard and timing constraints editor; IP Catalog, Customize IP, output products.
 7. **P7: Workspace polish.** Window/Layout/View/Help menus, saved layouts, Quick Access search, Tool settings

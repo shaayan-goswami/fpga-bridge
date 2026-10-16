@@ -9,6 +9,7 @@ import SwiftUI
 final class AppModel: ObservableObject {
     let backend: Backend
     let hardware: HardwareManager
+    let simulation: SimulationManager
     private let persist: Bool
 
     // Project
@@ -59,21 +60,25 @@ final class AppModel: ObservableObject {
     private var fileCache: [String: String] = [:]
 
     /// `hardware` defaults to a pretend board so tests never touch a real one.
-    init(backend: Backend, hardware: HardwareBackend = DemoHardware(speed: 0), persist: Bool) {
+    init(backend: Backend, hardware: HardwareBackend = DemoHardware(speed: 0),
+         simulation: SimulationBackend = DemoSimulation(speed: 0), persist: Bool) {
         self.backend = backend
         self.hardware = HardwareManager(backend: hardware)
+        self.simulation = SimulationManager(backend: simulation)
         self.persist = persist
         recentProjects = loadRecents()
         tclLines = [ConsoleLine(text: "# FPGA Bridge Tcl console. Commands run in Vivado on the build machine.", kind: .output)]
         self.hardware.console = { [weak self] text, kind in self?.tclLines.append(ConsoleLine(text: text, kind: kind)) }
+        self.simulation.console = { [weak self] text, kind in self?.tclLines.append(ConsoleLine(text: text, kind: kind)) }
     }
 
     static func make() -> AppModel {
         if !DebugHooks.forceDemo, let config = try? BridgeConfig.load() {
-            return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), persist: DebugHooks.persistRecents)
+            return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), simulation: LiveSimulation(),
+                            persist: DebugHooks.persistRecents)
         }
         return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), hardware: DemoHardware(speed: DebugHooks.demoSpeed),
-                        persist: DebugHooks.persistRecents)
+                        simulation: DemoSimulation(speed: DebugHooks.demoSpeed), persist: DebugHooks.persistRecents)
     }
 
     func start() async {
@@ -105,6 +110,7 @@ final class AppModel: ObservableObject {
         do {
             let loaded = try Project.load(from: directory)
             cancelRun()
+            simulation.reset()
             drafts = [:]
             project = loaded
             projectURL = directory
@@ -124,6 +130,7 @@ final class AppModel: ObservableObject {
     func closeProject() {
         afterResolvingUnsaved {
             self.cancelRun()
+            self.simulation.reset()
             self.drafts = [:]
             self.echoTcl("close_project")
             self.discardProject()
@@ -353,8 +360,19 @@ final class AppModel: ObservableObject {
         case .addSources: showAddSources = true
         case .openHardwareManager: open(.hardware)
         case .languageTemplates: open(.templates)
+        case .runSimulation: runSimulation()
         default: if let kind = item.runKind { run(kind) }
         }
+    }
+
+    // MARK: Simulation
+
+    /// Runs the testbench and shows the Simulation tab.
+    func runSimulation() {
+        guard let project, let projectURL, !simulation.isRunning else { return }
+        consoleTab = .tclConsole
+        open(.simulation)
+        Task { await simulation.run(project: project, directory: projectURL) }
     }
 
     // MARK: Hardware
@@ -670,6 +688,7 @@ final class AppModel: ObservableObject {
         case .report(let id): report(id).map { "\($0.title) – \($0.run.runName)" } ?? "Report"
         case .hardware: "Hardware Manager"
         case .templates: "Language Templates"
+        case .simulation: "Simulation"
         }
     }
 
@@ -680,6 +699,7 @@ final class AppModel: ObservableObject {
         case .report: "doc.plaintext"
         case .hardware: "cable.connector.horizontal"
         case .templates: "doc.text.magnifyingglass"
+        case .simulation: "waveform.path.ecg"
         }
     }
 
