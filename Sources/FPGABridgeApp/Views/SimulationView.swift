@@ -103,6 +103,7 @@ struct SimulationView: View {
 }
 
 private struct WaveformRow: View {
+    @EnvironmentObject private var model: AppModel
     let url: URL
 
     var body: some View {
@@ -114,19 +115,10 @@ private struct WaveformRow: View {
             }
             Spacer()
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-            Button("Open Waveform") { open() }
-                .help("Opens the waveform in the app set for .vcd files, such as Surfer or GTKWave.")
+            Button("Open Waveform") { model.openWaveform(url) }
+                .help("Opens the waveform in Surfer or GTKWave.")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-    }
-
-    /// Opens in whatever handles .vcd; with nothing installed, shows the file so it can be opened another way.
-    private func open() {
-        if NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
-            NSWorkspace.shared.open(url)
-        } else {
-            NSWorkspace.shared.activateFileViewerSelecting([url])
-        }
     }
 }

@@ -50,11 +50,19 @@ final class SimulatorTests: XCTestCase {
         XCTAssertEqual(plan.sources.map { ($0 as NSString).lastPathComponent }, ["counter.v", "tb.v"])
         XCTAssertTrue(plan.sources.allSatisfy { $0.hasPrefix("/") })
         XCTAssertTrue(plan.dumpsWaveform)
-        XCTAssertEqual(plan.directory.path, root.appendingPathComponent("build/sim").path)
+        XCTAssertEqual(plan.directory.path, root.appendingPathComponent("p.sim/sim_1/behav").path)
         XCTAssertEqual(Array(plan.compileArguments.prefix(5)), ["-g2012", "-s", "tb", "-s", "__fpgabridge_dump"])
         XCTAssertTrue(plan.compileArguments.contains("-I"))
         XCTAssertTrue(plan.compileArguments.last == plan.dumpModulePath, "the dump module is compiled last")
         XCTAssertTrue(plan.dumpModule.contains("$dumpvars(0, tb)"))
+    }
+
+    /// `fpga-bridge build` deletes build/ before fetching results, so simulation output must not live there.
+    func testSimulationOutputSurvivesABuildWipingTheBuildFolder() throws {
+        try write(dut, to: "src/counter.v")
+        try write(testbench(), to: "tb/tb.v")
+        let plan = try Simulator.plan(project: project, root: root)
+        XCTAssertFalse(plan.directory.path.contains("/build/"))
     }
 
     func testATestbenchThatDumpsItsOwnWaveformIsLeftAlone() throws {
@@ -162,7 +170,7 @@ final class SimulatorTests: XCTestCase {
         XCTAssertEqual(waveform.lastPathComponent, "sim.vcd")
         XCTAssertTrue(try String(contentsOf: waveform, encoding: .utf8).contains("$var"), "a real VCD")
         XCTAssertEqual(waveform.deletingLastPathComponent().resolvingSymlinksInPath().path,
-                       root.appendingPathComponent("build/sim").resolvingSymlinksInPath().path)
+                       root.appendingPathComponent("p.sim/sim_1/behav").resolvingSymlinksInPath().path)
     }
 
     func testACompileErrorStopsBeforeRunning() throws {
@@ -201,7 +209,7 @@ final class SimulatorTests: XCTestCase {
         let simulator = try realSimulator()
         try write(dut, to: "src/counter.v")
         try write(testbench(), to: "tb/tb.v")
-        let sim = root.appendingPathComponent("build/sim")
+        let sim = root.appendingPathComponent("p.sim/sim_1/behav")
         try FileManager.default.createDirectory(at: sim, withIntermediateDirectories: true)
         try "old".write(to: sim.appendingPathComponent("stale.vcd"), atomically: true, encoding: .utf8)
         let result = try simulator.simulate(try Simulator.plan(project: project, root: root), stop: Shell.StopFlag(), output: { _ in })

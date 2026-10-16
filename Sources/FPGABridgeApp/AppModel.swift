@@ -367,6 +367,24 @@ final class AppModel: ObservableObject {
 
     // MARK: Simulation
 
+    /// How to show a waveform. Replaced in tests so they never launch a program.
+    var findWaveformViewer: () -> WaveformViewer? = { WaveformViewer.locate() }
+    var launchWaveformViewer: (WaveformViewer, URL) throws -> Void = { try $0.open($1) }
+    var hasDefaultApp: (URL) -> Bool = { NSWorkspace.shared.urlForApplication(toOpen: $0) != nil }
+    var openInDefaultApp: (URL) -> Void = { NSWorkspace.shared.open($0) }
+
+    /// Opens a waveform in Surfer or GTKWave, or whatever the Mac has for `.vcd`. With none of those, says how to
+    /// install one: showing the file in the Finder would only lead to "no application set to open the document".
+    func openWaveform(_ url: URL) {
+        if let viewer = findWaveformViewer() {
+            do { try launchWaveformViewer(viewer, url) } catch { errorMessage = "Couldn't open \(viewer.name): \(error.userMessage)" }
+        } else if hasDefaultApp(url) {
+            openInDefaultApp(url)
+        } else {
+            errorMessage = WaveformViewerError.notInstalled.userMessage
+        }
+    }
+
     /// Runs the testbench and shows the Simulation tab.
     func runSimulation() {
         guard let project, let projectURL, !simulation.isRunning else { return }

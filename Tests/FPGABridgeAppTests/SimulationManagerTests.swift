@@ -151,3 +151,51 @@ final class SimulationManagerTests: XCTestCase {
         XCTAssertTrue(model.simulation.lines.isEmpty)
     }
 }
+
+@MainActor
+final class OpenWaveformTests: XCTestCase {
+    let wave = URL(fileURLWithPath: "/tmp/sim.vcd")
+
+    func makeModel() -> AppModel { AppModel(backend: DemoBackend(speed: 0), persist: false) }
+
+    func testAViewerIsLaunchedWithTheFile() {
+        let model = makeModel()
+        var launched: [(String, URL)] = []
+        model.findWaveformViewer = { WaveformViewer(executable: "/opt/homebrew/bin/surfer") }
+        model.launchWaveformViewer = { launched.append(($0.name, $1)) }
+        model.hasDefaultApp = { _ in XCTFail("a viewer was found, so the default app isn't consulted"); return false }
+        model.openWaveform(wave)
+        XCTAssertEqual(launched.count, 1)
+        XCTAssertEqual(launched.first?.0, "surfer")
+        XCTAssertEqual(launched.first?.1, wave)
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testWithoutAViewerTheDefaultAppIsUsedIfThereIsOne() {
+        let model = makeModel()
+        var opened: [URL] = []
+        model.findWaveformViewer = { nil }
+        model.hasDefaultApp = { _ in true }
+        model.openInDefaultApp = { opened.append($0) }
+        model.openWaveform(wave)
+        XCTAssertEqual(opened, [wave])
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testWithNothingInstalledTheMessageSaysHowToInstallSurfer() {
+        let model = makeModel()
+        model.findWaveformViewer = { nil }
+        model.hasDefaultApp = { _ in false }
+        model.openInDefaultApp = { _ in XCTFail("nothing can open it") }
+        model.openWaveform(wave)
+        XCTAssertTrue(model.errorMessage?.contains("brew install surfer") == true, model.errorMessage ?? "nil")
+    }
+
+    func testAViewerThatWontStartIsReportedByName() {
+        let model = makeModel()
+        model.findWaveformViewer = { WaveformViewer(executable: "/opt/homebrew/bin/surfer") }
+        model.launchWaveformViewer = { _, _ in throw ProgrammerError.notInstalled }
+        model.openWaveform(wave)
+        XCTAssertTrue(model.errorMessage?.hasPrefix("Couldn't open surfer") == true, model.errorMessage ?? "nil")
+    }
+}

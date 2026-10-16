@@ -75,7 +75,7 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 - [x] Detect Icarus Verilog; guide install (`brew install icarus-verilog`). Icarus first for its instant start; Verilator is still an option for big designs
 - [ ] Detect a waveform viewer (Surfer, GTKWave); today Open Waveform uses whatever handles `.vcd`
 - [x] `fpga-bridge sim`: compile and run the testbench locally (Verilog and SystemVerilog; VHDL needs GHDL)
-- [x] Emit a VCD waveform to `build/sim/sim.vcd` (no change to the testbench needed)
+- [x] Emit a VCD waveform to `<project>.sim/sim_1/behav/sim.vcd` (Vivado's layout, so a build never deletes it) (no change to the testbench needed)
 - [ ] FST waveforms, VHDL via GHDL, post-synthesis simulation
 - [ ] Project file section for testbench sources and top
 

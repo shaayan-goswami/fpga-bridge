@@ -32,7 +32,7 @@ struct Doctor: ParsableCommand {
 
     func run() throws {
         let config = try BridgeConfig.load()
-        let checks = FPGABridgeCore.Doctor.run(config: config) + [Programmer.check(), Simulator.check()]
+        let checks = FPGABridgeCore.Doctor.run(config: config) + [Programmer.check(), Simulator.check(), WaveformViewer.check()]
         for check in checks {
             let mark = check.level == .ok ? "ok  " : check.level == .warn ? "warn" : "FAIL"
             print("[\(mark)] \(check.name): \(check.detail)")
@@ -137,11 +137,12 @@ struct Sim: ParsableCommand {
         abstract: "Simulate the project's testbench on this Mac with Icarus Verilog.",
         discussion: """
             Runs the project's design and simulation sources (Verilog and SystemVerilog) and leaves a waveform in \
-            build/sim/sim.vcd, which Surfer or GTKWave can open. Needs: brew install icarus-verilog
+            <project>.sim/sim_1/behav/sim.vcd, which Surfer can open (--open does it). Needs: brew install icarus-verilog
             """)
 
     @Option(help: "Testbench module to simulate. Default: the project's simulationTop, or the one nothing instantiates.") var top: String?
     @Option(help: "Stop a simulation that hasn't finished after this many seconds.") var timeout: Double = 120
+    @Flag(name: .customLong("open"), help: "Open the waveform in Surfer (or GTKWave) when the simulation finishes.") var openWaveform = false
 
     func run() throws {
         let simulator = try Simulator.require()
@@ -165,6 +166,10 @@ struct Sim: ParsableCommand {
         if result.succeeded {
             print("Simulation finished" + (result.finishedAt.map { " at \($0) of simulated time" } ?? ""))
             if let waveform = result.waveform { print("Waveform: \(waveform.path)") }
+            if openWaveform, let waveform = result.waveform {
+                guard let viewer = WaveformViewer.locate() else { throw WaveformViewerError.notInstalled }
+                try viewer.open(waveform)
+            }
             return
         }
         if result.wasStopped { print("Stopped.") }

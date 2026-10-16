@@ -1,11 +1,16 @@
 import Foundation
 
 /// Behavioral simulation on this Mac with Icarus Verilog. Compiles the design and testbench sources with `iverilog`,
-/// runs the result with `vvp`, and leaves a waveform (`.vcd`) in `build/sim/`. Verilog and SystemVerilog only.
+/// runs the result with `vvp`, and leaves a waveform (`.vcd`) in `<project>.sim/sim_1/behav/`, as Vivado lays it out. Verilog and SystemVerilog only.
 public struct Simulator: Sendable {
     public static let compilerName = "iverilog"
     public static let runnerName = "vvp"
-    public static let outputDirectory = "sim"
+
+    /// `<project>.sim/sim_1/behav`: where Vivado keeps behavioral simulation output. Not under `build/`, which a build
+    /// replaces wholesale when it fetches results.
+    public static func outputDirectory(projectName: String, root: URL) -> URL {
+        root.appendingPathComponent("\(projectName).sim").appendingPathComponent("sim_1").appendingPathComponent("behav")
+    }
 
     public let iverilog: String
     public let vvp: String
@@ -57,7 +62,7 @@ public struct Simulator: Sendable {
         public let top: String
         /// Absolute paths: design sources, then simulation sources.
         public let sources: [String]
-        /// Where the compiled image and waveforms go (`build/sim`). Simulation runs with this as its working directory.
+        /// Where the compiled image and waveforms go. Simulation runs with this as its working directory.
         public let directory: URL
         /// Whether we write a small module that dumps the waveform. Skipped when the testbench dumps its own.
         public let dumpsWaveform: Bool
@@ -117,7 +122,7 @@ public struct Simulator: Sendable {
 
         let own = compilable.contains { text($0).contains("$dumpfile") }
         return Plan(top: top, sources: compilable.map { root.appendingPathComponent($0).path },
-                    directory: root.appendingPathComponent(Remote.localOutputDir).appendingPathComponent(outputDirectory),
+                    directory: outputDirectory(projectName: project.name, root: root),
                     dumpsWaveform: !own)
     }
 
