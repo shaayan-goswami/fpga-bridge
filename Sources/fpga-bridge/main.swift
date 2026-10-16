@@ -8,7 +8,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows or Linux machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Script.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -135,6 +135,17 @@ struct Build: ParsableCommand {
     }
 }
 
+struct Script: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Print the Vivado Tcl script that `build` would run, including the project's settings.")
+
+    func run() throws {
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let project = try Project.load(from: root)
+        print(project.buildScript(sources: try project.resolveSources(in: root), constraints: try project.resolveConstraints(in: root)), terminator: "")
+    }
+}
+
 struct Sim: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Simulate the project's testbench on this Mac with Icarus Verilog.",
@@ -144,7 +155,7 @@ struct Sim: ParsableCommand {
             """)
 
     @Option(help: "Testbench module to simulate. Default: the project's simulationTop, or the one nothing instantiates.") var top: String?
-    @Option(help: "Stop a simulation that hasn't finished after this many seconds.") var timeout: Double = 120
+    @Option(help: "Stop a simulation that hasn't finished after this many seconds. Default: the project's simulation time limit (120 s).") var timeout: Double?
     @Flag(name: .customLong("open"), help: "Open the waveform in Surfer (or GTKWave) when the simulation finishes.") var openWaveform = false
 
     func run() throws {
@@ -162,7 +173,8 @@ struct Sim: ParsableCommand {
 
         print("Simulating \(plan.top) (\(plan.sources.count) files)")
         fflush(stdout)
-        let result = try simulator.simulate(plan, stop: stop, timeout: timeout) { chunk in
+        let limit = timeout ?? plan.timeLimit
+        let result = try simulator.simulate(plan, stop: stop, timeout: limit) { chunk in
             FileHandle.standardOutput.write(Data(chunk.utf8))
         }
         print("")
@@ -176,7 +188,7 @@ struct Sim: ParsableCommand {
             return
         }
         if result.wasStopped { print("Stopped.") }
-        else if result.timedOut { print("Timed out after \(Int(timeout)) seconds. Does the testbench call $finish?") }
+        else if result.timedOut { print("Timed out after \(Int(limit)) seconds. Does the testbench call $finish?") }
         else { print(result.stage == .compile ? "Compile failed." : "Simulation failed (exit status \(result.status)).") }
         throw ExitCode(result.status == 0 ? 1 : result.status)
     }

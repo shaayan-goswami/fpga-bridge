@@ -64,18 +64,32 @@ public struct Simulator: Sendable {
         public let sources: [String]
         /// Where the compiled image and waveforms go. Simulation runs with this as its working directory.
         public let directory: URL
-        /// Whether we write a small module that dumps the waveform. Skipped when the testbench dumps its own.
+        /// Whether we write a small module that dumps the waveform. Skipped when the testbench dumps its own, or when
+        /// the project turns waveforms off.
         public let dumpsWaveform: Bool
+        /// The project's simulation and language settings, resolved: absolute include folders, flags ready to use.
+        public var settings = ProjectSettings()
+        public var includeDirectories: [String] = []
 
         public var imagePath: String { directory.appendingPathComponent("\(top).vvp").path }
         public var dumpModulePath: String { directory.appendingPathComponent("__fpgabridge_dump.v").path }
         public static let dumpModuleName = "__fpgabridge_dump"
         public static let waveformName = "sim.vcd"
 
+        /// Stop the run after this many seconds.
+        public var timeLimit: TimeInterval { TimeInterval(settings.simulation.timeLimit) }
+
+        /// Plusargs for `vvp`, after the image name.
+        public var runArguments: [String] { [imagePath] + settings.simulation.runtimeArguments.split(separator: " ").map(String.init) }
+
         public var compileArguments: [String] {
-            var args = ["-g2012", "-s", top]
+            var args = ["-g\(settings.simulation.standard.rawValue)", "-s", top]
+            if settings.simulation.allWarnings { args.append("-Wall") }
             if dumpsWaveform { args += ["-s", Plan.dumpModuleName] }
-            for include in Set(sources.map { ($0 as NSString).deletingLastPathComponent }).sorted() { args += ["-I", include] }
+            for define in settings.language.defines { args.append("-D\(define)") }
+            // The folders the sources are in, then the ones the project names for `include files.
+            let sourceFolders = Set(sources.map { ($0 as NSString).deletingLastPathComponent })
+            for include in (sourceFolders.sorted() + includeDirectories.filter { !sourceFolders.contains($0) }) { args += ["-I", include] }
             args += ["-o", imagePath]
             args += sources
             if dumpsWaveform { args.append(dumpModulePath) }
@@ -89,7 +103,7 @@ public struct Simulator: Sendable {
             module \(Plan.dumpModuleName);
                 initial begin
                     $dumpfile("\(Plan.waveformName)");
-                    $dumpvars(0, \(top));
+                    $dumpvars(\(settings.simulation.waveformDepth), \(top));
                 end
             endmodule
 
@@ -121,9 +135,13 @@ public struct Simulator: Sendable {
         }
 
         let own = compilable.contains { text($0).contains("$dumpfile") }
-        return Plan(top: top, sources: compilable.map { root.appendingPathComponent($0).path },
-                    directory: outputDirectory(projectName: project.name, root: root),
-                    dumpsWaveform: !own)
+        let settings = project.settings ?? ProjectSettings()
+        var plan = Plan(top: top, sources: compilable.map { root.appendingPathComponent($0).path },
+                        directory: outputDirectory(projectName: project.name, root: root),
+                        dumpsWaveform: !own && settings.simulation.recordWaveform)
+        plan.settings = settings
+        plan.includeDirectories = settings.language.includeDirectories.map { root.appendingPathComponent($0).path }
+        return plan
     }
 
     // MARK: Run
@@ -142,8 +160,9 @@ public struct Simulator: Sendable {
         public var timedOut: Bool { status == Shell.timedOutStatus }
     }
 
-    /// Compiles and runs. Output arrives through `output`. `timeout` bounds the run itself (a testbench with no `$finish`).
-    public func simulate(_ plan: Plan, stop: Shell.StopFlag, timeout: TimeInterval = 120,
+    /// Compiles and runs. Output arrives through `output`. `timeout` bounds the run itself (a testbench with no `$finish`);
+    /// without one, the project's simulation time limit applies.
+    public func simulate(_ plan: Plan, stop: Shell.StopFlag, timeout: TimeInterval? = nil,
                          output: @escaping @Sendable (String) -> Void) throws -> Result {
         try FileManager.default.createDirectory(at: plan.directory, withIntermediateDirectories: true)
         // A stale waveform from an earlier run must not be mistaken for this one's.
@@ -155,7 +174,7 @@ public struct Simulator: Sendable {
         guard compile == 0 else { return Result(status: compile, stage: .compile, waveform: nil, finishedAt: nil) }
 
         let collected = Collected()
-        let status = try Shell.stream(vvp, [plan.imagePath], in: plan.directory, stop: stop, timeout: timeout) { chunk in
+        let status = try Shell.stream(vvp, plan.runArguments, in: plan.directory, stop: stop, timeout: timeout ?? plan.timeLimit) { chunk in
             collected.append(chunk)
             output(chunk)
         }
