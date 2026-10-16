@@ -34,10 +34,22 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 # --- 1. OpenSSH server -------------------------------------------------------
 Write-Step 'OpenSSH server'
 
-$cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' | Select-Object -First 1
-if ($cap.State -ne 'Installed') {
-    Write-Host '  Installing OpenSSH.Server (this can take a minute)...'
-    Add-WindowsCapability -Online -Name $cap.Name | Out-Null
+# An sshd installed another way (winget, the Win32-OpenSSH installer) is just as good as the Windows feature.
+if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) {
+    $cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' | Select-Object -First 1
+    if ($cap.State -ne 'Installed') {
+        Write-Host '  Installing OpenSSH.Server (this can take a minute)...'
+        try {
+            Add-WindowsCapability -Online -Name $cap.Name | Out-Null
+        } catch {
+            Write-Warn2 "Windows could not install OpenSSH: $($_.Exception.Message)"
+            Write-Host '  If it says the component store is corrupted, repair Windows and re-run:'
+            Write-Host '    DISM /Online /Cleanup-Image /RestoreHealth'
+            Write-Host '    sfc /scannow'
+            Write-Host '  Or install OpenSSH another way and re-run: winget install Microsoft.OpenSSH.Beta'
+            throw
+        }
+    }
 }
 Write-Ok 'OpenSSH server installed'
 
