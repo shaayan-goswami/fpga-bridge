@@ -155,10 +155,18 @@ struct AppCommands: Commands {
         }
 
         CommandMenu("Reports") {
-            Button("Report Timing Summary") { openReport(BuildSummary.timingReport) }
-                .disabled(report(BuildSummary.timingReport) == nil)
-            Button("Report Utilization") { openReport(BuildSummary.utilizationReport) }
-                .disabled(report(BuildSummary.utilizationReport) == nil)
+            // The common ones always appear, greyed until a build has written them; anything else the build left follows.
+            ForEach(Self.reportMenu, id: \.file) { item in
+                Button(item.title) { openReport(item.file) }
+                    .disabled(report(item.file) == nil)
+            }
+            let others = model.reports.filter { entry in !Self.reportMenu.contains { $0.file == entry.fileName } || entry.run == .synthesis }
+            if !others.isEmpty {
+                Divider()
+                ForEach(others) { entry in
+                    Button("\(entry.run == .synthesis ? "Synthesis: " : "")\(entry.title)") { model.openReport(entry.id) }
+                }
+            }
         }
 
         CommandGroup(after: .toolbar) {
@@ -172,6 +180,20 @@ struct AppCommands: Commands {
         if case .file(let path) = model.selectedTab { return model.isDirty(path) }
         return false
     }
+
+    /// Vivado's Reports menu entries the build can fill in, in the order Vivado lists them.
+    private static let reportMenu: [(title: String, file: String)] = [
+        ("Report Timing Summary", BuildSummary.timingReport),
+        ("Report Timing", "timing_paths.rpt"),
+        ("Report Clocks", "clocks.rpt"),
+        ("Report Clock Utilization", "clock_utilization.rpt"),
+        ("Report Utilization", BuildSummary.utilizationReport),
+        ("Report Power", "power.rpt"),
+        ("Report DRC", "drc.rpt"),
+        ("Report Methodology", "methodology.rpt"),
+        ("Report I/O", "io.rpt"),
+        ("Report Route Status", "route_status.rpt"),
+    ]
 
     private func report(_ name: String) -> ReportEntry? {
         model.reports.first { $0.run == .implementation && $0.fileName == name }
