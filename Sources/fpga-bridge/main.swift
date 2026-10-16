@@ -8,7 +8,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows or Linux machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Script.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Script.self, IPCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -132,6 +132,117 @@ struct Build: ParsableCommand {
         if status != 0 { throw ExitCode(status) }
         print("")
         print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+    }
+}
+
+struct IPCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "ip",
+        abstract: "Browse Vivado's IP catalog and add IP to the project.",
+        discussion: """
+            IP is recreated by every build from what the project file records (its type and the settings that differ from \
+            the defaults), so there is no .xci file to manage. Each build regenerates and synthesizes it, which takes a \
+            minute or so per IP.
+            """,
+        subcommands: [List.self, Config.self, Add.self, Remove.self, Show.self])
+
+    static func service() throws -> IPService { IPService(remote: Remote(config: try BridgeConfig.load())) }
+
+    static func project() throws -> (Project, URL) {
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        return (try Project.load(from: root), root)
+    }
+
+    /// Finds an IP by exact VLNV, or by name (the newest version if there are several).
+    static func find(_ query: String, in catalog: IPCatalog) throws -> IPDefinition {
+        if let exact = catalog.definitions.first(where: { $0.vlnv == query }) { return exact }
+        let named = catalog.definitions.filter { $0.name == query }.sorted { $0.version.compare($1.version, options: .numeric) == .orderedDescending }
+        if let newest = named.first { return newest }
+        throw ValidationError("No IP named '\(query)'. Try: fpga-bridge ip list \(query)")
+    }
+
+    struct List: ParsableCommand {
+        static let configuration = CommandConfiguration(abstract: "List the IP in the catalog, optionally matching words.")
+        @Argument(help: "Words to look for in the name and description.") var query: [String] = []
+        @Flag(help: "Include IP that doesn't support the project's device.") var all = false
+        @Flag(help: "Ask the build machine again instead of using the saved catalog.") var refresh = false
+
+        func run() throws {
+            let (project, _) = try IPCommand.project()
+            let catalog = try IPCommand.service().catalog(part: project.part, refresh: refresh)
+            let found = catalog.search(query.joined(separator: " "), onlySupported: !all)
+            for ip in found { print("\(ip.displayName)  (\(ip.name) \(ip.version))  \(ip.categories.joined(separator: "/"))") }
+            print("\n\(found.count) of \(catalog.definitions.count) IP" + (all ? "" : " for \(project.part). Use --all to include the rest."))
+        }
+    }
+
+    struct Config: ParsableCommand {
+        static let configuration = CommandConfiguration(abstract: "Show an IP's settings and their default values.")
+        @Argument(help: "The IP's name or full vendor:library:name:version.") var ip: String
+
+        func run() throws {
+            let (project, _) = try IPCommand.project()
+            let service = try IPCommand.service()
+            let definition = try IPCommand.find(ip, in: try service.catalog(part: project.part))
+            print("\(definition.displayName)  \(definition.vlnv)\n")
+            for p in try service.properties(of: definition, part: project.part) { print("\(p.name) = \(p.value)") }
+        }
+    }
+
+    struct Add: ParsableCommand {
+        static let configuration = CommandConfiguration(abstract: "Add an IP to the project and print its instantiation template.")
+        @Argument(help: "The IP's name or full vendor:library:name:version.") var ip: String
+        @Option(help: "What to call it in the design (the module name to instantiate).") var name: String
+        @Option(name: .customLong("set"), parsing: .upToNextOption, help: "Settings that differ from the defaults, e.g. CONFIG.Output_Width=8.") var settings: [String] = []
+
+        func run() throws {
+            var (project, root) = try IPCommand.project()
+            let service = try IPCommand.service()
+            let definition = try IPCommand.find(ip, in: try service.catalog(part: project.part))
+            var config: [String: String] = [:]
+            for pair in settings {
+                guard let eq = pair.firstIndex(of: "=") else { throw ValidationError("'\(pair)' should look like CONFIG.Name=value") }
+                config[String(pair[..<eq])] = String(pair[pair.index(after: eq)...])
+            }
+            let new = ProjectIP(name: name, vlnv: definition.vlnv, config: config)
+            try new.validate()
+            guard !(project.ips ?? []).contains(where: { $0.name == name }) else { throw ValidationError("The project already has an IP called '\(name)'.") }
+            // Generate its template first: Vivado checks the settings there, so a bad value is caught before anything is saved.
+            let template = try service.template(for: new, part: project.part)
+            project.ips = (project.ips ?? []) + [new]
+            try project.validate()
+            try project.save(to: root)
+            print("Added \(definition.displayName) as '\(name)'.\n")
+            print(IPScripts.cutSection(of: project.targetLanguage == "VHDL" ? template.vhdlTemplate : template.verilogTemplate))
+        }
+    }
+
+    struct Remove: ParsableCommand {
+        static let configuration = CommandConfiguration(abstract: "Remove an IP from the project.")
+        @Argument(help: "The IP's instance name.") var name: String
+
+        func run() throws {
+            var (project, root) = try IPCommand.project()
+            guard (project.ips ?? []).contains(where: { $0.name == name }) else { throw ValidationError("The project has no IP called '\(name)'.") }
+            project.ips = (project.ips ?? []).filter { $0.name != name }
+            if project.ips?.isEmpty == true { project.ips = nil }
+            try project.save(to: root)
+            print("Removed '\(name)'. Take its instantiation out of your HDL too.")
+        }
+    }
+
+    struct Show: ParsableCommand {
+        static let configuration = CommandConfiguration(abstract: "Print an IP's instantiation template and settings.")
+        @Argument(help: "The IP's instance name.") var name: String
+
+        func run() throws {
+            let (project, _) = try IPCommand.project()
+            guard let ip = (project.ips ?? []).first(where: { $0.name == name }) else { throw ValidationError("The project has no IP called '\(name)'.") }
+            print("\(ip.vlnv)")
+            for key in ip.config.keys.sorted() { print("  \(key) = \(ip.config[key] ?? "")") }
+            let template = try IPCommand.service().template(for: ip, part: project.part)
+            print("\n" + IPScripts.cutSection(of: project.targetLanguage == "VHDL" ? template.vhdlTemplate : template.verilogTemplate))
+        }
     }
 }
 

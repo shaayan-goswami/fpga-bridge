@@ -106,6 +106,38 @@ public struct IPCatalog: Equatable, Sendable {
                          part: part, vivado: vivado)
     }
 
+    // MARK: Cache
+
+    /// Where the catalog for this build machine and device is kept between runs.
+    public static func cacheURL(host: String, part: String) -> URL {
+        let safe = { (s: String) in String(s.map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "." ? $0 : "_" }) }
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Caches/fpga-bridge/ip-catalog-\(safe(host))-\(safe(part)).txt")
+    }
+
+    /// The marker lines `parse` reads, so a catalog can be saved and loaded without asking Vivado again.
+    public var serialized: String {
+        func clean(_ s: String) -> String { s.replacingOccurrences(of: "\t", with: " ").replacingOccurrences(of: "\n", with: " ") }
+        var lines = ["\(IPCatalog.marker)\tVIVADO\t\(vivado)\t\t\t\t\t"]
+        for d in definitions {
+            lines.append(["\(IPCatalog.marker)", "IP", d.vlnv, d.name, d.displayName, d.taxonomy, clean(d.description),
+                          d.requiresLicense ? "1" : "0", d.supported ? "1" : "0"].map(clean).joined(separator: "\t"))
+        }
+        return lines.joined(separator: "\n") + "\n"
+    }
+
+    public func save(to url: URL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try serialized.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// Nil if there is no cache or it holds no IP.
+    public static func load(from url: URL) -> IPCatalog? {
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        let catalog = parse(output: text, part: "")
+        return catalog.definitions.isEmpty ? nil : catalog
+    }
+
     // MARK: Browsing
 
     /// Definitions matching `query` (every word in the name, title or description), optionally only supported ones.
