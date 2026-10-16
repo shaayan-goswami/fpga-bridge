@@ -185,6 +185,51 @@ enum DemoData {
         utilizationReport.replacingOccurrences(of: "|   38 |", with: "|   41 |")
     }
 
+    /// A small made-up design for Demo Mode, shaped like the project: the top, one instance per other module in the
+    /// sources, and counts that grow with each stage. The real ones come from the build machine.
+    static func design(stage: DesignStage, project: Project, sources: [String], directory: URL) -> DesignSnapshot {
+        let declared = sources.flatMap { file -> [String] in
+            guard let text = try? String(contentsOf: directory.appendingPathComponent(file), encoding: .utf8) else { return [] }
+            return ProjectCreator.declaredModules(in: text)
+        }
+        var seen = Set<String>()
+        let modules = declared.filter { $0 != project.top && seen.insert($0).inserted }.sorted()
+
+        func primitives(in path: String, seed: Int, top: Bool) -> [DesignCell] {
+            let prefix = path.isEmpty ? "" : path + "/"
+            var cells: [DesignCell] = []
+            func add(_ name: String, _ type: String) { cells.append(DesignCell(name: prefix + name, type: type, isPrimitive: true)) }
+            switch stage {
+            case .rtl:
+                for i in 0..<(2 + seed % 3) { add("count_reg\(i)", "RTL_REG") }
+                add("count_next", "RTL_ADD")
+                if seed % 2 == 0 { add("sel_mux", "RTL_MUX") }
+            case .synth, .impl:
+                for i in 0..<(3 + seed % 4) { add("state[\(i)]_i_1", "LUT\(2 + (i + seed) % 5)") }
+                for i in 0..<(4 + seed % 5) { add("state_reg[\(i)]", "FDRE") }
+                if seed % 2 == 1 { add("count_reg[0]_i_2", "CARRY4") }
+            }
+            if top {
+                add("clk_IBUF_inst", "IBUF"); add("btnC_IBUF_inst", "IBUF"); add("clk_IBUF_BUFG_inst", "BUFG")
+                for i in 0..<4 { add("led_OBUF[\(i)]_inst", "OBUF") }
+            }
+            return cells
+        }
+
+        var cells = primitives(in: "", seed: 1, top: true)
+        for (index, module) in modules.enumerated() {
+            let path = "u_" + module
+            cells.append(DesignCell(name: path, type: module, isPrimitive: false))
+            cells += primitives(in: path, seed: index + 2, top: false)
+        }
+        let info = DesignInfo(stage: stage.rawValue, design: "design_1", part: project.part, top: project.top, vivado: "2023.2 (demo data)")
+        let pins = ["U16", "E19", "U19", "V19"]
+        var ports = [DesignPort(name: "clk", direction: "IN", packagePin: "W5", ioStandard: "LVCMOS33", slew: "", drive: "", pullType: ""),
+                     DesignPort(name: "btnC", direction: "IN", packagePin: "U18", ioStandard: "LVCMOS33", slew: "", drive: "", pullType: "")]
+        ports += pins.enumerated().map { DesignPort(name: "led[\($0.offset)]", direction: "OUT", packagePin: $0.element, ioStandard: "LVCMOS33", slew: "SLOW", drive: "12", pullType: "") }
+        return DesignSnapshot(stage: stage, info: info, cells: cells, ports: ports)
+    }
+
     static func reports(for kind: RunKind) -> [ReportFile] {
         switch kind {
         case .synthesis:

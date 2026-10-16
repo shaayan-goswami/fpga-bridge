@@ -14,6 +14,7 @@ struct WorkspaceView: View {
                 case .file(let path): SourceEditorView(path: path)
                 case .report(let id): ReportView(id: id)
                 case .hardware: HardwareManagerView()
+                case .design(let stage): DesignView(stage: stage)
                 case .templates: LanguageTemplatesView()
                 case .simulation: SimulationView()
                 case .waveform: WaveformView()

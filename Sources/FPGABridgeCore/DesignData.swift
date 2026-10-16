@@ -16,7 +16,9 @@ public enum DesignStage: String, CaseIterable, Sendable, Identifiable {
 }
 
 /// One cell of a design: a module instance or a primitive (a LUT, a flip-flop, a block RAM, a buffer...).
-public struct DesignCell: Equatable, Sendable {
+public struct DesignCell: Equatable, Sendable, Identifiable {
+    public var id: String { name }
+
     /// Full hierarchical name, e.g. `u_tick/count_reg[3]`.
     public let name: String
     /// The module it instantiates, or the primitive's type (`LUT6`, `FDRE`).
@@ -47,6 +49,16 @@ public struct DesignPort: Equatable, Sendable, Identifiable {
     public let slew: String
     public let drive: String
     public let pullType: String
+
+    public init(name: String, direction: String, packagePin: String, ioStandard: String, slew: String, drive: String, pullType: String) {
+        self.name = name
+        self.direction = direction
+        self.packagePin = packagePin
+        self.ioStandard = ioStandard
+        self.slew = slew
+        self.drive = drive
+        self.pullType = pullType
+    }
 
     public var id: String { name }
     /// Whether the port has been assigned a pin.
@@ -117,6 +129,14 @@ public struct DesignInfo: Equatable, Sendable {
     public var part = ""
     public var top = ""
     public var vivado = ""
+
+    public init(stage: String = "", design: String = "", part: String = "", top: String = "", vivado: String = "") {
+        self.stage = stage
+        self.design = design
+        self.part = part
+        self.top = top
+        self.vivado = vivado
+    }
 }
 
 /// What Vivado wrote about one stage of a design: the hierarchy of modules and primitives, and the I/O ports.

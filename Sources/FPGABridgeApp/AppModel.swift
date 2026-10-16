@@ -46,6 +46,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var logs: [RunKind: [ConsoleLine]] = [:]
     @Published private(set) var tclLines: [ConsoleLine] = []
     @Published private(set) var reports: [ReportEntry] = []
+    /// What the last build wrote about the design at each stage.
+    @Published private(set) var designs: [DesignStage: DesignSnapshot] = [:]
+    /// A design view to open once the build that produces it has finished.
+    private var pendingDesign: DesignStage?
     @Published private(set) var timing: TimingSummary?
     @Published private(set) var utilization: UtilizationSummary?
     @Published private(set) var lastMessage = "Ready"
@@ -124,6 +128,7 @@ final class AppModel: ObservableObject {
             rebuildSourceTree()
             echoTcl("open_project \(directory.appendingPathComponent(Project.fileName).path)")
             addRecent(directory)
+            restorePreviousBuild(in: directory)
         } catch {
             errorMessage = "Couldn't open the project: \(error.userMessage)"
         }
@@ -141,6 +146,7 @@ final class AppModel: ObservableObject {
     }
 
     private func discardProject() {
+        clearRunState(message: "Ready")
         project = nil
         projectURL = nil
         sourceTree = []
@@ -397,10 +403,41 @@ final class AppModel: ObservableObject {
         case .settings: showSettings = true
         case .addSources: showAddSources = true
         case .openHardwareManager: open(.hardware)
+        case .openElaboratedDesign, .openSynthesizedDesign, .openImplementedDesign:
+            if let stage = item.designStage { openDesign(stage) }
         case .languageTemplates: open(.templates)
         case .runSimulation: runSimulation()
         default: if let kind = item.runKind { run(kind) }
         }
+    }
+
+    // MARK: Design views
+
+    /// Shows what the last build left in `build/` (reports and design data), so reopening a project doesn't lose them.
+    /// Run states are left alone: the results may be older than the sources, and only a run can say they are current.
+    private func restorePreviousBuild(in directory: URL) {
+        guard !backend.isDemo else { return }
+        let out = directory.appendingPathComponent(Remote.localOutputDir)
+        Task { [weak self] in
+            let (files, designs) = await Task.detached { () -> ([ReportFile], [DesignStage: DesignSnapshot]) in
+                var found: [DesignStage: DesignSnapshot] = [:]
+                for stage in DesignStage.allCases {
+                    if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { found[stage] = snapshot }
+                }
+                return (LiveBackend.reports(in: out), found)
+            }.value
+            guard let self, self.projectURL == directory, !files.isEmpty || !designs.isEmpty else { return }
+            self.apply(RunOutcome(completed: [], reports: files, designs: designs))
+        }
+    }
+
+    /// Opens the Elaborated, Synthesized or Implemented Design. If no build has produced it yet, runs one, and opens the
+    /// view when it finishes (Vivado runs synthesis when you open the synthesized design, too).
+    func openDesign(_ stage: DesignStage) {
+        if designs[stage] != nil { open(.design(stage)); return }
+        guard !isRunning else { return }
+        run(stage == .impl ? .implementation : .synthesis)
+        pendingDesign = stage
     }
 
     // MARK: Simulation
@@ -467,6 +504,7 @@ final class AppModel: ObservableObject {
 
     /// Vivado's behavior: each step runs what it depends on if that is missing or out-of-date.
     func run(_ target: RunKind) {
+        pendingDesign = nil     // a build the user starts by hand doesn't open a design view when it ends
         execute(RunPlanner.steps(for: target,
                                  synthesisUpToDate: runs[.synthesis]?.isUpToDate == true,
                                  implementationUpToDate: runs[.implementation]?.isUpToDate == true))
@@ -502,6 +540,8 @@ final class AppModel: ObservableObject {
         bitstreamReady = false
         logs = [:]
         reports = []
+        designs = [:]
+        pendingDesign = nil
         timing = nil
         utilization = nil
         lastOutcome = nil
@@ -636,10 +676,16 @@ final class AppModel: ObservableObject {
         }
         reports.sort { ($0.run == .synthesis ? 0 : 1, $0.fileName) < ($1.run == .synthesis ? 0 : 1, $1.fileName) }
 
+        for (stage, snapshot) in outcome.designs { designs[stage] = snapshot }
+        if let stage = pendingDesign, designs[stage] != nil {
+            pendingDesign = nil
+            open(.design(stage))
+        }
+
         timing = reports.first { $0.run == .implementation && $0.fileName == BuildSummary.timingReport }
             .flatMap { try? TimingSummary.parse($0.text) }
         let utilizationText = reports.first { $0.run == .implementation && $0.fileName == BuildSummary.utilizationReport }
-            ?? reports.first { $0.run == .synthesis }
+            ?? reports.first { $0.run == .synthesis && $0.fileName == "synth_utilization.rpt" }
         utilization = utilizationText.flatMap { try? UtilizationSummary.parse($0.text) }
     }
 
@@ -753,6 +799,7 @@ final class AppModel: ObservableObject {
         case .file(let path): (path as NSString).lastPathComponent
         case .report(let id): report(id).map { "\($0.title) – \($0.run.runName)" } ?? "Report"
         case .hardware: "Hardware Manager"
+        case .design(let stage): stage.title
         case .templates: "Language Templates"
         case .simulation: "Simulation"
         case .waveform: "Waveform"
@@ -765,6 +812,7 @@ final class AppModel: ObservableObject {
         case .file(let path): (path as NSString).pathExtension.lowercased() == "xdc" ? "pin" : "doc.text"
         case .report: "doc.plaintext"
         case .hardware: "cable.connector.horizontal"
+        case .design(let stage): stage == .rtl ? "square.stack.3d.up" : "rectangle.on.rectangle"
         case .templates: "doc.text.magnifyingglass"
         case .simulation: "waveform.path.ecg"
         case .waveform: "waveform"

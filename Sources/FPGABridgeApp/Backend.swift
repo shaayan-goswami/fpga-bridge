@@ -7,6 +7,8 @@ struct RunOutcome {
     var failed = false
     var cancelled = false
     var reports: [ReportFile] = []
+    /// What the build wrote about the design at each stage, for the design views.
+    var designs: [DesignStage: DesignSnapshot] = [:]
 }
 
 /// Where runs and Tcl commands go: a real build machine, or a simulation when none is configured.
@@ -51,7 +53,12 @@ final class DemoBackend: Backend, Sendable {
             }
             log(text)
         }
-        return RunOutcome(completed: [step], reports: DemoData.reports(for: step))
+        var outcome = RunOutcome(completed: [step], reports: DemoData.reports(for: step))
+        if step != .bitstream {
+            let stages: [DesignStage] = step == .synthesis ? [.rtl, .synth] : [.rtl, .synth, .impl]
+            outcome.designs = Dictionary(uniqueKeysWithValues: stages.map { ($0, DemoData.design(stage: $0, project: project, sources: sources, directory: directory)) })
+        }
+        return outcome
     }
 
     /// A handful of commands, enough to show how the console behaves.
@@ -103,16 +110,25 @@ final class LiveBackend: Backend, Sendable {
                 if status == Shell.interruptedStatus { return RunOutcome(cancelled: true) }
                 guard status == 0 else { return RunOutcome(failed: true) }
                 let out = directory.appendingPathComponent(Remote.localOutputDir)
-                let reports = [BuildSummary.timingReport, BuildSummary.utilizationReport].compactMap { name in
-                    (try? String(contentsOf: out.appendingPathComponent(name), encoding: .utf8))
-                        .map { ReportFile(run: .implementation, name: name, text: $0) }
+                var outcome = RunOutcome(completed: [.synthesis, .implementation, .bitstream], reports: LiveBackend.reports(in: out))
+                for stage in DesignStage.allCases {
+                    if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { outcome.designs[stage] = snapshot }
                 }
-                return RunOutcome(completed: [.synthesis, .implementation, .bitstream], reports: reports)
+                return outcome
             } catch {
                 log("ERROR: \(error.userMessage)\n")
                 return RunOutcome(failed: true)
             }
         }.value
+    }
+
+    /// Every report the build fetched. Synthesis reports start with `synth_`; the rest are from implementation.
+    static func reports(in directory: URL) -> [ReportFile] {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        return names.filter { $0.hasSuffix(".rpt") }.sorted().compactMap { name in
+            (try? String(contentsOf: directory.appendingPathComponent(name), encoding: .utf8))
+                .map { ReportFile(run: name.hasPrefix("synth_") ? .synthesis : .implementation, name: name, text: $0) }
+        }
     }
 
     func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async {

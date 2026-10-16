@@ -30,6 +30,7 @@ enum DebugHooks {
     static var consoleTab: ConsoleTab? { env["FPGA_BRIDGE_CONSOLE_TAB"].flatMap(ConsoleTab.init(rawValue:)) }
     static var wizardStartStep: Int? { env["FPGA_BRIDGE_WIZARD_STEP"].flatMap(Int.init) }
     static var settingsPage: String? { env["FPGA_BRIDGE_SETTINGS_PAGE"] }
+    static var designSection: String? { env["FPGA_BRIDGE_DESIGN_SECTION"] }
     #else
     static let forceDemo = false
     static let demoSpeed = 1.0
@@ -40,6 +41,7 @@ enum DebugHooks {
     static let consoleTab: ConsoleTab? = nil
     static let wizardStartStep: Int? = nil
     static let settingsPage: String? = nil
+    static let designSection: String? = nil
     #endif
 }
 
@@ -69,6 +71,11 @@ extension AppModel {
                 try? await Task.sleep(nanoseconds: 50_000_000)
             }
             while simulation.isRunning { try? await Task.sleep(nanoseconds: 100_000_000) }
+        case "design-rtl", "design-synth", "design-impl":
+            // Wait for the previous build's data to load from build/, then open the view.
+            let stage = DesignStage(rawValue: String(DebugHooks.scenario!.dropFirst("design-".count))) ?? .synth
+            while designs[stage] == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
+            open(.design(stage))
         case "waveform", "waveform-zoom":
             if DebugHooks.openPath == nil { openExampleProject() }
             runSimulation()

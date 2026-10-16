@@ -76,13 +76,21 @@ enum FlowItem: String, CaseIterable, Identifiable {
     var unavailableReason: String? {
         switch self {
         case .ipCatalog: "The IP Catalog needs Vivado's own IP tooling and isn't available yet"
-        case .openElaboratedDesign, .openSynthesizedDesign, .openImplementedDesign:
-            "Vivado's schematic and netlist viewers can't run on the Mac. Use the reports instead."
         default: nil
         }
     }
 
     var isAvailable: Bool { unavailableReason == nil }
+
+    /// The design view this item opens, if it is one.
+    var designStage: DesignStage? {
+        switch self {
+        case .openElaboratedDesign: .rtl
+        case .openSynthesizedDesign: .synth
+        case .openImplementedDesign: .impl
+        default: nil
+        }
+    }
 
     var runKind: RunKind? {
         switch self {
@@ -155,8 +163,16 @@ struct ReportEntry: Identifiable {
 
     var title: String {
         switch fileName {
-        case BuildSummary.timingReport: "Timing Summary Report"
+        case BuildSummary.timingReport, "synth_timing_summary.rpt": "Timing Summary Report"
         case BuildSummary.utilizationReport, "synth_utilization.rpt": "Utilization Report"
+        case "timing_paths.rpt": "Timing Report"
+        case "clocks.rpt", "synth_clocks.rpt": "Clock Report"
+        case "clock_utilization.rpt": "Clock Utilization Report"
+        case "io.rpt": "I/O Report"
+        case "route_status.rpt": "Route Status Report"
+        case "drc.rpt": "DRC Report"
+        case "methodology.rpt": "Methodology Report"
+        case "power.rpt": "Power Report"
         default: fileName
         }
     }
@@ -168,6 +184,7 @@ enum WorkspaceTab: Hashable, Identifiable {
     case summary
     case file(String)
     case report(String)
+    case design(DesignStage)
     case hardware
     case templates
     case simulation
