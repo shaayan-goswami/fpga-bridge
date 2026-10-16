@@ -44,6 +44,10 @@ public enum Doctor {
             return peer.online
                 ? (Check(name: "Tailscale", level: .ok, detail: "Connected, \(host) is online"), true)
                 : (Check(name: "Tailscale", level: .fail, detail: "\(host) is offline on your tailnet. Is the Windows machine awake?"), false)
+        } catch TailscaleError.notInstalled where !host.lowercased().hasSuffix(".ts.net") {
+            // Not needed while the build machine is on the same network; SSH decides whether it is reachable.
+            return (Check(name: "Tailscale", level: .warn,
+                          detail: "Not installed. Fine while both machines are on the same network; you need it to build from anywhere else."), true)
         } catch {
             return (Check(name: "Tailscale", level: .fail, detail: "\(error.userMessage)"), false)
         }

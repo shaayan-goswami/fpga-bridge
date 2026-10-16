@@ -137,11 +137,18 @@ final class FakeRemoteTests: XCTestCase {
         XCTAssertEqual(checks.map(\.level), [.warn, .ok, .ok], "\(checks)")
     }
 
-    func testDoctorReportsMissingTailscaleCLI() {
-        let checks = Doctor.run(config: config, tailscale: { throw TailscaleError.notInstalled })
+    func testDoctorFailsForATailnetNameWhenTheTailscaleCLIIsMissing() {
+        let tailnet = BridgeConfig(host: "pc.example.ts.net", user: "me", vivadoPath: Self.vivadoPath)
+        let checks = Doctor.run(config: tailnet, tailscale: { throw TailscaleError.notInstalled })
         XCTAssertEqual(checks.map(\.name), ["Tailscale"])
         XCTAssertEqual(checks.first?.level, .fail)
         XCTAssertTrue(calls.isEmpty)
+    }
+
+    func testDoctorOnlyWarnsAboutMissingTailscaleForALocalAddress() {
+        let lan = BridgeConfig(host: "100.100.51.9", user: "me", vivadoPath: Self.vivadoPath)
+        let checks = Doctor.run(config: lan, tailscale: { throw TailscaleError.notInstalled })
+        XCTAssertEqual(checks.map(\.level), [.warn, .ok, .ok], "\(checks)")
     }
 
     // MARK: Build
