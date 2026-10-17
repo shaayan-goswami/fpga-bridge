@@ -271,7 +271,16 @@ public struct SchematicBuilder {
 
         // Ports at the top; the module's own boundary pins inside a module.
         if module.isEmpty {
-            for (bus, ports) in portBuses() {
+            // A schematic of chosen cells shows only the ports wired to them.
+            let drawnCells = Set(included.map(\.name))
+            func reachesDrawnCell(_ port: DesignPort) -> Bool {
+                guard spec.only != nil else { return true }
+                guard let net = design.net(ofPort: port.name).flatMap(design.net(named:)) else { return false }
+                return net.endpoints.contains { end in
+                    !end.isPort && drawnCells.contains(design.pins[end.name]?.cellName ?? "")
+                }
+            }
+            for (bus, ports) in portBuses() where ports.contains(where: reachesDrawnCell) {
                 add(portItem(bus: bus, ports: ports, depth: depth))
             }
         } else {
@@ -612,26 +621,45 @@ public struct SchematicBuilder {
                 floor = want + height(i) + clearance(i)
             }
         }
-        // Nodes nothing drives (inputs, constants) line up with what they drive instead.
-        for l in stride(from: layerCount - 1, through: 0, by: -1) {
-            var ceiling = CGFloat.greatestFiniteMagnitude
-            for i in layers[l].reversed() {
-                let drives = hops.filter { $0.from == i }
-                if hops.contains(where: { $0.to == i }) || drives.isEmpty {
-                    ceiling = top[i] - clearance(i)
-                    continue
+        // Then settle every layer, sweeping right and left: each node as near as it can be to the pins it connects to on
+        // both sides, keeping the layer's order and spacing (an isotonic regression, solved exactly by pooling).
+        func offsetOf(_ i: Int, _ group: String?) -> CGFloat { i < n ? (group.flatMap { items[i].pinOffsets[$0] } ?? height(i) / 2) : 0 }
+        var neighbours = Array(repeating: [(other: Int, otherGroup: String?, ownGroup: String?)](), count: total)
+        for h in hops {
+            neighbours[h.to].append((h.from, h.fromGroup, h.toGroup))
+            neighbours[h.from].append((h.to, h.toGroup, h.fromGroup))
+        }
+        func settle(_ l: Int) {
+            let nodes = layers[l]
+            guard !nodes.isEmpty else { return }
+            var offsets: [CGFloat] = []
+            var running: CGFloat = 0
+            for i in nodes { offsets.append(running); running += height(i) + clearance(i) }
+            // Targets in "slack" coordinates: position minus the room everything above it needs.
+            var targets: [CGFloat] = []
+            for (k, i) in nodes.enumerated() {
+                let pulls = neighbours[i].map { pinY($0.other, $0.otherGroup) - offsetOf(i, $0.ownGroup) }
+                let want = pulls.isEmpty ? top[i] : pulls.reduce(0, +) / CGFloat(pulls.count)
+                targets.append(want - offsets[k])
+            }
+            // Pool adjacent violators: merge runs whose targets go down, so the result never does.
+            var blocks: [(sum: CGFloat, count: CGFloat, size: Int)] = []
+            for t in targets {
+                blocks.append((t, 1, 1))
+                while blocks.count > 1, blocks[blocks.count - 2].sum / blocks[blocks.count - 2].count > blocks[blocks.count - 1].sum / blocks[blocks.count - 1].count {
+                    let last = blocks.removeLast()
+                    blocks[blocks.count - 1] = (blocks[blocks.count - 1].sum + last.sum, blocks[blocks.count - 1].count + last.count, blocks[blocks.count - 1].size + last.size)
                 }
-                let ys = drives.map { pinY($0.to, $0.toGroup) - (i < n ? ($0.fromGroup.flatMap { items[i].pinOffsets[$0] } ?? height(i) / 2) : 0) }
-                let want = ys.reduce(0, +) / CGFloat(ys.count)
-                top[i] = min(want, ceiling - height(i))
-                ceiling = top[i] - clearance(i)
             }
-            // Keep the layer in order and apart after that move.
-            var floor = -CGFloat.greatestFiniteMagnitude
-            for i in layers[l] {
-                top[i] = max(top[i], floor)
-                floor = top[i] + height(i) + clearance(i)
+            var k = 0
+            for block in blocks {
+                let value = block.sum / block.count
+                for _ in 0..<block.size { top[nodes[k]] = value + offsets[k]; k += 1 }
             }
+        }
+        for _ in 0..<6 {
+            for l in 0..<layerCount { settle(l) }
+            for l in stride(from: layerCount - 1, through: 0, by: -1) { settle(l) }
         }
 
         // Tracks: each wire's vertical run in a gap gets a column, shared by its branches, apart from overlapping runs.

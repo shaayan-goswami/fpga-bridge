@@ -130,4 +130,57 @@ final class DesignSelectionAppTests: ExampleSandboxTestCase {
         XCTAssertEqual(text.substring(with: AppModel.range(ofLine: 99, in: text)), "three", "past the end: the last line")
         XCTAssertEqual(AppModel.range(ofLine: 1, in: ""), NSRange(location: 0, length: 0))
     }
+
+    // MARK: Schematic
+
+    func testTheElaboratedDesignOpensOnASchematicOfTheTop() async throws {
+        let model = try await makeModel()
+        model.perform(.openElaboratedDesign)
+        XCTAssertEqual(model.selectedTab, .schematic(.rtl), "as Vivado does")
+        XCTAssertTrue(model.openTabs.contains(.design(.rtl)))
+        XCTAssertEqual(model.schematicSpecs[.rtl], SchematicSpec())
+        model.perform(.openSynthesizedDesign)
+        XCTAssertEqual(model.selectedTab, .design(.synth), "the synthesized design doesn't")
+    }
+
+    func testF4DrawsTheSelectionAndPreviousGoesBack() async throws {
+        let model = try await makeModel()
+        model.perform(.openSynthesizedDesign)
+        model.schematicOfSelection()
+        XCTAssertEqual(model.schematicSpecs[.synth], SchematicSpec(), "nothing selected: the top level")
+        XCTAssertEqual(model.selectedTab, .schematic(.synth))
+
+        model.select(.net("u/q"))
+        model.schematicOfSelection()
+        XCTAssertEqual(model.schematicSpecs[.synth]?.only, ["u/ff"], "a net draws the cells it connects")
+        model.select(.pin("u/ff/Q"))
+        XCTAssertEqual(model.cellsForSchematic(of: model.designSelection, in: try XCTUnwrap(model.designs[.synth])), ["u/ff"])
+
+        model.schematicBack(.synth)
+        XCTAssertEqual(model.schematicSpecs[.synth], SchematicSpec())
+        model.schematicForward(.synth)
+        XCTAssertEqual(model.schematicSpecs[.synth]?.only, ["u/ff"])
+    }
+
+    func testExpandingAModuleInPlaceAndCollapsingIt() async throws {
+        let model = try await makeModel()
+        model.perform(.openSynthesizedDesign)
+        model.openSchematic()
+        model.toggleInSchematic("u", stage: .synth)
+        XCTAssertEqual(model.schematicSpecs[.synth]?.expanded, ["u"])
+        model.toggleInSchematic("u", stage: .synth)
+        XCTAssertEqual(model.schematicSpecs[.synth]?.expanded, [])
+        model.schematicBack(.synth)
+        XCTAssertEqual(model.schematicSpecs[.synth]?.expanded, ["u"], "each step can be undone with Previous")
+    }
+
+    func testClosingADesignClosesItsSchematic() async throws {
+        let model = try await makeModel()
+        model.perform(.openElaboratedDesign)
+        XCTAssertTrue(model.openTabs.contains(.schematic(.rtl)))
+        model.close(.design(.rtl))
+        XCTAssertFalse(model.openTabs.contains(.schematic(.rtl)))
+        XCTAssertNil(model.activeDesign)
+        XCTAssertEqual(model.title(of: .schematic(.synth)), "Schematic")
+    }
 }

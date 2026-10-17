@@ -63,6 +63,10 @@ final class AppModel: ObservableObject {
     @Published var propertiesShowsDesign = false
     /// A line to show in an open editor (Go To Source), by file.
     @Published var editorReveal: [String: EditorReveal] = [:]
+    /// What each design's Schematic window shows, and the earlier views for its Previous button.
+    @Published var schematicSpecs: [DesignStage: SchematicSpec] = [:]
+    var schematicHistory: [DesignStage: [SchematicSpec]] = [:]
+    var schematicFuture: [DesignStage: [SchematicSpec]] = [:]
     @Published private(set) var timing: TimingSummary?
     @Published private(set) var utilization: UtilizationSummary?
     @Published private(set) var lastMessage = "Ready"
@@ -530,7 +534,7 @@ final class AppModel: ObservableObject {
     /// Opens the Elaborated, Synthesized or Implemented Design. If no build has produced it yet, runs one, and opens the
     /// view when it finishes (Vivado runs synthesis when you open the synthesized design, too).
     func openDesign(_ stage: DesignStage) {
-        if designs[stage] != nil { open(.design(stage)); return }
+        if designs[stage] != nil { showDesign(stage); return }
         guard !isRunning else { return }
         run(stage == .impl ? .implementation : .synthesis)
         pendingDesign = stage
@@ -780,7 +784,7 @@ final class AppModel: ObservableObject {
         for (stage, snapshot) in outcome.designs { designs[stage] = snapshot }
         if let stage = pendingDesign, designs[stage] != nil {
             pendingDesign = nil
-            open(.design(stage))
+            showDesign(stage)
         }
 
         timing = reports.first { $0.run == .implementation && $0.fileName == BuildSummary.timingReport }
@@ -843,6 +847,7 @@ final class AppModel: ObservableObject {
         selectedTab = tab
         if case .file(let path) = tab { lastFile = path }
         if case .design(let stage) = tab { designOpened(stage) }
+        if case .schematic(let stage) = tab { designOpened(stage) }
     }
 
     // MARK: Language templates
@@ -887,7 +892,14 @@ final class AppModel: ObservableObject {
         guard tab.isCloseable, let index = openTabs.firstIndex(of: tab) else { return }
         openTabs.remove(at: index)
         if selectedTab == tab { selectedTab = openTabs[max(0, index - 1)] }
-        if case .design(let stage) = tab { designClosed(stage) }
+        if case .design(let stage) = tab {
+            // Closing a design closes its windows, as in Vivado.
+            if let schematic = openTabs.firstIndex(of: .schematic(stage)) {
+                openTabs.remove(at: schematic)
+                if selectedTab == .schematic(stage) { selectedTab = openTabs.last ?? .summary }
+            }
+            designClosed(stage)
+        }
     }
 
     func openFile(_ path: String) { open(.file(path)) }
@@ -903,6 +915,7 @@ final class AppModel: ObservableObject {
         case .report(let id): report(id).map { "\($0.title) – \($0.run.runName)" } ?? "Report"
         case .hardware: "Hardware Manager"
         case .design(let stage): stage.title
+        case .schematic: "Schematic"
         case .ipCatalog: "IP Catalog"
         case .templates: "Language Templates"
         case .simulation: "Simulation"
@@ -917,6 +930,7 @@ final class AppModel: ObservableObject {
         case .report: "doc.plaintext"
         case .hardware: "cable.connector.horizontal"
         case .design(let stage): stage == .rtl ? "square.stack.3d.up" : "rectangle.on.rectangle"
+        case .schematic: "point.3.connected.trianglepath.dotted"
         case .ipCatalog: "puzzlepiece.extension"
         case .templates: "doc.text.magnifyingglass"
         case .simulation: "waveform.path.ecg"

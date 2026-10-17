@@ -140,6 +140,9 @@ struct NetlistWindow: View {
         HStack(spacing: 12) {
             Button { expanded = [] } label: { Image(systemName: "chevron.up.chevron.down") }
                 .help("Collapse All")
+            Button { model.schematicOfSelection() } label: { Image(systemName: "point.3.connected.trianglepath.dotted") }
+                .disabled(!design.hasConnectivity)
+                .help("Schematic (F4): draw the selected objects, or the top level")
             Spacer()
             if !design.hasConnectivity {
                 Label("Nets need a newer build", systemImage: "info.circle")
@@ -162,6 +165,16 @@ struct NetlistWindow: View {
         }
         if case .module(let path) = row.kind, !path.isEmpty, let cell = design.cell(named: path) {
             Button("Go To Source") { model.goToSource(cell) }.disabled(!model.canGoToSource(cell))
+        }
+        if row.object != nil {
+            Button("Schematic") {
+                if let ref = row.object, !model.designSelection.contains(ref) { model.select(ref) }
+                model.schematicOfSelection()
+            }
+            .disabled(!design.hasConnectivity)
+        }
+        if case .module(let path) = row.kind, !path.isEmpty, design.hasConnectivity {
+            Button("Schematic of Its Contents") { model.showSchematic(SchematicSpec(module: path), in: design.stage) }
         }
         if let ref = row.object {
             Divider()

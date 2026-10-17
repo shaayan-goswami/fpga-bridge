@@ -3,6 +3,10 @@ import XCTest
 @testable import FPGABridgeCore
 
 /// The schematic layout, on Vivado 2025.2's demo_top netlists: what is drawn, and that the drawing is sound.
+private extension SchematicNode {
+    var isPortNode: Bool { if case .port = kind { return true } else { return false } }
+}
+
 final class SchematicTests: XCTestCase {
     func snapshot(_ stage: DesignStage) throws -> DesignSnapshot {
         let dir = try XCTUnwrap(Bundle.module.url(forResource: "design_vivado2025", withExtension: nil, subdirectory: "Fixtures"))
@@ -164,6 +168,9 @@ final class SchematicTests: XCTestCase {
         XCTAssertEqual(s.nodes.first { $0.id == "u_tick" }?.kind, .module(open: true))
         XCTAssertFalse(s.nodes.contains { $0.stands(for: .cell("count_reg[0]")) }, "nothing else")
         XCTAssertTrue(s.nodes.flatMap(\.pins).contains(where: \.hasHiddenConnections), "pins going to logic not shown are marked")
+        XCTAssertEqual(s.portCount, 0, "no port is wired to these cells")
+        let (withPort, _) = try layout(.synth, SchematicSpec(only: ["clk_IBUF_inst"]))
+        XCTAssertEqual(withPort.nodes.filter(\.isPortNode).map(\.title), ["clk"], "only the port wired to the chosen cell")
     }
 
     // MARK: Every stage lays out

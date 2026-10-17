@@ -143,6 +143,17 @@ struct AppCommands: Commands {
             Button("Reset Runs") { model.resetRuns() }
                 .disabled(!model.hasProject || model.isRunning)
             Divider()
+            Button("Open Elaborated Design") { model.openDesign(.rtl) }
+                .disabled(!model.hasProject)
+            Button("Open Synthesized Design") { model.openDesign(.synth) }
+                .disabled(!model.hasProject)
+            Button("Open Implemented Design") { model.openDesign(.impl) }
+                .disabled(!model.hasProject)
+            // Vivado's Schematic command, F4: the selected objects, or the top level when nothing is selected.
+            Button("Schematic") { model.schematicOfSelection() }
+                .keyboardShortcut(KeyEquivalent(Character(UnicodeScalar(UInt16(NSF4FunctionKey))!)), modifiers: [])
+                .disabled(model.activeSnapshot == nil)
+            Divider()
             Button("Run Simulation") { model.runSimulation() }
                 .disabled(!model.hasProject || model.simulation.isRunning)
             Button("Open Hardware Manager") { model.open(.hardware) }

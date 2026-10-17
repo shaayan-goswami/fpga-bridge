@@ -184,6 +184,8 @@ enum WorkspaceTab: Hashable, Identifiable {
     case file(String)
     case report(String)
     case design(DesignStage)
+    /// The Schematic window of an open design.
+    case schematic(DesignStage)
     case ipCatalog
     case hardware
     case templates

@@ -69,7 +69,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
 | Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
-| Open Elaborated / Synthesized / Implemented Design | Remote | Prototype (Netlist hierarchy with cells, I/O Ports table, utilization by module, and the stage's reports, from data the build writes; verified on Vivado 2025.2). Schematic, Device view, Properties of nets and timing path highlighting are Todo. Decision: keep mirroring Vivado for the design views |
+| Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Device and Package views, timing path highlighting and the Flow Navigator's per-design sub-items are Todo |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
 | Create Block Design… | Not possible (see §6) | — |
@@ -130,9 +130,9 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Reports (per run, open in viewer) | Mac | Done |
 | Design Runs table (columns, context menu: Launch, Reset, Delete, Make Active, Change Run Settings, Open Run Directory) | Mac → Remote | Prototype (table only) |
 | Run Properties | Mac | Todo |
-| Netlist (cells, nets, hierarchy of the opened design) | Remote | Prototype (cells and hierarchy; nets Todo) |
+| Netlist (cells, nets, hierarchy of the opened design) | Remote data + Mac | Done: Nets and Leaf Cells folders per module, buses grouped, Vivado's icons, shared selection that opens the tree to what is selected elsewhere, Go To Source, Schematic (F4) |
 | Properties (any selected object) | Remote | Todo |
-| Schematic | Remote data + Mac renderer | Todo (stretch, see P8) |
+| Schematic | Remote data + Mac renderer | Prototype: layered left-to-right layout with Vivado's RTL symbols (gates, mux, register with clock triangle, buffers, port pentagons), registers and buses bundled (`count_reg[7:0]`), constants as tie labels, modules opened in place, feedback over the top, dotted stubs for logic not shown; zoom, pan, select (shared), Previous/Next, Schematic of selection (F4), Go To Source. Not done: Expand Cone, Select Area, schematic display settings (fanout, slack, equations), pages for huge levels |
 | I/O Ports table and Package view (pin assignment) | Remote data + Mac | Prototype (the table with pin, standard, slew, drive and pull; the Package view and editing pins are Todo) |
 | Timing results window (paths table, path report, highlight) | Remote | Todo |
 | Device view / floorplanning | Not possible | — |

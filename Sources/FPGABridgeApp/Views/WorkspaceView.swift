@@ -15,6 +15,7 @@ struct WorkspaceView: View {
                 case .report(let id): ReportView(id: id)
                 case .hardware: HardwareManagerView()
                 case .design(let stage): DesignView(stage: stage)
+                case .schematic(let stage): SchematicView(stage: stage)
                 case .ipCatalog: IPCatalogView()
                 case .templates: LanguageTemplatesView()
                 case .simulation: SimulationView()

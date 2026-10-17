@@ -22,6 +22,12 @@ extension AppModel {
     /// The object Properties shows: the most recently selected one.
     var primarySelection: DesignObjectRef? { designSelection.last }
 
+    /// Opens a design's window. The elaborated design opens on a schematic of the top, as Vivado's does.
+    func showDesign(_ stage: DesignStage) {
+        open(.design(stage))
+        if stage == .rtl { openSchematic(stage) }
+    }
+
     func designOpened(_ stage: DesignStage) {
         if activeDesign != stage { designSelection = [] }
         activeDesign = stage
@@ -100,5 +106,75 @@ extension AppModel {
             contents.length -= 1
         }
         return contents
+    }
+}
+
+// MARK: Schematic
+
+extension AppModel {
+    /// The open design's schematic: what it showed last, or the whole top level.
+    func openSchematic(_ stage: DesignStage? = nil) {
+        guard let stage = stage ?? activeDesign, designs[stage] != nil else { return }
+        if schematicSpecs[stage] == nil { schematicSpecs[stage] = SchematicSpec() }
+        open(.schematic(stage))
+    }
+
+    /// Shows a different view in a design's schematic, remembering the current one for Previous.
+    func showSchematic(_ spec: SchematicSpec, in stage: DesignStage) {
+        if let current = schematicSpecs[stage], current != spec {
+            schematicHistory[stage, default: []].append(current)
+            schematicFuture[stage] = []
+        }
+        schematicSpecs[stage] = spec
+        open(.schematic(stage))
+    }
+
+    func schematicBack(_ stage: DesignStage) {
+        guard let previous = schematicHistory[stage]?.popLast() else { return }
+        if let current = schematicSpecs[stage] { schematicFuture[stage, default: []].append(current) }
+        schematicSpecs[stage] = previous
+    }
+
+    func schematicForward(_ stage: DesignStage) {
+        guard let next = schematicFuture[stage]?.popLast() else { return }
+        if let current = schematicSpecs[stage] { schematicHistory[stage, default: []].append(current) }
+        schematicSpecs[stage] = next
+    }
+
+    /// Opens or closes a module instance in place (Expand Inside / Collapse Inside).
+    func toggleInSchematic(_ cell: String, stage: DesignStage) {
+        var spec = schematicSpecs[stage] ?? SchematicSpec()
+        if spec.expanded.contains(cell) { spec.expanded.remove(cell) } else { spec.expanded.insert(cell) }
+        showSchematic(spec, in: stage)
+    }
+
+    /// The cells a schematic of the selection draws: selected cells, the cells of selected pins, and the cells a
+    /// selected net or port connects at its own level.
+    func cellsForSchematic(of refs: [DesignObjectRef], in design: DesignSnapshot) -> Set<String> {
+        var cells: Set<String> = []
+        func addNet(_ name: String) {
+            guard let net = design.net(named: name) else { return }
+            for end in net.endpoints where !end.isPort {
+                if let pin = design.pins[end.name], pin.cellName != net.parentPath, design.cell(named: pin.cellName) != nil {
+                    cells.insert(pin.cellName)
+                }
+            }
+        }
+        for ref in refs {
+            switch ref.kind {
+            case .cell: if design.cell(named: ref.name) != nil { cells.insert(ref.name) }
+            case .pin: if let pin = design.pins[ref.name] { cells.insert(pin.cellName) }
+            case .net: addNet(ref.name)
+            case .port: if let net = design.net(ofPort: ref.name) { addNet(net) }
+            }
+        }
+        return cells.filter { design.cell(named: $0)?.type != "GND" && design.cell(named: $0)?.type != "VCC" }
+    }
+
+    /// Vivado's Schematic command (F4): a schematic of what is selected, or of the top level when nothing is.
+    func schematicOfSelection() {
+        guard let stage = activeDesign, let design = designs[stage] else { return }
+        let cells = cellsForSchematic(of: designSelection, in: design)
+        showSchematic(cells.isEmpty ? SchematicSpec() : SchematicSpec(only: cells), in: stage)
     }
 }

@@ -16,6 +16,8 @@ import SwiftUI
 ///   FPGA_BRIDGE_WIZARD_STEP=n      start the New Project wizard on step n
 ///   FPGA_BRIDGE_SETTINGS_PAGE=name open Project Settings on this page (General, Simulation, ...)
 ///   FPGA_BRIDGE_SELECT=kind:name   in a design scenario, select this object (cell:u_tick, net:clk, port:led[0])
+///   FPGA_BRIDGE_EXPAND=a,b         in a schematic scenario, open these module instances in place
+///   FPGA_BRIDGE_SCHEMATIC_ONLY=a,b  in a schematic scenario, draw only these cells (as F4 on a selection does)
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -81,11 +83,20 @@ extension AppModel {
         case "ipcatalog", "ipcustomize":
             if DebugHooks.openPath == nil { openExampleProject() }
             openIPCatalog()
-        case "design-rtl", "design-synth", "design-impl":
+        case "design-rtl", "design-synth", "design-impl", "schematic-rtl", "schematic-synth", "schematic-impl":
             // Wait for the previous build's data to load from build/, then open the view.
-            let stage = DesignStage(rawValue: String(DebugHooks.scenario!.dropFirst("design-".count))) ?? .synth
+            let name = DebugHooks.scenario!
+            let stage = DesignStage(rawValue: String(name.split(separator: "-").last ?? "")) ?? .synth
             while designs[stage] == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
             open(.design(stage))
+            if name.hasPrefix("schematic") {
+                var spec = SchematicSpec()
+                spec.expanded = Set((ProcessInfo.processInfo.environment["FPGA_BRIDGE_EXPAND"] ?? "").split(separator: ",").map(String.init))
+                let only = (ProcessInfo.processInfo.environment["FPGA_BRIDGE_SCHEMATIC_ONLY"] ?? "").split(separator: ",").map(String.init)
+                if !only.isEmpty { spec.only = Set(only) }
+                schematicSpecs[stage] = spec
+                open(.schematic(stage))
+            }
             if let ref = DebugHooks.selectObject { select(ref) }
         case "waveform", "waveform-zoom":
             if DebugHooks.openPath == nil { openExampleProject() }
