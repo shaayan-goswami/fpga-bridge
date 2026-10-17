@@ -45,8 +45,11 @@ open "dist/FPGA Bridge.app"
 
 Or run it straight from the build without packaging: `swift run "FPGA Bridge"`.
 
-With no build machine configured (`fpga-bridge init` not run yet) the app starts in **Demo Mode**: runs are
-simulated so you can try the whole flow. Use **Open Example Project** on the start page for a ready-made design.
+With no build machine configured (`fpga-bridge init` not run yet) the app still works as a Verilog editor and
+simulator: editing, Language Templates, **Run Simulation** (Icarus Verilog on this Mac) and the waveform viewer all work,
+and the Hardware Manager programs a board with a bitstream built elsewhere. Vivado's steps (synthesis, implementation,
+bitstream, the linter, the IP Catalog) are greyed out and say why. No board is needed for any of it. Use **Open Example
+Project** on the start page for a ready-made design.
 
 **FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the glass style (Liquid Glass, Clear, Off), editor and
 console font sizes, and whether to show accent colors. The app is grey, with small accents in the colors Vivado itself

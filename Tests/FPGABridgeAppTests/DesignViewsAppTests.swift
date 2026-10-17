@@ -205,6 +205,54 @@ final class DesignViewsAppTests: ExampleSandboxTestCase {
         XCTAssertNil(model.selectedTab.designStage, "restoring doesn't open any view")
     }
 
+    func testABuildMadeWhileTheProjectIsOpenIsLoadedOnReturn() async throws {
+        let model = AppModel(backend: ScriptedBuildBackend(), persist: false)
+        model.openExampleProject()
+        let out = try XCTUnwrap(model.projectURL).appendingPathComponent("build")
+        try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        let cells = out.appendingPathComponent("synth_cells.tsv")
+        try "top_ff\tFDRE\t1\n".write(to: cells, atomically: true, encoding: .utf8)
+        try "top\ttop\npart\txc7\n".write(to: out.appendingPathComponent("synth_info.tsv"), atomically: true, encoding: .utf8)
+        XCTAssertNil(model.designs[.synth], "nothing there when the project opened")
+
+        // A build from the command line, say: picked up when the app comes back to the front.
+        model.reloadBuildIfChanged()
+        try await until("the new build") { model.designs[.synth]?.cells.count == 1 }
+
+        // A second build writes more; opening the design reads it again.
+        try "top_ff\tFDRE\t1\ntop_lut\tLUT2\t1\n".write(to: cells, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 5)], ofItemAtPath: cells.path)
+        model.openDesign(.synth)
+        try await until("the second build") { model.designs[.synth]?.cells.count == 2 }
+
+        // Nothing changed: nothing is read again.
+        let stamp = model.loadedBuildStamp
+        model.reloadBuildIfChanged()
+        XCTAssertEqual(model.loadedBuildStamp, stamp)
+    }
+
+    func testWithoutABuildMachineVivadosStepsExplainWhyAndSimulationStillRuns() async throws {
+        let model = AppModel(backend: LocalBackend(), persist: false)
+        await model.start()
+        XCTAssertEqual(model.connection, .notConfigured)
+        XCTAssertFalse(model.hasBuildMachine)
+        model.openExampleProject()
+        model.run(.synthesis)
+        XCTAssertFalse(model.isRunning)
+        XCTAssertEqual(model.errorMessage, NoBuildMachine.message)
+        XCTAssertTrue(FlowItem.runSynthesis.needsVivado && FlowItem.runLinter.needsVivado && FlowItem.ipCatalog.needsVivado)
+        XCTAssertFalse(FlowItem.runSimulation.needsVivado || FlowItem.openHardwareManager.needsVivado
+                       || FlowItem.openSynthesizedDesign.needsVivado || FlowItem.languageTemplates.needsVivado)
+        let lint = await LocalBackend().lint(project: try XCTUnwrap(model.project), directory: try XCTUnwrap(model.projectURL)) { _ in }
+        XCTAssertEqual(lint, .failure(LintFailure(message: NoBuildMachine.message)))
+        do {
+            _ = try await LocalIPBackend().catalog(part: "xc7a35tcpg236-1", refresh: false)
+            XCTFail("the IP Catalog comes from Vivado")
+        } catch {
+            XCTAssertEqual(error.userMessage, NoBuildMachine.message)
+        }
+    }
+
     func testDemoModeRestoresNothing() async throws {
         let model = AppModel(backend: DemoBackend(speed: 0), persist: false)
         model.openExampleProject()

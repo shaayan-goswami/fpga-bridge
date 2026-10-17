@@ -51,7 +51,8 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Elaborated, Synthesized and Implemented Design**: the netlist hierarchy with cells, the I/O ports with pins and standards, utilization by module, and the reports of each stage (timing, clocks, power, DRC, methodology, I/O, route status), written by the build and restored when you reopen a project
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
-- [x] Liquid Glass design, light and dark mode, and a Demo Mode (no build machine needed) for trying the app
+- [x] Liquid Glass design, light and dark mode
+- [x] Works without a build machine or a board: write Verilog, simulate and view waveforms on the Mac; only Vivado's steps need the build machine
 
 **Not built yet** (greyed out or missing; see the backlog for the full list)
 - [ ] Separate synthesis and implementation runs with checkpoints, Launch Runs, run strategies, and stopping a live build from the app
@@ -135,7 +136,7 @@ fpga-bridge build                  # Vivado on the build machine; results land i
 fpga-bridge flash                  # program the board from build/<top>.bit
 ```
 
-Or do the same from the app: open `dist/FPGA Bridge.app`, choose **New Project**, then use the Flow Navigator. With no build machine configured the app starts in Demo Mode so you can try the flow first.
+Or do the same from the app: open `dist/FPGA Bridge.app`, choose **New Project**, then use the Flow Navigator. With no build machine configured you can still write code and run simulations; Vivado's steps are greyed out until you run `fpga-bridge init`.
 
 ### Commands
 

@@ -108,6 +108,39 @@ final class DemoBackend: Backend, Sendable {
     }
 }
 
+// MARK: No build machine
+
+/// Why a Vivado command can't run when no build machine is set up.
+struct NoBuildMachine: DescribedError {
+    static let message = "No build machine is set up, so Vivado's steps can't run. Writing code, simulating and "
+        + "programming a board work on this Mac. To build, run `fpga-bridge init` and reopen the app."
+    var description: String { Self.message }
+}
+
+/// Used when no build machine is configured: the app is still a Verilog editor and simulator, and still programs a
+/// board with a bitstream from elsewhere. Anything that needs Vivado says why it can't run.
+final class LocalBackend: Backend, Sendable {
+    let isDemo = false
+    let hostName = "No build machine"
+    let vivadoPath: String? = nil
+    let canStop = false
+
+    func checkConnection() async -> ConnectionState { .notConfigured }
+
+    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
+        log("ERROR: \(NoBuildMachine.message)\n")
+        return RunOutcome(failed: true)
+    }
+
+    func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async {
+        log("ERROR: \(NoBuildMachine.message)\n")
+    }
+
+    func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure> {
+        .failure(LintFailure(message: NoBuildMachine.message))
+    }
+}
+
 // MARK: Live
 
 final class LiveBackend: Backend, Sendable {

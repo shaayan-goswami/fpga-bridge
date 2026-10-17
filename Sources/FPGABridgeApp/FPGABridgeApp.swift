@@ -17,6 +17,10 @@ struct FPGABridgeApp: App {
                 .environmentObject(model.waveform)
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
+                // A build from the command line (or another Mac) while the app was in the background shows up on return.
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    model.reloadBuildIfChanged()
+                }
                 .task {
                     AppDelegate.model = model
                     await model.start()
@@ -130,12 +134,12 @@ struct AppCommands: Commands {
                 .disabled(!model.hasProject)
             Divider()
             Button("Run Synthesis") { model.run(.synthesis) }
-                .disabled(!model.hasProject || model.isRunning)
+                .disabled(!model.hasProject || model.isRunning || !model.hasBuildMachine)
             Button("Run Implementation") { model.run(.implementation) }
-                .disabled(!model.hasProject || model.isRunning)
+                .disabled(!model.hasProject || model.isRunning || !model.hasBuildMachine)
             Button("Generate Bitstream") { model.run(.bitstream) }
                 .keyboardShortcut("b")
-                .disabled(!model.hasProject || model.isRunning)
+                .disabled(!model.hasProject || model.isRunning || !model.hasBuildMachine)
             Divider()
             Button("Stop") { model.stop() }
                 .keyboardShortcut(".")

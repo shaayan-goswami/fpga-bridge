@@ -76,6 +76,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var connection: ConnectionState = .checking
 
     private var runTask: Task<Void, Never>?
+    /// When the build folder last read was written, so a build made elsewhere (the command line, another Mac) is
+    /// noticed and loaded.
+    var loadedBuildStamp: Date?
     /// Bumped whenever a run starts or is abandoned. A task from an earlier generation may still be finishing after
     /// it was cancelled; it must not touch the state of the run that replaced it.
     private var runGeneration = 0
@@ -101,6 +104,12 @@ final class AppModel: ObservableObject {
         if !DebugHooks.forceDemo, let config = try? BridgeConfig.load() {
             return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), simulation: LiveSimulation(),
                             ips: LiveIPBackend(config: config), persist: DebugHooks.persistRecents)
+        }
+        // No build machine: editing, simulation (Icarus) and programming (openFPGALoader) are all on this Mac, so
+        // they stay real; only Vivado's steps are off.
+        if !DebugHooks.forceDemo {
+            return AppModel(backend: LocalBackend(), hardware: LiveHardware(), simulation: LiveSimulation(),
+                            ips: LocalIPBackend(), persist: DebugHooks.persistRecents)
         }
         return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), hardware: DemoHardware(speed: DebugHooks.demoSpeed),
                         simulation: DemoSimulation(speed: DebugHooks.demoSpeed), ips: DemoIPBackend(speed: DebugHooks.demoSpeed),
@@ -533,11 +542,30 @@ final class AppModel: ObservableObject {
                         AppModel.isStale(build: out, project: project, root: directory))
             }.value
             guard let self, self.projectURL == directory, !files.isEmpty || !designs.isEmpty else { return }
+            self.loadedBuildStamp = AppModel.buildStamp(out)
             self.apply(RunOutcome(completed: completed, reports: files, designs: designs))
             if stale {
                 for kind in [RunKind.synthesis, .implementation] where self.runs[kind]?.status == .complete { self.runs[kind]?.outOfDate = true }
             }
         }
+    }
+
+    /// Loads `build/` again if it changed since it was read: a build from the command line or another Mac while
+    /// this window was open. Called when the app comes to the front and when a design is opened.
+    func reloadBuildIfChanged() {
+        guard let directory = projectURL, !isRunning, !backend.isDemo,
+              let stamp = AppModel.buildStamp(directory.appendingPathComponent(Remote.localOutputDir)),
+              stamp > (loadedBuildStamp ?? .distantPast) else { return }
+        loadedBuildStamp = stamp
+        restorePreviousBuild(in: directory)
+    }
+
+    /// When a build folder was last written: the newest of its files.
+    nonisolated static func buildStamp(_ out: URL) -> Date? {
+        let fm = FileManager.default
+        return ((try? fm.contentsOfDirectory(atPath: out.path)) ?? []).compactMap {
+            (try? fm.attributesOfItem(atPath: out.appendingPathComponent($0).path))?[.modificationDate] as? Date
+        }.max()
     }
 
     /// Which steps a build folder shows were finished: synthesis if it has synthesis results, implementation if it
@@ -635,7 +663,14 @@ final class AppModel: ObservableObject {
     }
 
     /// Vivado's behavior: each step runs what it depends on if that is missing or out-of-date.
+    /// Whether Vivado's steps can run: false when no build machine is set up (the app is then an editor and simulator).
+    var hasBuildMachine: Bool { !(backend is LocalBackend) }
+
     func run(_ target: RunKind) {
+        guard hasBuildMachine else {
+            errorMessage = NoBuildMachine.message
+            return
+        }
         pendingDesign = nil     // a build the user starts by hand doesn't open a design view when it ends
         execute(RunPlanner.steps(for: target,
                                  synthesisUpToDate: runs[.synthesis]?.isUpToDate == true,
@@ -782,6 +817,7 @@ final class AppModel: ObservableObject {
         }
 
         apply(outcome)
+        if let directory = projectURL { loadedBuildStamp = AppModel.buildStamp(directory.appendingPathComponent(Remote.localOutputDir)) }
         lastOutcome = .complete
         switch step {
         case .synthesis: lastMessage = "synth_1 complete"
@@ -879,8 +915,8 @@ final class AppModel: ObservableObject {
         if !openTabs.contains(tab) { openTabs.append(tab) }
         selectedTab = tab
         if case .file(let path) = tab { lastFile = path }
-        if case .design(let stage) = tab { designOpened(stage) }
-        if case .schematic(let stage) = tab { designOpened(stage) }
+        if case .design(let stage) = tab { reloadBuildIfChanged(); designOpened(stage) }
+        if case .schematic(let stage) = tab { reloadBuildIfChanged(); designOpened(stage) }
     }
 
     // MARK: Language templates

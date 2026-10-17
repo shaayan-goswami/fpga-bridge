@@ -33,6 +33,15 @@ final class LiveIPBackend: IPBackend, Sendable {
     }
 }
 
+/// The IP Catalog comes from Vivado, so without a build machine there is nothing to list.
+final class LocalIPBackend: IPBackend, Sendable {
+    let isDemo = false
+
+    func catalog(part: String, refresh: Bool) async throws -> IPCatalog { throw NoBuildMachine() }
+    func properties(of ip: IPDefinition, part: String) async throws -> [IPProperty] { throw NoBuildMachine() }
+    func template(for ip: ProjectIP, part: String) async throws -> IPScriptOutput { throw NoBuildMachine() }
+}
+
 /// A handful of IP with plausible settings, so the catalog can be explored without a build machine. Nothing here is
 /// real Vivado data, and the app says so.
 final class DemoIPBackend: IPBackend, Sendable {

@@ -371,6 +371,8 @@ enum ConnectionState: Equatable {
     case checking
     case connected(String)
     case offline(String)
+    /// No build machine set up: everything that runs on this Mac works, Vivado's steps don't.
+    case notConfigured
     case demo
 
     var label: String {
@@ -378,6 +380,7 @@ enum ConnectionState: Equatable {
         case .checking: "Checking…"
         case .connected(let host): host
         case .offline: "Offline"
+        case .notConfigured: "No Build Machine"
         case .demo: "Demo Mode"
         }
     }
@@ -387,7 +390,7 @@ enum ConnectionState: Equatable {
         case .checking: .secondary
         case .connected: Accent.success
         case .offline: Accent.error
-        case .demo: .secondary
+        case .notConfigured, .demo: .secondary
         }
     }
 
@@ -396,6 +399,7 @@ enum ConnectionState: Equatable {
         case .checking: "Checking the connection to the build machine…"
         case .connected(let host): "Connected to \(host) over Tailscale and SSH."
         case .offline(let reason): reason
+        case .notConfigured: NoBuildMachine.message
         case .demo: "No build machine is configured, so runs are simulated. Run `fpga-bridge init` to connect a real one."
         }
     }

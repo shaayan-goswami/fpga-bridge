@@ -96,6 +96,9 @@ struct FlowNavigatorView: View {
 extension FlowItem {
     /// Whether the item opens up to more commands: the designs, and the Hardware Manager.
     var hasCommands: Bool { designStage != nil || self == .openHardwareManager }
+
+    /// Whether the item runs Vivado on the build machine. Opening a design doesn't: it reads what the last build saved.
+    var needsVivado: Bool { runKind != nil || self == .runLinter || self == .ipCatalog }
 }
 
 private struct FlowRow: View {
@@ -106,7 +109,12 @@ private struct FlowRow: View {
     @State private var hovering = false
 
     private var isEnabled: Bool {
-        item.isAvailable && !(item.runKind != nil && model.isRunning) && !(item == .runLinter && (model.isRunning || model.isLinting))
+        item.isAvailable && !(item.needsVivado && !model.hasBuildMachine)
+            && !(item.runKind != nil && model.isRunning) && !(item == .runLinter && (model.isRunning || model.isLinting))
+    }
+
+    private var unavailableReason: String? {
+        item.unavailableReason ?? (item.needsVivado && !model.hasBuildMachine ? NoBuildMachine.message : nil)
     }
 
     /// Vivado renames "Open Synthesized Design" to "Synthesized Design" once it is open.
@@ -138,7 +146,7 @@ private struct FlowRow: View {
                             .frame(width: 18)
                     }
                     Text(title)
-                        .foregroundStyle(item.isAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.secondary.opacity(0.75)))
+                        .foregroundStyle(unavailableReason == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.secondary.opacity(0.75)))
                     Spacer(minLength: 4)
                     if item == .runLinter, model.isLinting {
                         ProgressView().controlSize(.mini)
@@ -154,7 +162,7 @@ private struct FlowRow: View {
             .buttonStyle(.plain)
             .disabled(!isEnabled)
         }
-        .help(item.unavailableReason ?? title)
+        .help(unavailableReason ?? title)
         .listRowBackground(
             RoundedRectangle(cornerRadius: 6)
                 .fill(hovering && isEnabled ? Color.primary.opacity(0.06) : .clear)
@@ -164,7 +172,7 @@ private struct FlowRow: View {
     }
 
     private var iconStyle: AnyShapeStyle {
-        guard item.isAvailable else { return AnyShapeStyle(Color.secondary.opacity(0.65)) }
+        guard unavailableReason == nil else { return AnyShapeStyle(Color.secondary.opacity(0.65)) }
         // Runs happen in Vivado on the build machine.
         return item.runKind != nil || item == .runLinter ? AnyShapeStyle(Accent.remote) : AnyShapeStyle(.primary)
     }
