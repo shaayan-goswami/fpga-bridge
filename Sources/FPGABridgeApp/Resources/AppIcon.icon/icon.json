@@ -1,9 +1,7 @@
 {
   "fill-specializations" : [
     {
-      "value" : {
-        "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
-      }
+      "value" : "system-light"
     },
     {
       "appearance" : "dark",
@@ -25,7 +23,9 @@
           ],
           "fill-specializations" : [
             {
-              "value" : "system-light"
+              "value" : {
+                "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+              }
             },
             {
               "appearance" : "dark",
@@ -37,7 +37,7 @@
           "glass" : true,
           "image-name" : "cpu-layer-3-die.svg",
           "name" : "cpu-layer-3-die",
-          "opacity" : 0,
+          "opacity" : 0.6,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
@@ -58,6 +58,11 @@
           ],
           "fill-specializations" : [
             {
+              "value" : {
+                "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+              }
+            },
+            {
               "appearance" : "dark",
               "value" : {
                 "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
@@ -67,7 +72,7 @@
           "glass" : true,
           "image-name" : "cpu-layer-2-body.svg",
           "name" : "cpu-layer-2-body",
-          "opacity" : 0.25,
+          "opacity" : 0.5,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
@@ -88,7 +93,9 @@
           ],
           "fill-specializations" : [
             {
-              "value" : "automatic"
+              "value" : {
+                "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+              }
             },
             {
               "appearance" : "dark",
@@ -100,7 +107,7 @@
           "glass" : true,
           "image-name" : "cpu-layer-1-pins.svg",
           "name" : "cpu-layer-1-pins",
-          "opacity" : 0.25,
+          "opacity" : 0.5,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
