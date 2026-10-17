@@ -15,6 +15,7 @@ import SwiftUI
 ///   FPGA_BRIDGE_CONSOLE_TAB=name   select a console tab
 ///   FPGA_BRIDGE_WIZARD_STEP=n      start the New Project wizard on step n
 ///   FPGA_BRIDGE_SETTINGS_PAGE=name open Project Settings on this page (General, Simulation, ...)
+///   FPGA_BRIDGE_SELECT=kind:name   in a design scenario, select this object (cell:u_tick, net:clk, port:led[0])
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -31,6 +32,11 @@ enum DebugHooks {
     static var wizardStartStep: Int? { env["FPGA_BRIDGE_WIZARD_STEP"].flatMap(Int.init) }
     static var settingsPage: String? { env["FPGA_BRIDGE_SETTINGS_PAGE"] }
     static var designSection: String? { env["FPGA_BRIDGE_DESIGN_SECTION"] }
+    static var selectObject: DesignObjectRef? {
+        guard let spec = env["FPGA_BRIDGE_SELECT"], let colon = spec.firstIndex(of: ":"),
+              let kind = DesignObjectKind(rawValue: String(spec[..<colon])) else { return nil }
+        return DesignObjectRef(kind, String(spec[spec.index(after: colon)...]))
+    }
     #else
     static let forceDemo = false
     static let demoSpeed = 1.0
@@ -42,6 +48,7 @@ enum DebugHooks {
     static let wizardStartStep: Int? = nil
     static let settingsPage: String? = nil
     static let designSection: String? = nil
+    static let selectObject: DesignObjectRef? = nil
     #endif
 }
 
@@ -79,6 +86,7 @@ extension AppModel {
             let stage = DesignStage(rawValue: String(DebugHooks.scenario!.dropFirst("design-".count))) ?? .synth
             while designs[stage] == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
             open(.design(stage))
+            if let ref = DebugHooks.selectObject { select(ref) }
         case "waveform", "waveform-zoom":
             if DebugHooks.openPath == nil { openExampleProject() }
             runSimulation()

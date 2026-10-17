@@ -315,7 +315,8 @@ struct SourceEditorView: View {
             CodeEditor(
                 text: Binding(get: { model.editedText(for: path) }, set: { model.updateDraft($0, for: path) }),
                 language: language, fontSize: CGFloat(fontSize), showLineNumbers: lineNumbers,
-                onCaretMove: { model.setCaret($0, in: path) }, initialCaret: model.caret(in: path))
+                onCaretMove: { model.setCaret($0, in: path) }, initialCaret: model.caret(in: path),
+                reveal: model.editorReveal[path])
                 .id(path)
         }
     }

@@ -18,6 +18,8 @@ struct CodeEditor: NSViewRepresentable {
     var initialCaret: Int?
     /// False for a read-only view, such as the Language Templates preview.
     var isEditable = true
+    /// A range to select and scroll to, e.g. from Go To Source. Applied once per token.
+    var reveal: EditorReveal?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -70,6 +72,7 @@ struct CodeEditor: NSViewRepresentable {
             DispatchQueue.main.async { textView.scrollRangeToVisible(NSRange(location: location, length: 0)) }
         }
         context.coordinator.highlight(textView)
+        context.coordinator.applyReveal(reveal, to: textView)
         if focusOnAppear {
             DispatchQueue.main.async { container.window?.makeFirstResponder(textView) }
         }
@@ -87,6 +90,7 @@ struct CodeEditor: NSViewRepresentable {
         }
         context.coordinator.apply(settings: self, to: textView, container: container)
         context.coordinator.highlight(textView)
+        context.coordinator.applyReveal(reveal, to: textView)
     }
 
     @MainActor
@@ -95,7 +99,24 @@ struct CodeEditor: NSViewRepresentable {
         weak var textView: CodeTextView?
         private var lastStyle: String?
 
+        private var lastRevealToken: Int?
+
         init(_ parent: CodeEditor) { self.parent = parent }
+
+        /// Selects and scrolls to a range the first time its token is seen, and flashes it like Find does.
+        func applyReveal(_ reveal: EditorReveal?, to textView: CodeTextView) {
+            guard let reveal, reveal.token != lastRevealToken else { return }
+            lastRevealToken = reveal.token
+            let length = (textView.string as NSString).length
+            let location = min(reveal.range.location, length)
+            let range = NSRange(location: location, length: min(reveal.range.length, length - location))
+            textView.setSelectedRange(range)
+            // The text may not be laid out yet; scroll and flash once it is.
+            DispatchQueue.main.async {
+                textView.scrollRangeToVisible(range)
+                if range.length > 0 { textView.showFindIndicator(for: range) }
+            }
+        }
 
         func apply(settings: CodeEditor, to textView: CodeTextView, container: EditorContainer) {
             textView.language = settings.language

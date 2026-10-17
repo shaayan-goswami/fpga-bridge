@@ -195,6 +195,22 @@ public enum DesignObjectKind: String, Sendable, CaseIterable {
     case cell, net, port, pin
 }
 
+/// A cell, net, port or pin of a design, as the selection that every design window shares.
+public struct DesignObjectRef: Hashable, Sendable {
+    public let kind: DesignObjectKind
+    public let name: String
+
+    public init(_ kind: DesignObjectKind, _ name: String) {
+        self.kind = kind
+        self.name = name
+    }
+
+    public static func cell(_ name: String) -> DesignObjectRef { DesignObjectRef(.cell, name) }
+    public static func net(_ name: String) -> DesignObjectRef { DesignObjectRef(.net, name) }
+    public static func port(_ name: String) -> DesignObjectRef { DesignObjectRef(.port, name) }
+    public static func pin(_ name: String) -> DesignObjectRef { DesignObjectRef(.pin, name) }
+}
+
 /// One property and its value, as Vivado's Properties window lists them.
 public struct DesignProperty: Equatable, Sendable, Identifiable {
     public var id: String { name }
@@ -243,6 +259,11 @@ public struct DesignSnapshot: Equatable, Sendable {
     private let cellsByName: [String: DesignCell]
     private let pinsByCell: [String: [DesignPin]]
     private let netsByModule: [String: [DesignNet]]
+    private let netsByName: [String: DesignNet]
+    /// For each cell pin, the net it joins at its cell's own level (outside the cell).
+    private let outsideNet: [String: String]
+    /// For each boundary pin of a module instance, the net it joins inside the module.
+    private let insideNet: [String: String]
 
     public enum LoadError: DescribedError {
         case notAvailable(DesignStage)
@@ -268,6 +289,17 @@ public struct DesignSnapshot: Equatable, Sendable {
         self.pinsByCell = Dictionary(grouping: self.pins.values, by: \.cellName)
             .mapValues { $0.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending } }
         self.netsByModule = Dictionary(grouping: nets, by: \.parentPath)
+        self.netsByName = Dictionary(nets.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        var outside: [String: String] = [:]
+        var inside: [String: String] = [:]
+        for net in nets {
+            for end in net.endpoints where !end.isPort {
+                let cell = end.name.lastIndex(of: "/").map { String(end.name[..<$0]) } ?? ""
+                if cell == net.parentPath { inside[end.name] = net.name } else { outside[end.name] = net.name }
+            }
+        }
+        self.outsideNet = outside
+        self.insideNet = inside
     }
 
     /// Whether the build wrote how cells are connected, which the schematic needs.
@@ -404,6 +436,69 @@ public struct DesignSnapshot: Equatable, Sendable {
     }
 
     public func cell(named name: String) -> DesignCell? { cellsByName[name] }
+
+    public func net(named name: String) -> DesignNet? { netsByName[name] }
+
+    public func port(named name: String) -> DesignPort? { ports.first { $0.name == name } }
+
+    /// The net a pin is connected to at its cell's level (for a module instance, the net outside it).
+    public func net(ofPin pin: String) -> String? { outsideNet[pin] }
+
+    /// The net a top-level port is on.
+    public func net(ofPort port: String) -> String? {
+        nets.first { $0.parentPath.isEmpty && $0.endpoints.contains(NetEndpoint(name: port, isPort: true)) }?.name
+    }
+
+    /// Whether an object is in this design, so a selection carried over from another design can be ignored.
+    public func contains(_ ref: DesignObjectRef) -> Bool {
+        switch ref.kind {
+        case .cell: cellsByName[ref.name] != nil
+        case .net: netsByName[ref.name] != nil
+        case .port: ports.contains { $0.name == ref.name }
+        case .pin: pins[ref.name] != nil
+        }
+    }
+
+    /// Everything a net reaches through the hierarchy: the pins of primitives and the top-level ports, following it
+    /// into and out of module instances. This is Vivado's Connectivity view, as opposed to the pins at the net's own
+    /// level (which include module boundary pins).
+    public func flatConnectivity(of netName: String) -> [NetEndpoint] {
+        var result: [NetEndpoint] = []
+        var seen: Set<String> = []
+        var queue = [netName]
+        while let current = queue.popLast() {
+            guard seen.insert(current).inserted, let net = netsByName[current] else { continue }
+            for end in net.endpoints {
+                if end.isPort {
+                    // Vivado lists the top port on every level's piece of the signal; it belongs to the top only.
+                    if net.parentPath.isEmpty, !result.contains(end) { result.append(end) }
+                    continue
+                }
+                let cellName = end.name.lastIndex(of: "/").map { String(end.name[..<$0]) } ?? ""
+                if cellName == net.parentPath, let out = outsideNet[end.name] {
+                    queue.append(out)                                  // up out of this module
+                } else if let cell = cellsByName[cellName], !cell.isPrimitive {
+                    if let into = insideNet[end.name] { queue.append(into) }   // down into a sub-module
+                } else if !result.contains(end) {
+                    result.append(end)
+                }
+            }
+        }
+        return result
+    }
+
+    /// The modules containing an object, outermost first, by hierarchical path ("" is the top).
+    public static func ancestors(of name: String) -> [String] {
+        var paths = [""]
+        var parts = name.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        parts.removeLast()
+        var path = ""
+        for part in parts {
+            path = path.isEmpty ? part : path + "/" + part
+            paths.append(path)
+        }
+        return paths
+    }
 
     /// The nets inside a module (not its sub-modules), in Vivado's order.
     public func nets(in modulePath: String) -> [DesignNet] { netsByModule[modulePath] ?? [] }

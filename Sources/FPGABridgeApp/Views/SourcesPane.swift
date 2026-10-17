@@ -16,47 +16,84 @@ struct SourcesPane: View {
     }
 
     var body: some View {
-        VerticalPaneSplit(height: $propertiesHeight, range: 160...420, minTop: 240) {
+        VerticalPaneSplit(height: $propertiesHeight, range: 160...460, minTop: 240) {
             VStack(spacing: 0) {
-                HStack {
-                    Text("Sources").font(.headline)
+                HStack(spacing: 14) {
+                    if let design = model.activeSnapshot {
+                        // With a design open, Vivado shows its Netlist window next to Sources.
+                        windowTab(.sources)
+                        windowTab(.netlist, detail: design.stage.title)
+                    } else {
+                        Text("Sources").font(.headline)
+                    }
                     Spacer()
-                    Button { model.showAddSources = true } label: { Image(systemName: "plus") }
-                        .buttonStyle(.borderless)
-                        .help("Add Sources")
+                    if showsNetlist == false {
+                        Button { model.showAddSources = true } label: { Image(systemName: "plus") }
+                            .buttonStyle(.borderless)
+                            .help("Add Sources")
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
                 .padding(.bottom, 6)
 
-                // A compact tab strip: a segmented control can't shrink to fit four labels in a narrow pane.
-                HStack(spacing: 14) {
-                    ForEach(Tab.allCases) { item in
-                        Button { tab = item } label: {
-                            VStack(spacing: 4) {
-                                Text(item.rawValue)
-                                    .font(.callout.weight(tab == item ? .semibold : .regular))
-                                    .foregroundStyle(tab == item ? .primary : .secondary)
-                                    .fixedSize()
-                                Capsule()
-                                    .fill(tab == item ? Color.primary : .clear)
-                                    .frame(height: 2)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    Spacer(minLength: 0)
+                if let design = model.activeSnapshot, showsNetlist {
+                    Divider()
+                    NetlistWindow(design: design).id(design.stage)
+                } else {
+                    sourcesWindow
                 }
-                .padding(.horizontal, 12)
-
-                Divider()
-                content
             }
         } bottom: {
             PropertiesPanel()
         }
         .onChange(of: model.selectedSourceID) { _, id in
+            model.propertiesShowsDesign = false
             if let path = model.node(withID: id)?.path { model.openFile(path) }
+        }
+    }
+
+    private var showsNetlist: Bool { model.sidePane == .netlist && model.activeSnapshot != nil }
+
+    private func windowTab(_ pane: SidePane, detail: String? = nil) -> some View {
+        let selected = model.sidePane == pane
+        return Button { model.sidePane = pane } label: {
+            VStack(spacing: 4) {
+                Text(pane.rawValue)
+                    .font(.headline)
+                    .foregroundStyle(selected ? .primary : .secondary)
+                Capsule().fill(selected ? Color.primary : .clear).frame(height: 2)
+            }
+            .fixedSize()
+        }
+        .buttonStyle(.plain)
+        .help(detail.map { "\(pane.rawValue) of the \($0)" } ?? pane.rawValue)
+    }
+
+    private var sourcesWindow: some View {
+        VStack(spacing: 0) {
+            // A compact tab strip: a segmented control can't shrink to fit four labels in a narrow pane.
+            HStack(spacing: 14) {
+                ForEach(Tab.allCases) { item in
+                    Button { tab = item } label: {
+                        VStack(spacing: 4) {
+                            Text(item.rawValue)
+                                .font(.callout.weight(tab == item ? .semibold : .regular))
+                                .foregroundStyle(tab == item ? .primary : .secondary)
+                                .fixedSize()
+                            Capsule()
+                                .fill(tab == item ? Color.primary : .clear)
+                                .frame(height: 2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+
+            Divider()
+            content
         }
     }
 
@@ -146,6 +183,27 @@ private struct PropertiesPanel: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
+        if model.propertiesShowsDesign, let design = model.activeSnapshot {
+            if let ref = model.primarySelection {
+                DesignPropertiesWindow(design: design, ref: ref).id(design.stage)
+            } else {
+                VStack(spacing: 0) {
+                    HStack { Text("Properties").font(.headline); Spacer() }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                    Divider()
+                    Text("Select an object to see properties")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+        } else {
+            sourceProperties
+        }
+    }
+
+    private var sourceProperties: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Source File Properties").font(.headline)

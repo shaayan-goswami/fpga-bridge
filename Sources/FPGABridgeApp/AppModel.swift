@@ -51,6 +51,18 @@ final class AppModel: ObservableObject {
     @Published private(set) var designs: [DesignStage: DesignSnapshot] = [:]
     /// A design view to open once the build that produces it has finished.
     private var pendingDesign: DesignStage?
+
+    // Opened designs (see DesignSelection.swift)
+    /// The design the Netlist and Properties windows show: the last one opened, as in Vivado.
+    @Published var activeDesign: DesignStage?
+    /// The selected cells, nets, ports and pins, shared by every design window. The last is the one Properties shows.
+    @Published var designSelection: [DesignObjectRef] = []
+    /// Which window the left pane shows: Sources, or the open design's Netlist.
+    @Published var sidePane: SidePane = .sources
+    /// Whether Properties shows the selected design object (true) or the selected source file.
+    @Published var propertiesShowsDesign = false
+    /// A line to show in an open editor (Go To Source), by file.
+    @Published var editorReveal: [String: EditorReveal] = [:]
     @Published private(set) var timing: TimingSummary?
     @Published private(set) var utilization: UtilizationSummary?
     @Published private(set) var lastMessage = "Ready"
@@ -626,6 +638,8 @@ final class AppModel: ObservableObject {
         reports = []
         designs = [:]
         pendingDesign = nil
+        designSelection = []
+        propertiesShowsDesign = false
         ipCatalog = nil
         ipTemplates = [:]
         ipLoad = .idle
@@ -828,6 +842,7 @@ final class AppModel: ObservableObject {
         if !openTabs.contains(tab) { openTabs.append(tab) }
         selectedTab = tab
         if case .file(let path) = tab { lastFile = path }
+        if case .design(let stage) = tab { designOpened(stage) }
     }
 
     // MARK: Language templates
@@ -872,6 +887,7 @@ final class AppModel: ObservableObject {
         guard tab.isCloseable, let index = openTabs.firstIndex(of: tab) else { return }
         openTabs.remove(at: index)
         if selectedTab == tab { selectedTab = openTabs[max(0, index - 1)] }
+        if case .design(let stage) = tab { designClosed(stage) }
     }
 
     func openFile(_ path: String) { open(.file(path)) }
