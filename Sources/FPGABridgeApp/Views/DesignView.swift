@@ -6,10 +6,10 @@ import SwiftUI
 struct DesignView: View {
     @EnvironmentObject private var model: AppModel
     let stage: DesignStage
-    @State private var section = DebugHooks.designSection.flatMap { name in Section.allCases.first { $0.rawValue == name } } ?? Section.netlist
+    @State private var section = DebugHooks.designSection.flatMap { name in Section.allCases.first { $0.rawValue == name } } ?? Section.ports
 
+    /// The netlist itself is in the Netlist window and the Schematic; this tab holds the design's tables and reports.
     enum Section: String, CaseIterable, Identifiable {
-        case netlist = "Netlist"
         case ports = "I/O Ports"
         case utilization = "Utilization"
         case reports = "Reports"
@@ -22,7 +22,6 @@ struct DesignView: View {
                 header(design)
                 Divider()
                 switch section {
-                case .netlist: NetlistSection(design: design)
                 case .ports: PortsSection(design: design)
                 case .utilization: UtilizationSection(design: design)
                 case .reports: StageReports(stage: stage)
@@ -52,6 +51,8 @@ struct DesignView: View {
             Spacer(minLength: 12)
             Pill(text: "\(design.cells.count) cells", color: .secondary)
             Pill(text: "\(design.ports.count) ports", color: .secondary)
+            Button { model.openSchematic(stage) } label: { Label("Schematic", systemImage: "point.3.connected.trianglepath.dotted") }
+                .help("Open the design's schematic")
             Picker("", selection: $section) {
                 ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
             }
@@ -102,95 +103,6 @@ private struct TreeLead: View {
             }
             Image(systemName: row.node.isTop ? "cpu" : "square.on.square").foregroundStyle(Accent.source)
         }
-    }
-}
-
-// MARK: Netlist
-
-private struct NetlistSection: View {
-    let design: DesignSnapshot
-    @State private var selection: String? = ""      // "" is the top module
-    @State private var collapsed: Set<String> = []
-
-    var body: some View {
-        HStack(spacing: 0) {
-            List(selection: $selection) {
-                ForEach(flatten(design.root, collapsed: collapsed)) { row in
-                    HStack(spacing: 6) {
-                        TreeLead(row: row, collapsed: $collapsed)
-                        Text(row.node.name).fontWeight(row.node.isTop ? .semibold : .regular)
-                        Text("(\(row.node.type))").foregroundStyle(.secondary).lineLimit(1)
-                        Spacer(minLength: 4)
-                        Text("\(row.node.totals.total)").font(.caption).monospacedDigit().foregroundStyle(.secondary)
-                    }
-                    .tag(row.id)
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .frame(width: 330)
-            Divider()
-            if let node = design.module(withPath: selection ?? "") {
-                ModuleDetail(design: design, node: node).id(node.id)
-            } else {
-                Text("Select a module.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-    }
-}
-
-private struct ModuleDetail: View {
-    let design: DesignSnapshot
-    let node: ModuleNode
-    @State private var search = ""
-    @State private var type = ""
-
-    private var types: [String] { Array(Set(node.primitives.map(\.type))).sorted() }
-
-    private var shown: [DesignCell] {
-        node.primitives.filter { cell in
-            (type.isEmpty || cell.type == type) && (search.isEmpty || cell.name.localizedCaseInsensitiveContains(search))
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(node.isTop ? design.info.top : node.id).font(.headline).textSelection(.enabled)
-                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 5) {
-                    InfoRow(label: "Module", value: node.type)
-                    InfoRow(label: "Path", value: node.isTop ? "(top)" : node.id, monospaced: true)
-                    InfoRow(label: "In this module", value: summary(node.counts))
-                    InfoRow(label: "With sub-modules", value: summary(node.totals))
-                }
-            }
-            .padding(14)
-            Divider()
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Filter cells", text: $search).textFieldStyle(.plain)
-                Picker("Type", selection: $type) {
-                    Text("All types").tag("")
-                    ForEach(types, id: \.self) { Text($0).tag($0) }
-                }
-                .fixedSize()
-                Text("\(shown.count) of \(node.primitives.count)").font(.caption).foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 34)
-            Divider()
-            Table(shown) {
-                TableColumn("Cell") { Text($0.localName).font(.callout.monospaced()).textSelection(.enabled) }
-                TableColumn("Type") { Text($0.type).font(.callout.monospaced()) }.width(min: 80, ideal: 120, max: 200)
-            }
-            .overlay { if node.primitives.isEmpty { Text("No primitives directly in this module.").foregroundStyle(.secondary) } }
-        }
-    }
-
-    private func summary(_ c: ResourceCounts) -> String {
-        let parts = [("LUT", c.lut), ("FF", c.flipFlop), ("RAM", c.blockRAM), ("DSP", c.dsp), ("carry", c.carry), ("I/O buf", c.io), ("other", c.other)]
-            .filter { $0.1 > 0 }.map { "\($0.1) \($0.0)" }
-        return parts.isEmpty ? "nothing" : parts.joined(separator: ", ")
     }
 }
 

@@ -67,6 +67,8 @@ final class AppModel: ObservableObject {
     @Published var schematicSpecs: [DesignStage: SchematicSpec] = [:]
     var schematicHistory: [DesignStage: [SchematicSpec]] = [:]
     var schematicFuture: [DesignStage: [SchematicSpec]] = [:]
+    /// Run Linter's state and findings.
+    @Published var lint: LintState = .idle
     @Published private(set) var timing: TimingSummary?
     @Published private(set) var utilization: UtilizationSummary?
     @Published private(set) var lastMessage = "Ready"
@@ -427,6 +429,7 @@ final class AppModel: ObservableObject {
             if let stage = item.designStage { openDesign(stage) }
         case .languageTemplates: open(.templates)
         case .runSimulation: runSimulation()
+        case .runLinter: runLinter()
         default: if let kind = item.runKind { run(kind) }
         }
     }
@@ -644,6 +647,7 @@ final class AppModel: ObservableObject {
         pendingDesign = nil
         designSelection = []
         propertiesShowsDesign = false
+        lint = .idle
         ipCatalog = nil
         ipTemplates = [:]
         ipLoad = .idle
@@ -834,7 +838,7 @@ final class AppModel: ObservableObject {
     }
 
     /// GUI actions print the Tcl command they stand for, as Vivado does, so the console teaches the scripting.
-    private func echoTcl(_ command: String) {
+    func echoTcl(_ command: String) {
         tclLines.append(ConsoleLine(text: command, kind: .command))
     }
 
@@ -916,6 +920,7 @@ final class AppModel: ObservableObject {
         case .hardware: "Hardware Manager"
         case .design(let stage): stage.title
         case .schematic: "Schematic"
+        case .linter: "Linter"
         case .ipCatalog: "IP Catalog"
         case .templates: "Language Templates"
         case .simulation: "Simulation"
@@ -931,6 +936,7 @@ final class AppModel: ObservableObject {
         case .hardware: "cable.connector.horizontal"
         case .design(let stage): stage == .rtl ? "square.stack.3d.up" : "rectangle.on.rectangle"
         case .schematic: "point.3.connected.trianglepath.dotted"
+        case .linter: "checklist"
         case .ipCatalog: "puzzlepiece.extension"
         case .templates: "doc.text.magnifyingglass"
         case .simulation: "waveform.path.ecg"

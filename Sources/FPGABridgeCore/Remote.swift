@@ -75,6 +75,29 @@ extension Remote {
     /// With `log`, the progress messages and Vivado's live output go to it in chunks (for a UI). Without it they go
     /// straight to the terminal, which keeps ssh's own prompts working.
     public func build(project: Project, root: URL, log captured: (@Sendable (String) -> Void)? = nil) throws -> Int32 {
+        try run(project: project, root: root, script: nil, jobName: project.name, fetchTo: Remote.localOutputDir, log: captured)
+    }
+
+    /// Runs Vivado's RTL linter on the project (Run Linter). It stages the sources like a build, in a job folder of
+    /// its own so a build's results on the build machine are left alone, and fetches nothing: the findings are in
+    /// the log.
+    /// Returns Vivado's exit status, what the linter found, and the whole log (to show when it didn't finish).
+    public func lint(project: Project, root: URL, log captured: (@Sendable (String) -> Void)? = nil) throws -> (status: Int32, report: LintReport, log: String) {
+        let sources = try project.resolveSources(in: root)
+        let constraints = try project.resolveConstraints(in: root)
+        let output = OutputBox()
+        let status = try run(project: project, root: root, script: project.lintScript(sources: sources, constraints: constraints),
+                             jobName: project.name + "_lint", fetchTo: nil) { chunk in
+            output.append(chunk)
+            captured?(chunk)
+        }
+        return (status, LintReport.parse(log: output.value), output.value)
+    }
+
+    /// Stages the project as `jobName`, runs `script` (the build script by default) in Vivado, and fetches the job's
+    /// `out/` into `fetchTo` under the project when there is one.
+    func run(project: Project, root: URL, script: String?, jobName: String, fetchTo: String?,
+             log captured: (@Sendable (String) -> Void)?) throws -> Int32 {
         let log: @Sendable (String) -> Void = captured ?? { print($0, terminator: "") }
         let sources = try project.resolveSources(in: root)
         let constraints = try project.resolveConstraints(in: root)
@@ -86,7 +109,7 @@ extension Remote {
         // Stage everything in a temp dir named after the project so `scp -r` creates the right remote directory.
         let stage = FileManager.default.temporaryDirectory
             .appendingPathComponent("fpga-bridge-\(UUID().uuidString.prefix(8))")
-        let stagedProject = stage.appendingPathComponent(project.name)
+        let stagedProject = stage.appendingPathComponent(jobName)
         try FileManager.default.createDirectory(at: stagedProject, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: stage) }
 
@@ -95,7 +118,7 @@ extension Remote {
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: root.appendingPathComponent(file), to: dest)
         }
-        try project.buildScript(sources: sources, constraints: constraints)
+        try (script ?? project.buildScript(sources: sources, constraints: constraints))
             .write(to: stagedProject.appendingPathComponent("build.tcl"), atomically: true, encoding: .utf8)
 
         // Take the lock before touching anything remote. The release is registered only after acquiring, so a
@@ -103,7 +126,7 @@ extension Remote {
         try acquireLock(project: project.name)
         defer { releaseLock() }
 
-        let remoteProject = commands.path(Remote.remoteDir, project.name)
+        let remoteProject = commands.path(Remote.remoteDir, jobName)
         let prep = try exec(commands.prep(jobDir: remoteProject))
         guard prep.succeeded else { throw RemoteError.ssh(prep.stderr) }
 
@@ -123,15 +146,15 @@ extension Remote {
         if status == Shell.interruptedStatus { return status }
         // ssh itself exits 255 when the connection fails; Vivado's own failures use other statuses.
         if status == 255 { throw RemoteError.connectionLost(jobDir: remoteProject) }
-        guard status == 0 else { return status }
+        guard status == 0, let fetchTo else { return status }
 
-        let local = root.appendingPathComponent(Remote.localOutputDir)
+        let local = root.appendingPathComponent(fetchTo)
         try? FileManager.default.removeItem(at: local)
         let down = try Shell.run(
-            "scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + ["\(target):\(Remote.remoteDir)/\(project.name)/out", local.path],
+            "scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + ["\(target):\(Remote.remoteDir)/\(jobName)/out", local.path],
             timeout: 300)
         guard down.succeeded else { throw RemoteError.ssh(down.stderr) }
-        log("Results in \(Remote.localOutputDir)/\n")
+        log("Results in \(fetchTo)/\n")
         return 0
     }
 

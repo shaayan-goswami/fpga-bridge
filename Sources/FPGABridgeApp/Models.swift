@@ -3,10 +3,10 @@ import SwiftUI
 
 // MARK: Flow Navigator
 
-/// The sections of Vivado's Flow Navigator, in Vivado's order. IP Integrator is left out: block designs need
-/// Vivado's graphical editor, which can't run on the Mac.
+/// The sections of Vivado's Flow Navigator, in Vivado's order.
 enum FlowSection: String, CaseIterable, Identifiable {
     case projectManager = "Project Manager"
+    case ipIntegrator = "IP Integrator"
     case simulation = "Simulation"
     case rtlAnalysis = "RTL Analysis"
     case synthesis = "Synthesis"
@@ -15,12 +15,23 @@ enum FlowSection: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var items: [FlowItem] { FlowItem.allCases.filter { $0.section == self } }
+
+    /// The design a section's "Open ... Design" opens. Vivado shows the section in bold while it is open.
+    var designStage: DesignStage? {
+        switch self {
+        case .rtlAnalysis: .rtl
+        case .synthesis: .synth
+        case .implementation: .impl
+        default: nil
+        }
+    }
 }
 
 enum FlowItem: String, CaseIterable, Identifiable {
     case settings, addSources, languageTemplates, ipCatalog
+    case createBlockDesign, openBlockDesign, generateBlockDesign
     case runSimulation
-    case openElaboratedDesign
+    case runLinter, openElaboratedDesign
     case runSynthesis, openSynthesizedDesign
     case runImplementation, openImplementedDesign
     case generateBitstream, openHardwareManager
@@ -33,7 +44,11 @@ enum FlowItem: String, CaseIterable, Identifiable {
         case .addSources: "Add Sources"
         case .languageTemplates: "Language Templates"
         case .ipCatalog: "IP Catalog"
+        case .createBlockDesign: "Create Block Design"
+        case .openBlockDesign: "Open Block Design"
+        case .generateBlockDesign: "Generate Block Design"
         case .runSimulation: "Run Simulation"
+        case .runLinter: "Run Linter"
         case .openElaboratedDesign: "Open Elaborated Design"
         case .runSynthesis: "Run Synthesis"
         case .openSynthesizedDesign: "Open Synthesized Design"
@@ -50,7 +65,10 @@ enum FlowItem: String, CaseIterable, Identifiable {
         case .addSources: "plus.rectangle.on.folder"
         case .languageTemplates: "doc.text"
         case .ipCatalog: "puzzlepiece.extension"
+        case .createBlockDesign: "square.grid.3x1.below.line.grid.1x2"
+        case .openBlockDesign, .generateBlockDesign: "square.grid.3x1.below.line.grid.1x2"
         case .runSimulation: "waveform.path.ecg"
+        case .runLinter: "play.fill"
         case .openElaboratedDesign: "square.stack.3d.up"
         case .runSynthesis: "play.fill"
         case .openSynthesizedDesign: "rectangle.on.rectangle"
@@ -64,8 +82,9 @@ enum FlowItem: String, CaseIterable, Identifiable {
     var section: FlowSection {
         switch self {
         case .settings, .addSources, .languageTemplates, .ipCatalog: .projectManager
+        case .createBlockDesign, .openBlockDesign, .generateBlockDesign: .ipIntegrator
         case .runSimulation: .simulation
-        case .openElaboratedDesign: .rtlAnalysis
+        case .runLinter, .openElaboratedDesign: .rtlAnalysis
         case .runSynthesis, .openSynthesizedDesign: .synthesis
         case .runImplementation, .openImplementedDesign: .implementation
         case .generateBitstream, .openHardwareManager: .programAndDebug
@@ -75,6 +94,8 @@ enum FlowItem: String, CaseIterable, Identifiable {
     /// What the item says when it can't be used yet.
     var unavailableReason: String? {
         switch self {
+        case .createBlockDesign, .openBlockDesign, .generateBlockDesign:
+            "Block designs need Vivado's IP Integrator canvas, which isn't in this app yet"
         default: nil
         }
     }
@@ -97,6 +118,89 @@ enum FlowItem: String, CaseIterable, Identifiable {
         case .runImplementation: .implementation
         case .generateBitstream: .bitstream
         default: nil
+        }
+    }
+}
+
+/// What Vivado lists under an open design in the Flow Navigator (Open Synthesized Design ▸ Report DRC, and so on).
+enum DesignCommand: String, CaseIterable, Identifiable {
+    case constraintsWizard, editTimingConstraints, setUpDebug, openDataflowDesign
+    case reportTimingSummary, reportClockNetworks, reportClockInteraction, reportMethodology, reportDRC, reportNoise
+    case reportUtilization, reportPower, schematic
+
+    var id: String { rawValue }
+
+    /// The items, in Vivado 2025.2's order for each design.
+    static func commands(for stage: DesignStage) -> [DesignCommand] {
+        switch stage {
+        case .rtl: [.reportMethodology, .reportDRC, .reportNoise, .schematic]
+        case .synth: [.constraintsWizard, .editTimingConstraints, .setUpDebug, .openDataflowDesign, .reportTimingSummary,
+                      .reportClockNetworks, .reportClockInteraction, .reportMethodology, .reportDRC, .reportNoise,
+                      .reportUtilization, .reportPower, .schematic]
+        case .impl: [.constraintsWizard, .openDataflowDesign, .editTimingConstraints, .reportTimingSummary, .reportClockNetworks,
+                     .reportClockInteraction, .reportMethodology, .reportDRC, .reportNoise, .reportUtilization, .reportPower, .schematic]
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .constraintsWizard: "Constraints Wizard"
+        case .editTimingConstraints: "Edit Timing Constraints"
+        case .setUpDebug: "Set Up Debug"
+        case .openDataflowDesign: "Open Dataflow Design"
+        case .schematic: "Schematic"
+        default: report?.title ?? rawValue
+        }
+    }
+
+    /// Vivado gives only some of these an icon.
+    var symbol: String? {
+        switch self {
+        case .setUpDebug: "ladybug"
+        case .reportTimingSummary: "timer"
+        case .reportMethodology: "checklist"
+        case .reportPower: "powerplug"
+        case .schematic: "point.3.connected.trianglepath.dotted"
+        default: nil
+        }
+    }
+
+    var report: DesignReportKind? {
+        switch self {
+        case .reportTimingSummary: .timingSummary
+        case .reportClockNetworks: .clockNetworks
+        case .reportClockInteraction: .clockInteraction
+        case .reportMethodology: .methodology
+        case .reportDRC: .drc
+        case .reportNoise: .noise
+        case .reportUtilization: .utilization
+        case .reportPower: .power
+        default: nil
+        }
+    }
+
+    /// Why an item can't be used yet, or nil.
+    var unavailableReason: String? {
+        switch self {
+        case .constraintsWizard, .editTimingConstraints: "The constraints editors aren't in this app yet. Edit the .xdc file directly."
+        case .setUpDebug: "Debug cores (ILA) need Vivado's hardware server talking to the board, which this app doesn't do yet"
+        case .openDataflowDesign: "The dataflow view isn't in this app yet"
+        default: nil
+        }
+    }
+}
+
+/// What Vivado lists under Open Hardware Manager.
+enum HardwareCommand: String, CaseIterable, Identifiable {
+    case openTarget, programDevice, addConfigurationMemoryDevice
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .openTarget: "Open Target"
+        case .programDevice: "Program Device"
+        case .addConfigurationMemoryDevice: "Add Configuration Memory Device"
         }
     }
 }
@@ -160,21 +264,7 @@ struct ReportEntry: Identifiable {
 
     var id: String { "\(run.runName)/\(fileName)" }
 
-    var title: String {
-        switch fileName {
-        case BuildSummary.timingReport, "synth_timing_summary.rpt": "Timing Summary Report"
-        case BuildSummary.utilizationReport, "synth_utilization.rpt": "Utilization Report"
-        case "timing_paths.rpt": "Timing Report"
-        case "clocks.rpt", "synth_clocks.rpt": "Clock Report"
-        case "clock_utilization.rpt": "Clock Utilization Report"
-        case "io.rpt": "I/O Report"
-        case "route_status.rpt": "Route Status Report"
-        case "drc.rpt": "DRC Report"
-        case "methodology.rpt": "Methodology Report"
-        case "power.rpt": "Power Report"
-        default: fileName
-        }
-    }
+    var title: String { DesignReportKind.title(ofFile: fileName) }
 }
 
 // MARK: Workspace
@@ -186,6 +276,8 @@ enum WorkspaceTab: Hashable, Identifiable {
     case design(DesignStage)
     /// The Schematic window of an open design.
     case schematic(DesignStage)
+    /// The Linter window: what Run Linter found.
+    case linter
     case ipCatalog
     case hardware
     case templates

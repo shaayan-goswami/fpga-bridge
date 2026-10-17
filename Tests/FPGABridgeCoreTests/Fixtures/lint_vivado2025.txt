@@ -1,0 +1,51 @@
+Command: synth_design -lint -top demo_top -part xc7a35tcpg236-1
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7a35t'
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 2 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 28224
+---------------------------------------------------------------------------------
+Starting Synthesize : Time (s): cpu = 00:00:06 ; elapsed = 00:00:07 . Memory (MB): peak = 1070.863 ; gain = 537.336
+---------------------------------------------------------------------------------
+Clean up Linter database...
+INFO: [Synth 8-6157] synthesizing module 'demo_top' [C:/Users/shaay/probe_rpt_src/demo_top.v:10]
+INFO: [Synth 8-6157] synthesizing module 'tick_gen' [C:/Users/shaay/probe_rpt_src/tick_gen.v:3]
+	Parameter DIVIDE bound to: 12500000 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'tick_gen' (1#1) [C:/Users/shaay/probe_rpt_src/tick_gen.v:3]
+INFO: [Synth 8-6155] done synthesizing module 'demo_top' (2#1) [C:/Users/shaay/probe_rpt_src/demo_top.v:10]
+---------------------------------------------------------------------------------
+Finished Synthesize : Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1188.965 ; gain = 655.438
+---------------------------------------------------------------------------------
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
+| Date         : Fri Oct 16 20:32:09 2026
+| Host         : pc running 64-bit major release  (build 9200)
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+RTL Linter Report
+
+Table of Contents
+-----------------
+1. Summary
+
+1. Summary
+----------
+
++-----------+----------+--------------+----------+
+| Rule ID   | Severity | # Violations | # Waived |
++-----------+----------+--------------+----------+
+| ASSIGN-10 | WARNING  | 1            | 0        |
++-----------+----------+--------------+----------+
+
+
+WARNING: [Synth 37-125] [ASSIGN-10]Some bits in IO 'sw' are not read. First unread bit index is 2. 
+RTL Name 'sw', Hierarchy 'demo_top', File 'demo_top.v', Line 15.
+INFO: [Synth 37-85] Total of 1 linter message(s) generated.
+INFO: [Synth 37-45] Linter Run Finished!
+Synthesis Optimization Runtime : Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1188.965 ; gain = 655.438
+INFO: [Common 17-83] Releasing license: Synthesis
+11 Infos, 1 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:00:09 ; elapsed = 00:00:10 . Memory (MB): peak = 1188.965 ; gain = 658.391

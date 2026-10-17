@@ -76,7 +76,13 @@ extension AppModel {
 
     /// Opens the file a cell comes from and selects the line, as Vivado's Go To Source does.
     func goToSource(_ cell: DesignCell) {
-        guard let file = cell.sourceFile, let line = cell.sourceLine, let root = projectURL else { return }
+        guard let file = cell.sourceFile, let line = cell.sourceLine else { return }
+        goToSource(file: file, line: line)
+    }
+
+    /// Opens a project file at a 1-based line, selecting it.
+    func goToSource(file: String, line: Int) {
+        guard let root = projectURL else { return }
         let url = root.appendingPathComponent(file)
         guard FileManager.default.fileExists(atPath: url.path) else {
             errorMessage = "\(file) isn't in this project any more."

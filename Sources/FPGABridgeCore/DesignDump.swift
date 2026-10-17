@@ -35,21 +35,33 @@ public enum DesignDump {
     /// Reports written per stage: (file name, Tcl command that writes `out/<file>`). Optional extras are skipped by
     /// Vivado versions that lack them.
     public static let reports: [String: [(file: String, command: String)]] = [
-        "rtl": [],
+        "rtl": [
+            ("rtl_drc.rpt", "report_drc -file out/rtl_drc.rpt"),
+            ("rtl_methodology.rpt", "report_methodology -file out/rtl_methodology.rpt"),
+        ],
         "synth": [
             ("synth_utilization.rpt", "report_utilization -file out/synth_utilization.rpt"),
             ("synth_timing_summary.rpt", "report_timing_summary -file out/synth_timing_summary.rpt"),
             ("synth_clocks.rpt", "report_clocks -file out/synth_clocks.rpt"),
+            ("synth_clock_networks.rpt", "report_clock_networks -file out/synth_clock_networks.rpt"),
+            ("synth_clock_interaction.rpt", "report_clock_interaction -file out/synth_clock_interaction.rpt"),
+            ("synth_methodology.rpt", "report_methodology -file out/synth_methodology.rpt"),
+            ("synth_drc.rpt", "report_drc -file out/synth_drc.rpt"),
+            ("synth_power.rpt", "report_power -file out/synth_power.rpt"),
+            ("synth_noise.rpt", "report_ssn -format txt -file out/synth_noise.rpt"),
         ],
         "impl": [
             ("timing_paths.rpt", "report_timing -max_paths 10 -nworst 1 -sort_by group -file out/timing_paths.rpt"),
             ("clocks.rpt", "report_clocks -file out/clocks.rpt"),
             ("clock_utilization.rpt", "report_clock_utilization -file out/clock_utilization.rpt"),
+            ("clock_networks.rpt", "report_clock_networks -file out/clock_networks.rpt"),
+            ("clock_interaction.rpt", "report_clock_interaction -file out/clock_interaction.rpt"),
             ("io.rpt", "report_io -file out/io.rpt"),
             ("route_status.rpt", "report_route_status -file out/route_status.rpt"),
             ("drc.rpt", "report_drc -file out/drc.rpt"),
             ("methodology.rpt", "report_methodology -file out/methodology.rpt"),
             ("power.rpt", "report_power -file out/power.rpt"),
+            ("noise.rpt", "report_ssn -format txt -file out/noise.rpt"),
         ],
     ]
 
@@ -185,6 +197,9 @@ public enum DesignDump {
                 puts "WARNING: fpga-bridge could not write the $stage design data: $err"
             }
             switch $stage {
+                rtl {
+        \(reportLines("rtl"))
+                }
                 synth {
         \(reportLines("synth"))
                 }

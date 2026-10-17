@@ -27,16 +27,20 @@ struct SchematicView: View {
             content
         }
         .background(Theme.surface)
-        .task(id: TaskKey(spec: spec, design: model.designs[stage]?.info.design ?? "", cells: model.designs[stage]?.cells.count ?? 0)) {
+        .task(id: TaskKey(spec: spec, design: model.designs[stage]?.info.design ?? "", cells: model.designs[stage]?.cells.count ?? 0,
+                          nets: model.designs[stage]?.nets.count ?? 0, pins: model.designs[stage]?.pins.count ?? 0)) {
             await relayout()
         }
         .onChange(of: model.designSelection) { _, _ in if autofit { fitSelection() } }
     }
 
+    /// Changes whenever a build brings a different netlist, so the schematic is drawn again.
     private struct TaskKey: Equatable {
         let spec: SchematicSpec
         let design: String
         let cells: Int
+        let nets: Int
+        let pins: Int
     }
 
     // MARK: Toolbar
@@ -98,7 +102,14 @@ struct SchematicView: View {
             } description: {
                 Text(error.userMessage)
             } actions: {
-                if spec != SchematicSpec() { Button("Show the Top Level") { model.showSchematic(SchematicSpec(), in: stage) } }
+                if (error as? SchematicError) == .noConnectivity {
+                    Button(model.isRunning ? "Building…" : "Run \(stage == .impl ? "Implementation" : "Synthesis")") {
+                        model.run(stage == .impl ? .implementation : .synthesis)
+                    }
+                    .disabled(model.isRunning)
+                } else if spec != SchematicSpec() {
+                    Button("Show the Top Level") { model.showSchematic(SchematicSpec(), in: stage) }
+                }
             }
         case .success(let layout):
             GeometryReader { geometry in
@@ -136,7 +147,7 @@ struct SchematicView: View {
     private func relayout(force: Bool = false) async {
         guard let design = model.designs[stage] else { return }
         let spec = spec
-        if !force, laidOut == spec, result != nil { return }
+        if !force, laidOut == spec, case .success = result { return }
         let previous = laidOut
         let computed = await Task.detached { Result { try SchematicBuilder(design: design).layout(spec) } }.value
         result = computed

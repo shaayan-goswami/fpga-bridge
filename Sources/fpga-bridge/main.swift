@@ -8,7 +8,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows or Linux machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Script.self, IPCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Lint.self, Script.self, IPCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -132,6 +132,31 @@ struct Build: ParsableCommand {
         if status != 0 { throw ExitCode(status) }
         print("")
         print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+    }
+}
+
+struct Lint: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Run Vivado's RTL linter on the project and list what it finds (Run Linter).")
+
+    func run() throws {
+        let config = try BridgeConfig.load()
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let project = try Project.load(from: root)
+        let (status, report, log) = try Remote(config: config).lint(project: project, root: root) { _ in }
+        if status != 0 || !report.finished {
+            print(log)
+            throw ValidationError("The linter didn't finish. Vivado's output is above.")
+        }
+        if report.messages.isEmpty {
+            print("No linter messages.")
+            return
+        }
+        for m in report.messages {
+            let place = [m.file, m.line.map(String.init)].compactMap { $0 }.joined(separator: ":")
+            print("\(m.severity)  \(m.rule)  \(m.text)\(place.isEmpty ? "" : "  (\(place))")")
+        }
+        print("\n\(report.messages.count) linter message\(report.messages.count == 1 ? "" : "s").")
     }
 }
 

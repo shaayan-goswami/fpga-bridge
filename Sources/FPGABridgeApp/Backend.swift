@@ -21,6 +21,20 @@ protocol Backend: AnyObject, Sendable {
     func checkConnection() async -> ConnectionState
     func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome
     func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async
+    /// Run Linter: Vivado's RTL linter on the project's sources.
+    func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure>
+}
+
+/// Why a linter run produced no report, with Vivado's output to show.
+struct LintFailure: Error, Equatable {
+    let message: String
+    var log = ""
+}
+
+extension Backend {
+    func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure> {
+        .failure(LintFailure(message: "This build machine can't run the linter."))
+    }
 }
 
 // MARK: Demo
@@ -36,6 +50,22 @@ final class DemoBackend: Backend, Sendable {
     init(speed: Double = 1) { self.speed = speed }
 
     func checkConnection() async -> ConnectionState { .demo }
+
+    /// Sample findings, so Run Linter can be tried without a build machine.
+    func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure> {
+        if speed > 0 { try? await Task.sleep(nanoseconds: UInt64(1.5 * speed * 1_000_000_000)) }
+        let top = ((try? project.resolveSources(in: directory)) ?? []).first.map { ($0 as NSString).lastPathComponent } ?? "top.v"
+        let text = """
+            | Rule ID   | Severity | # Violations | # Waived |
+            +-----------+----------+--------------+----------+
+            | ASSIGN-10 | WARNING  | 1            | 0        |
+            +-----------+----------+--------------+----------+
+            WARNING: [Synth 37-125] [ASSIGN-10]Some bits in IO 'sw' are not read. First unread bit index is 2.
+            RTL Name 'sw', Hierarchy '\(project.top)', File '\(top)', Line 1.
+            INFO: [Synth 37-45] Linter Run Finished!
+            """
+        return .success(LintReport.parse(log: text))
+    }
 
     func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
         let sources = (try? project.resolveSources(in: directory)) ?? []
@@ -122,12 +152,28 @@ final class LiveBackend: Backend, Sendable {
         }.value
     }
 
+    func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure> {
+        let config = config
+        return await Task.detached {
+            do {
+                let (status, report, output) = try Remote(config: config).lint(project: project, root: directory, log: log)
+                if status == Shell.interruptedStatus { return .failure(LintFailure(message: "The linter was stopped.")) }
+                guard status == 0, report.finished else {
+                    return .failure(LintFailure(message: "The linter didn't finish (Vivado exited with status \(status)).", log: output))
+                }
+                return .success(report)
+            } catch {
+                return .failure(LintFailure(message: error.userMessage))
+            }
+        }.value
+    }
+
     /// Every report the build fetched. Synthesis reports start with `synth_`; the rest are from implementation.
     static func reports(in directory: URL) -> [ReportFile] {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         return names.filter { $0.hasSuffix(".rpt") }.sorted().compactMap { name in
             (try? String(contentsOf: directory.appendingPathComponent(name), encoding: .utf8))
-                .map { ReportFile(run: name.hasPrefix("synth_") ? .synthesis : .implementation, name: name, text: $0) }
+                .map { ReportFile(run: DesignReportKind.stage(ofFile: name) == .impl ? .implementation : .synthesis, name: name, text: $0) }
         }
     }
 
