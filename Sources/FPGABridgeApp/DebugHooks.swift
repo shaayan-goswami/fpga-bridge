@@ -18,6 +18,7 @@ import SwiftUI
 ///   FPGA_BRIDGE_SELECT=kind:name   in a design scenario, select this object (cell:u_tick, net:clk, port:led[0])
 ///   FPGA_BRIDGE_EXPAND=a,b         in a schematic scenario, open these module instances in place
 ///   FPGA_BRIDGE_SCHEMATIC_ONLY=a,b  in a schematic scenario, draw only these cells (as F4 on a selection does)
+///   FPGA_BRIDGE_SCHEMATIC_VIEW=z,x,y in a schematic scenario, zoom to z (1 = 100%) centred at x,y (0...1 of the drawing)
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -39,6 +40,10 @@ enum DebugHooks {
               let kind = DesignObjectKind(rawValue: String(spec[..<colon])) else { return nil }
         return DesignObjectRef(kind, String(spec[spec.index(after: colon)...]))
     }
+    static var schematicView: (zoom: CGFloat, x: CGFloat, y: CGFloat)? {
+        let parts = (env["FPGA_BRIDGE_SCHEMATIC_VIEW"] ?? "").split(separator: ",").compactMap { Double($0) }
+        return parts.count == 3 ? (CGFloat(parts[0]), CGFloat(parts[1]), CGFloat(parts[2])) : nil
+    }
     #else
     static let forceDemo = false
     static let demoSpeed = 1.0
@@ -51,6 +56,7 @@ enum DebugHooks {
     static let settingsPage: String? = nil
     static let designSection: String? = nil
     static let selectObject: DesignObjectRef? = nil
+    static let schematicView: (zoom: CGFloat, x: CGFloat, y: CGFloat)? = nil
     #endif
 }
 

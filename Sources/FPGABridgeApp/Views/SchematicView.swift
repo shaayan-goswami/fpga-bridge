@@ -172,6 +172,10 @@ struct SchematicView: View {
         guard case .success(let layout) = result else { return }
         fit(CGRect(origin: .zero, size: layout.size), maxScale: 1.6)
         needsFit = viewSize == .zero
+        if let view = DebugHooks.schematicView, viewSize != .zero {
+            scale = view.zoom
+            offset = CGPoint(x: layout.size.width * view.x * scale - viewSize.width / 2, y: layout.size.height * view.y * scale - viewSize.height / 2)
+        }
     }
 
     private func fitSelection() {

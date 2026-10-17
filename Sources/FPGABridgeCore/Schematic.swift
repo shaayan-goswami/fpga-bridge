@@ -149,8 +149,8 @@ public enum SchematicError: DescribedError, Equatable {
 // MARK: Layout
 
 /// Lays out a schematic the way Vivado draws one: signals flow left to right in layers, ports on the outside edges,
-/// feedback (a register's output coming back round to its input) routed over the top, and every wire made of
-/// horizontal and vertical segments with its own track between layers.
+/// feedback (a register's output coming back round to the logic in front of it) looped back under the cells, and every
+/// wire made of horizontal and vertical segments with its own track between layers.
 public struct SchematicBuilder {
     public static let maxCellsPerLevel = 1500
 
@@ -176,7 +176,7 @@ public struct SchematicBuilder {
     public func layout(_ spec: SchematicSpec) throws -> SchematicLayout {
         guard design.hasConnectivity else { throw SchematicError.noConnectivity }
         var block = try level(spec.module, spec: spec, depth: 0)
-        // Leave room for feedback lanes above and labels all round.
+        // Leave room for labels all round.
         let shift = CGPoint(x: Metrics.padding - block.bounds.minX, y: Metrics.padding - block.bounds.minY)
         block.translate(by: shift)
         return SchematicLayout(size: CGSize(width: block.bounds.width + Metrics.padding * 2, height: block.bounds.height + Metrics.padding * 2),
@@ -244,7 +244,8 @@ public struct SchematicBuilder {
 
         // Primitives named `name[0]`, `name[1]`... of one type are bundled into one stacked symbol, as Vivado does.
         var bundles: [String: [DesignCell]] = [:]
-        for cell in included where cell.isPrimitive {
+        // Only RTL registers: in a synthesized netlist Vivado draws each flip-flop on its own.
+        for cell in included where cell.isPrimitive && cell.type.hasPrefix("RTL_") {
             let base = DesignNet.busName(of: cell.localName)
             if base != cell.localName { bundles["\(base)|\(cell.type)", default: []].append(cell) }
         }
@@ -503,15 +504,22 @@ public struct SchematicBuilder {
             if case .port(let dir) = items[i].node.kind { return dir != "IN" }
             return false
         }
+        func isRegister(_ i: Int) -> Bool { items[i].node.kind == .cell(.register) }
 
-        // Node-level edges, and the ones that close a loop (found depth first) treated as feedback.
+        // Node-level edges, and the ones that close a loop treated as feedback. As in Vivado, a loop is broken where a
+        // register's output comes back round, so the logic in front of a register sits to its left.
         var succ = Array(repeating: [Int](), count: n)
-        for link in links { for t in link.to where t.node != link.from.node { succ[link.from.node].append(t.node) } }
-        var state = Array(repeating: 0, count: n)      // 0 new, 1 on stack, 2 done
+        for link in links {
+            for t in link.to where t.node != link.from.node && !succ[link.from.node].contains(t.node) { succ[link.from.node].append(t.node) }
+        }
+        let component = Self.components(succ)
         var back: Set<[Int]> = []
+        for u in 0..<n where isRegister(u) { for v in succ[u] where component[u] == component[v] { back.insert([u, v]) } }
+        // Whatever loops are left (through logic alone, or through a module) are broken where a depth-first search closes them.
+        var state = Array(repeating: 0, count: n)      // 0 new, 1 on stack, 2 done
         func dfs(_ u: Int) {
             state[u] = 1
-            for v in succ[u] {
+            for v in succ[u] where !back.contains([u, v]) {
                 if state[v] == 1 { back.insert([u, v]) } else if state[v] == 0 { dfs(v) }
             }
             state[u] = 2
@@ -522,112 +530,173 @@ public struct SchematicBuilder {
 
         // Longest-path layers: inputs in 0, cells from 1, outputs after the last cell.
         var pred = Array(repeating: [Int](), count: n)
-        for u in 0..<n { for v in succ[u] where !back.contains([u, v]) && u != v { pred[v].append(u) } }
+        var forward = Array(repeating: [Int](), count: n)
+        for u in 0..<n { for v in succ[u] where !back.contains([u, v]) { pred[v].append(u); forward[u].append(v) } }
         var layer = Array(repeating: -1, count: n)
         func layerOf(_ i: Int) -> Int {
             if layer[i] >= 0 { return layer[i] }
             if isSource(i) { layer[i] = 0; return 0 }
-            layer[i] = 1                                   // guards against any loop the DFS missed
+            layer[i] = 1                                   // guards against any loop the search missed
             let l = pred[i].filter { !isSink($0) }.map { layerOf($0) + 1 }.max() ?? 1
             layer[i] = max(l, 1)
             return layer[i]
         }
         for i in 0..<n where !isSink(i) { _ = layerOf(i) }
         let lastCell = (0..<n).filter { !isSink($0) }.map { layer[$0] }.max() ?? 0
+        // Logic fed only by feedback (a register's next-state logic) sits just in front of what it drives, and output
+        // buffers sit by the output ports, rather than everything bunching up on the left.
+        // "Free" logic is reached from no input, only from feedback (or other free logic); it moves right, latest first.
+        var free = Array(repeating: false, count: n)
+        let byLayer = (0..<n).filter { !isSource($0) && !isSink($0) }.sorted { layer[$0] < layer[$1] }
+        for i in byLayer { free[i] = pred[i].allSatisfy { free[$0] } }
+        for i in byLayer.reversed() where free[i] && !forward[i].isEmpty {
+            layer[i] = max(layer[i], (forward[i].map { isSink($0) ? lastCell + 1 : layer[$0] }.min() ?? 1) - 1)
+        }
+        for i in 0..<n where !isSource(i) && !isSink(i) && !forward[i].isEmpty && forward[i].allSatisfy(isSink) { layer[i] = max(layer[i], lastCell) }
         for i in 0..<n where isSink(i) { layer[i] = lastCell + 1 }
         let layerCount = (layer.max() ?? 0) + 1
         for i in 0..<n { items[i].layer = layer[i] }
 
-        // Forward links become chains through every layer they cross, using one shared bend point per wire per layer.
-        struct Hop { let from: Int; let to: Int; let fromGroup: String?; let toGroup: String?; let wire: Int }
-        var dummies: [(layer: Int, wire: Int)] = []
-        var dummyIndex: [String: Int] = [:]           // "wire@layer" → index into dummies (offset by n)
+        // Every link becomes a chain of hops through the layers it crosses, with one shared bend point per wire per layer.
+        // A forward wire bends in the gap after each layer; a feedback wire leaves its driver to the right, comes back
+        // left through the layers just under the cells, and goes into its load from the left, as Vivado draws loops.
+        struct Hop { let from: Int; let to: Int; let fromGroup: String?; let toGroup: String?; let wire: Int; let gap: Int }
+        var dummies: [(layer: Int, wire: Int, backward: Bool)] = []
+        var dummyIndex: [String: Int] = [:]
+        func dummy(_ w: Int, _ l: Int, backward: Bool) -> Int {
+            let key = "\(w)@\(l)\(backward ? "<" : ">")"
+            if let d = dummyIndex[key] { return d }
+            dummies.append((l, w, backward))
+            dummyIndex[key] = n + dummies.count - 1
+            return n + dummies.count - 1
+        }
         var hops: [Hop] = []
-        var feedback: [(wire: Int, from: Int, fromGroup: String, to: Int, toGroup: String)] = []
+        var seen: Set<[Int]> = []
+        func hop(_ h: Hop) {
+            if seen.insert([h.from, h.to, h.wire]).inserted { hops.append(h) }
+        }
         for (w, link) in links.enumerated() {
             for t in link.to {
                 let a = link.from.node, b = t.node
-                if layer[b] <= layer[a] {
-                    feedback.append((w, a, link.from.group, b, t.group))
-                    continue
-                }
                 var prev = a
                 var prevGroup: String? = link.from.group
-                for l in (layer[a] + 1)..<layer[b] {
-                    let key = "\(w)@\(l)"
-                    let d: Int
-                    if let existing = dummyIndex[key] { d = existing } else {
-                        d = n + dummies.count
-                        dummies.append((l, w))
-                        dummyIndex[key] = d
+                if layer[b] > layer[a] {
+                    for l in (layer[a] + 1)..<layer[b] {
+                        let d = dummy(w, l, backward: false)
+                        hop(Hop(from: prev, to: d, fromGroup: prevGroup, toGroup: nil, wire: w, gap: l - 1))
+                        prev = d
+                        prevGroup = nil
                     }
-                    if !hops.contains(where: { $0.from == prev && $0.to == d && $0.wire == w }) {
-                        hops.append(Hop(from: prev, to: d, fromGroup: prevGroup, toGroup: nil, wire: w))
+                } else {
+                    var gap = layer[a]
+                    for l in stride(from: layer[a], through: layer[b], by: -1) {
+                        let d = dummy(w, l, backward: true)
+                        hop(Hop(from: prev, to: d, fromGroup: prevGroup, toGroup: nil, wire: w, gap: gap))
+                        prev = d
+                        prevGroup = nil
+                        gap = l - 1
                     }
-                    prev = d
-                    prevGroup = nil
                 }
-                hops.append(Hop(from: prev, to: b, fromGroup: prevGroup, toGroup: t.group, wire: w))
+                hop(Hop(from: prev, to: b, fromGroup: prevGroup, toGroup: t.group, wire: w, gap: max(layer[b] - 1, 0)))
             }
         }
         let total = n + dummies.count
         func layerOfAny(_ i: Int) -> Int { i < n ? layer[i] : dummies[i - n].layer }
 
-        // Order within layers: start in the order things were found, then a few barycenter sweeps.
+        // Order within layers: start in the order things were found, then a few barycenter sweeps. A feedback wire's
+        // bend point beside its driver or load stays just under it.
         var layers = Array(repeating: [Int](), count: layerCount)
         for i in 0..<total { layers[layerOfAny(i)].append(i) }
         var position = Array(repeating: 0.0, count: total)
         func renumber() { for l in layers { for (k, i) in l.enumerated() { position[i] = Double(k) } } }
         renumber()
-        var into = Array(repeating: [Int](), count: total)
-        var outOf = Array(repeating: [Int](), count: total)
-        for h in hops { into[h.to].append(h.from); outOf[h.from].append(h.to) }
-        for _ in 0..<4 {
-            for l in 1..<max(layerCount, 1) {
-                layers[l].sort { barycenter($0, into, position) < barycenter($1, into, position) }
-                renumber()
-            }
-            if layerCount > 1 {
-                for l in stride(from: layerCount - 2, through: 0, by: -1) {
-                    layers[l].sort { barycenter($0, outOf, position) < barycenter($1, outOf, position) }
-                    renumber()
-                }
-            }
+        var leftOf = Array(repeating: [Int](), count: total)
+        var rightOf = Array(repeating: [Int](), count: total)
+        var beside = Array(repeating: [Int](), count: total)
+        for h in hops {
+            let lf = layerOfAny(h.from), lt = layerOfAny(h.to)
+            if lf < lt { rightOf[h.from].append(h.to); leftOf[h.to].append(h.from) }
+            else if lf > lt { leftOf[h.from].append(h.to); rightOf[h.to].append(h.from) }
+            else { beside[h.from].append(h.to); beside[h.to].append(h.from) }
+        }
+        func key(_ i: Int, _ side: [[Int]]) -> Double {
+            if i >= n, let owner = beside[i].first(where: { $0 < n }) { return position[owner] + 0.5 }
+            let list = side[i]
+            guard !list.isEmpty else { return position[i] }
+            return list.map { position[$0] }.reduce(0, +) / Double(list.count)
+        }
+        func sortLayer(_ l: Int, _ side: [[Int]]) {
+            let keys = Dictionary(uniqueKeysWithValues: layers[l].map { ($0, key($0, side)) })
+            layers[l].sort { keys[$0]! != keys[$1]! ? keys[$0]! < keys[$1]! : position[$0] < position[$1] }
+            renumber()
+        }
+        for _ in 0..<6 {
+            for l in 1..<max(layerCount, 1) { sortLayer(l, leftOf) }
+            if layerCount > 1 { for l in stride(from: layerCount - 2, through: 0, by: -1) { sortLayer(l, rightOf) } }
         }
 
         // Vertical placement: each node as close as possible to the pins that drive it, without overlapping.
         var top = Array(repeating: CGFloat(0), count: total)
         func height(_ i: Int) -> CGFloat { i < n ? items[i].size.height : 0 }
-        func pinY(_ i: Int, _ group: String?) -> CGFloat {
-            guard i < n else { return top[i] }
-            return top[i] + (group.flatMap { items[i].pinOffsets[$0] } ?? height(i) / 2)
-        }
+        func offsetOf(_ i: Int, _ group: String?) -> CGFloat { i < n ? (group.flatMap { items[i].pinOffsets[$0] } ?? height(i) / 2) : 0 }
+        func pinY(_ i: Int, _ group: String?) -> CGFloat { top[i] + offsetOf(i, group) }
         func clearance(_ i: Int) -> CGFloat {
             guard i < n else { return Metrics.lanePitch }
             if items[i].isTerminal { return Metrics.pinPitch }
             if case .port = items[i].node.kind { return Metrics.nodeGap }
             return Metrics.nodeGap + Metrics.labelSpace * 2
         }
+        // First pass, left to right: a cell level with the cells already placed that drive it (the nearest count most),
+        // a bend point level with the one before it on its wire.
+        var drivers = Array(repeating: [(other: Int, otherGroup: String, ownGroup: String, weight: CGFloat)](), count: n)
+        for link in links {
+            for t in link.to where layer[link.from.node] < layer[t.node] {
+                drivers[t.node].append((link.from.node, link.from.group, t.group, 1 / CGFloat(layer[t.node] - layer[link.from.node])))
+            }
+        }
+        var arriving: [Int: Hop] = [:]           // a forward bend point → the hop into it from the left
+        for h in hops where h.to >= n && layerOfAny(h.from) < layerOfAny(h.to) && arriving[h.to] == nil { arriving[h.to] = h }
         for l in 0..<layerCount {
             var floor: CGFloat = 0
             for i in layers[l] {
-                let incoming = hops.filter { $0.to == i }
+                var pulls: [(y: CGFloat, w: CGFloat)] = []
+                if i < n {
+                    pulls = drivers[i].map { (pinY($0.other, $0.otherGroup) - offsetOf(i, $0.ownGroup), $0.weight) }
+                } else if let h = arriving[i] {
+                    pulls = [(pinY(h.from, h.fromGroup), 1)]
+                }
                 var want = floor
-                if !incoming.isEmpty {
-                    let ys = incoming.map { pinY($0.from, $0.fromGroup) - (i < n ? ($0.toGroup.flatMap { items[i].pinOffsets[$0] } ?? height(i) / 2) : 0) }
-                    want = max(floor, ys.reduce(0, +) / CGFloat(ys.count))
+                if !pulls.isEmpty {
+                    let sorted = pulls.sorted { $0.y < $1.y }
+                    let half = sorted.reduce(0) { $0 + $1.w } / 2
+                    var running: CGFloat = 0
+                    want = sorted.last!.y
+                    for p in sorted { running += p.w; if running >= half { want = p.y; break } }
+                    want = max(floor, want)
                 }
                 top[i] = want
                 floor = want + height(i) + clearance(i)
             }
         }
         // Then settle every layer, sweeping right and left: each node as near as it can be to the pins it connects to on
-        // both sides, keeping the layer's order and spacing (an isotonic regression, solved exactly by pooling).
-        func offsetOf(_ i: Int, _ group: String?) -> CGFloat { i < n ? (group.flatMap { items[i].pinOffsets[$0] } ?? height(i) / 2) : 0 }
-        var neighbours = Array(repeating: [(other: Int, otherGroup: String?, ownGroup: String?)](), count: total)
-        for h in hops {
-            neighbours[h.to].append((h.from, h.fromGroup, h.toGroup))
-            neighbours[h.from].append((h.to, h.toGroup, h.fromGroup))
+        // both sides, keeping the layer's order and spacing (an isotonic regression, solved exactly by pooling). A cell
+        // isn't pulled by the feedback bend point tucked under it.
+        // Cells are pulled by the cells they connect to (a distant one less), never by where a wire bends: otherwise a
+        // cell follows the wires under the one before it, they follow it, and a chain slides downhill. Bend points follow
+        // their wire.
+        var neighbours = Array(repeating: [(other: Int, otherGroup: String?, ownGroup: String?, weight: CGFloat)](), count: total)
+        for h in hops where h.from >= n || h.to >= n {
+            let w: CGFloat = h.from >= n && h.to >= n ? 8 : 2
+            if h.to >= n { neighbours[h.to].append((h.from, h.fromGroup, h.toGroup, w)) }
+            if h.from >= n { neighbours[h.from].append((h.to, h.toGroup, h.fromGroup, w)) }
+        }
+        for link in links {
+            for t in link.to where t.node != link.from.node {
+                let a = link.from.node, b = t.node
+                let w = 1 / CGFloat(max(abs(layer[b] - layer[a]), 1))
+                neighbours[a].append((b, t.group, link.from.group, w))
+                neighbours[b].append((a, link.from.group, t.group, w))
+            }
         }
         func settle(_ l: Int) {
             let nodes = layers[l]
@@ -636,16 +705,31 @@ public struct SchematicBuilder {
             var running: CGFloat = 0
             for i in nodes { offsets.append(running); running += height(i) + clearance(i) }
             // Targets in "slack" coordinates: position minus the room everything above it needs.
+            // A long wire's bend points pull hardest on each other, so it runs straight (the weights ELK uses).
             var targets: [CGFloat] = []
+            var weights: [CGFloat] = []
             for (k, i) in nodes.enumerated() {
-                let pulls = neighbours[i].map { pinY($0.other, $0.otherGroup) - offsetOf(i, $0.ownGroup) }
-                let want = pulls.isEmpty ? top[i] : pulls.reduce(0, +) / CGFloat(pulls.count)
+                // The weighted median, not the mean: anywhere between two pulls is as good, so a wire pulled by both
+                // its ends stays straight from one of them and bends once, instead of sloping across from one to the other.
+                let pulls = neighbours[i].map { (y: pinY($0.other, $0.otherGroup) - offsetOf(i, $0.ownGroup), w: $0.weight) }
+                    .sorted { $0.y < $1.y }
+                let weight = pulls.reduce(0) { $0 + $1.w }
+                var want = top[i]
+                if weight > 0 {
+                    var running: CGFloat = 0
+                    var low = pulls[0].y, high = pulls[pulls.count - 1].y
+                    for p in pulls { running += p.w; if running >= weight / 2 { low = p.y; break } }
+                    running = 0
+                    for p in pulls { running += p.w; if running > weight / 2 { high = p.y; break } }
+                    want = min(max(top[i], low), high)
+                }
                 targets.append(want - offsets[k])
+                weights.append(max(weight, 0.5))
             }
             // Pool adjacent violators: merge runs whose targets go down, so the result never does.
             var blocks: [(sum: CGFloat, count: CGFloat, size: Int)] = []
-            for t in targets {
-                blocks.append((t, 1, 1))
+            for (t, w) in zip(targets, weights) {
+                blocks.append((t * w, w, 1))
                 while blocks.count > 1, blocks[blocks.count - 2].sum / blocks[blocks.count - 2].count > blocks[blocks.count - 1].sum / blocks[blocks.count - 1].count {
                     let last = blocks.removeLast()
                     blocks[blocks.count - 1] = (blocks[blocks.count - 1].sum + last.sum, blocks[blocks.count - 1].count + last.count, blocks[blocks.count - 1].size + last.size)
@@ -664,25 +748,16 @@ public struct SchematicBuilder {
 
         // Tracks: each wire's vertical run in a gap gets a column, shared by its branches, apart from overlapping runs.
         var runs: [Int: [Int: (lo: CGFloat, hi: CGFloat)]] = [:]       // gap → wire → span
-        func addRun(_ gap: Int, _ wire: Int, _ a: CGFloat, _ b: CGFloat) {
-            let span = runs[gap]?[wire]
-            runs[gap, default: [:]][wire] = (min(a, b, span?.lo ?? .greatestFiniteMagnitude), max(a, b, span?.hi ?? -.greatestFiniteMagnitude))
-        }
-        for h in hops { addRun(layerOfAny(h.from), h.wire, pinY(h.from, h.fromGroup), pinY(h.to, h.toGroup)) }
-        let allTops = (0..<n).map { top[$0] - Metrics.labelSpace }
-        let laneBase = (allTops.min() ?? 0) - Metrics.lanePitch * 2
-        var lanes: [Int: CGFloat] = [:]
-        for f in feedback where lanes[f.wire] == nil { lanes[f.wire] = laneBase - CGFloat(lanes.count) * Metrics.lanePitch }
-        for f in feedback {
-            guard let lane = lanes[f.wire] else { continue }
-            addRun(layer[f.from], f.wire, pinY(f.from, f.fromGroup), lane)
-            addRun(max(layer[f.to] - 1, 0), f.wire, lane, pinY(f.to, f.toGroup))
+        for h in hops {
+            let a = pinY(h.from, h.fromGroup), b = pinY(h.to, h.toGroup)
+            let span = runs[h.gap]?[h.wire]
+            runs[h.gap, default: [:]][h.wire] = (min(a, b, span?.lo ?? .greatestFiniteMagnitude), max(a, b, span?.hi ?? -.greatestFiniteMagnitude))
         }
         var track: [Int: [Int: Int]] = [:]       // gap → wire → column
         var columns: [Int: Int] = [:]
         for (gap, spans) in runs {
             var ends: [CGFloat] = []              // the bottom of the last run in each column
-            for (wire, span) in spans.sorted(by: { $0.value.lo < $1.value.lo }) {
+            for (wire, span) in spans.sorted(by: { $0.value.lo != $1.value.lo ? $0.value.lo < $1.value.lo : $0.key < $1.key }) {
                 if let c = ends.firstIndex(where: { $0 + Metrics.trackPitch < span.lo }) {
                     ends[c] = span.hi
                     track[gap, default: [:]][wire] = c
@@ -742,41 +817,31 @@ public struct SchematicBuilder {
             }
             items[i] = item
         }
-        func point(_ i: Int, _ group: String?, outgoing: Bool) -> CGPoint {
+        /// Where a hop meets a node: its pin, or the edge of a bend point's layer (a feedback one is crossed right to left).
+        func point(_ i: Int, _ group: String?, leaving: Bool) -> CGPoint {
             if i < n, let group, let pin = items[i].node.pins.first(where: { groupName($0) == group }) { return pin.point }
             let l = layerOfAny(i)
-            let y = pinY(i, group)
-            return CGPoint(x: outgoing ? layerX[l] + layerWidth[l] : layerX[l], y: y)
+            let rightEdge = i < n ? leaving : leaving != dummies[i - n].backward
+            return CGPoint(x: rightEdge ? layerX[l] + layerWidth[l] : layerX[l], y: pinY(i, group))
         }
 
-        // Wires: from the driver to its track, along the track, and into each load; feedback goes up to its lane.
+        // Wires: from each end to its track, along the track, into the other end; bend points carry it across their layer.
+        let hopsOfWire = Dictionary(grouping: hops, by: \.wire)
+        let dummiesOfWire = Dictionary(grouping: dummies.indices, by: { dummies[$0].wire })
         for (w, link) in links.enumerated() {
             var segments: [SchematicWire.Segment] = []
             func line(_ a: CGPoint, _ b: CGPoint) { if a != b { segments.append(.init(from: a, to: b)) } }
-            for h in hops where h.wire == w {
-                let a = point(h.from, h.fromGroup, outgoing: true)
-                let b = point(h.to, h.toGroup, outgoing: false)
-                let tx = trackX(layerOfAny(h.from), w)
+            for h in hopsOfWire[w] ?? [] {
+                let a = point(h.from, h.fromGroup, leaving: true)
+                let b = point(h.to, h.toGroup, leaving: false)
+                let tx = trackX(h.gap, w)
                 line(a, CGPoint(x: tx, y: a.y))
                 line(CGPoint(x: tx, y: a.y), CGPoint(x: tx, y: b.y))
                 line(CGPoint(x: tx, y: b.y), b)
-                if h.to >= n {
-                    // A bend point carries the wire straight across its layer.
-                    let l = layerOfAny(h.to)
-                    line(CGPoint(x: layerX[l], y: b.y), CGPoint(x: layerX[l] + layerWidth[l], y: b.y))
-                }
             }
-            for f in feedback where f.wire == w {
-                guard let lane = lanes[w] else { continue }
-                let a = point(f.from, f.fromGroup, outgoing: true)
-                let b = point(f.to, f.toGroup, outgoing: false)
-                let out = trackX(layer[f.from], w)
-                let back = trackX(max(layer[f.to] - 1, 0), w)
-                line(a, CGPoint(x: out, y: a.y))
-                line(CGPoint(x: out, y: a.y), CGPoint(x: out, y: lane))
-                line(CGPoint(x: out, y: lane), CGPoint(x: back, y: lane))
-                line(CGPoint(x: back, y: lane), CGPoint(x: back, y: b.y))
-                line(CGPoint(x: back, y: b.y), b)
+            for k in dummiesOfWire[w] ?? [] {
+                let d = dummies[k], y = top[n + k]
+                line(CGPoint(x: layerX[d.layer], y: y), CGPoint(x: layerX[d.layer] + layerWidth[d.layer], y: y))
             }
             guard !segments.isEmpty else { continue }
             let label = link.width > 1 ? "\(DesignNet.busName(of: link.nets.first.map { String($0.split(separator: "/").last ?? "") } ?? ""))[\(link.width - 1):0]"
@@ -817,10 +882,27 @@ public struct SchematicBuilder {
         return block
     }
 
-    private func barycenter(_ i: Int, _ neighbours: [[Int]], _ position: [Double]) -> Double {
-        let list = neighbours[i]
-        guard !list.isEmpty else { return position[i] }
-        return list.map { position[$0] }.reduce(0, +) / Double(list.count)
+    /// Strongly connected components (Tarjan): the component each node is in.
+    static func components(_ succ: [[Int]]) -> [Int] {
+        let n = succ.count
+        var index = Array(repeating: -1, count: n), low = Array(repeating: 0, count: n), component = Array(repeating: -1, count: n)
+        var onStack = Array(repeating: false, count: n), stack: [Int] = [], next = 0, count = 0
+        func visit(_ u: Int) {
+            index[u] = next; low[u] = next; next += 1
+            stack.append(u); onStack[u] = true
+            for v in succ[u] {
+                if index[v] < 0 { visit(v); low[u] = min(low[u], low[v]) } else if onStack[v] { low[u] = min(low[u], index[v]) }
+            }
+            guard low[u] == index[u] else { return }
+            while let w = stack.popLast() {
+                onStack[w] = false
+                component[w] = count
+                if w == u { break }
+            }
+            count += 1
+        }
+        for u in 0..<n where index[u] < 0 { visit(u) }
+        return component
     }
 
     private func dedupe(_ segments: [SchematicWire.Segment]) -> [SchematicWire.Segment] {

@@ -106,12 +106,54 @@ final class SchematicTests: XCTestCase {
         XCTAssertFalse(s.wires.contains { $0.nets.contains("<const0>") || $0.nets.contains("<const1>") })
     }
 
-    func testFeedbackGoesOverTheTop() throws {
-        // The counter's register output comes back to the adder that feeds it.
+    func testFeedbackLoopsBackUnderItsRegister() throws {
+        // The counter's register output comes back to the adder in front of it: out to the right, back left just under
+        // the register, as Vivado draws a loop, not in a band over the whole drawing.
         let (s, _) = try layout(.rtl)
+        let register = try XCTUnwrap(s.nodes.first { $0.title == "count_reg[7:0]" })
+        let adder = try XCTUnwrap(s.nodes.first { $0.id == "count0_i__0" })
+        XCTAssertLessThan(adder.frame.maxX, register.frame.minX, "the logic that feeds a register sits in front of it")
+        let loop = try XCTUnwrap(s.wires.first { $0.nets.contains("count[0]") })
+        XCTAssertTrue(loop.segments.contains { $0.from.y == $0.to.y && $0.from.y > register.frame.maxY
+                && min($0.from.x, $0.to.x) <= register.frame.minX && max($0.from.x, $0.to.x) >= register.frame.maxX },
+                      "the loop passes back under the register")
         let top = try XCTUnwrap(s.nodes.map(\.frame.minY).min())
-        XCTAssertTrue(s.wires.contains { $0.segments.contains { $0.from.y == $0.to.y && $0.from.y < top } },
-                      "a loop is routed above the cells")
+        XCTAssertFalse(s.wires.contains { $0.segments.contains { $0.from.y < top && $0.to.y < top } }, "nothing runs over the top")
+    }
+
+    // MARK: The synthesized netlist
+
+    func testSynthesizedFlipFlopsAreDrawnOneEach() throws {
+        let (s, _) = try layout(.synth)
+        assertSound(s)
+        for bit in 0..<8 {
+            let register = try XCTUnwrap(s.nodes.first { $0.id == "count_reg[\(bit)]" }, "count_reg[\(bit)] on its own, as Vivado draws it")
+            XCTAssertFalse(register.isBundle)
+        }
+    }
+
+    func testRegistersFollowTheirNextStateLogicInARow() throws {
+        // Each bit of the counter: its LUT, then its flip-flop, then the next bit's LUT. Vivado draws the chain level,
+        // not as a staircase.
+        let (s, _) = try layout(.synth)
+        func node(_ id: String) throws -> SchematicNode { try XCTUnwrap(s.nodes.first { $0.id == id }, id) }
+        for bit in 1..<7 {
+            let lut = try node("count[\(bit)]_i_1"), register = try node("count_reg[\(bit)]")
+            XCTAssertLessThan(lut.frame.maxX, register.frame.minX, "count[\(bit)]_i_1 in front of its register")
+        }
+        let first = try node("count_reg[1]"), last = try node("count_reg[6]")
+        XCTAssertLessThan(abs(last.frame.midY - first.frame.midY), (last.frame.midX - first.frame.midX) / 2, "the chain runs across, not down")
+    }
+
+    func testOutputBuffersStandByTheOutputs() throws {
+        // led[15:8] are the switches passed straight through: their buffers still line up with the others by the port.
+        let (s, _) = try layout(.synth)
+        let passThrough = try XCTUnwrap(s.nodes.first { $0.id == "led_OBUF[8]_inst" })
+        let driven = try XCTUnwrap(s.nodes.first { $0.id == "led_OBUF[0]_inst" })
+        XCTAssertEqual(passThrough.frame.midX, driven.frame.midX)
+        let lastCell = try XCTUnwrap(s.nodes.filter { $0.subtitle.hasPrefix("FD") || $0.subtitle.hasPrefix("LUT") }.map(\.frame.maxX).max())
+        XCTAssertGreaterThan(passThrough.frame.minX, lastCell)
+        XCTAssertGreaterThan(s.size.width, s.size.height, "the drawing is wider than it is tall")
     }
 
     func testSymbolsFollowTheCellType() {
