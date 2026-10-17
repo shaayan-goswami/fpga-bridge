@@ -69,7 +69,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
 | Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
-| Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Device and Package views, timing path highlighting and the Flow Navigator's per-design sub-items are Todo |
+| Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Device and Package views, timing path highlighting are Todo |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
 | Create Block Design… | Not possible (see §6) | — |
@@ -114,21 +114,22 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Pane | How | Status |
 | --- | --- | --- |
-| Flow Navigator (all sections, run status icons, collapse sections) | Mac | Done (collapse Todo) |
+| Flow Navigator (all sections, run status icons, collapse sections) | Mac | Done as in Vivado 2025.2: every section including IP Integrator (block design items greyed), Run Linter, each open design's commands (reports, Schematic; Constraints Wizard, Edit Timing Constraints, Set Up Debug and Open Dataflow Design greyed with the reason), Open Hardware Manager's Open Target / Program Device / Add Configuration Memory Device, bold section and renamed item for the open design, collapsible sections and items |
+| Run Linter (RTL Analysis) | Remote | Done: `synth_design -lint` on the build machine (its own job folder, the build's lock), the Linter window with Vivado's rule summary and each message linked to its line; `fpga-bridge lint` on the command line |
 | Sources ▸ Hierarchy (module tree, top marker) | Mac | Done |
 | Sources ▸ Libraries, Compile Order (reorder, manual compile order) | Mac | Prototype (read-only) |
 | Sources ▸ IP Sources | Remote | Todo |
 | Sources toolbar: search, collapse/expand all, add, properties | Mac | Prototype (add only) |
 | Sources context menu: Set as Top, Remove File, Disable File, Open File, Replace File, Copy File Into Project, Hierarchy Update, Refresh Hierarchy | Mac | Todo |
 | Source File Properties | Mac | Done |
-| Project Summary dashboard (Overview, Settings, Board, Synthesis, Implementation, DRC, Timing, Utilization, Power, Methodology, Design Runs) | Mac + Remote data | Prototype |
+| Project Summary dashboard (Overview, Settings, Board, Synthesis, Implementation, DRC, Timing, Utilization, Power, Methodology, Design Runs) | Mac + Remote data | Done for the Overview as in Vivado 2025.2 (Settings; Synthesis; Implementation with Route Status; DRC Violations; Timing Setup/Hold/Pulse Width; Utilization Post-Synthesis/Post-Implementation as Graph or Table; Power Summary/On-Chip with thermal margin). Dashboard: fixed timing, utilization and power gadgets; Add Gadget is Todo |
 | Text editor: editing, save, undo, line numbers, syntax colors, find (⌘F), comment toggle (⌘/), auto-indent, Tab and Shift-Tab | Mac | Done |
 | Text editor: go to line, replace in files, bracket matching, linting markers from Messages | Mac | Todo |
 | Tcl Console (history with ↑/↓, command echo of GUI actions, clear) | Mac → Remote | Prototype (history Todo) |
 | Messages (grouped by run and ID, severity filters, search, suppress, jump to source line) | Mac | Prototype (grouping and filters) |
 | Log (per run, live) | Mac | Done |
 | Reports (per run, open in viewer) | Mac | Done |
-| Design Runs table (columns, context menu: Launch, Reset, Delete, Make Active, Change Run Settings, Open Run Directory) | Mac → Remote | Prototype (table only) |
+| Design Runs table (columns, context menu: Launch, Reset, Delete, Make Active, Change Run Settings, Open Run Directory) | Mac → Remote | Prototype: every Vivado column (WNS…QoR Suggestions, LUT…DSP, Start, Elapsed, Run Strategy), percentage toggle, search, synth_1 with impl_1 under it, toolbar (Reset Runs, Launch Runs; step-by-step items greyed), context menu Launch/Reset/Open Run/Generate Bitstream. Runs restored from the last build show complete, or out-of-date if a source changed. Delete, Make Active and extra runs are Todo |
 | Run Properties | Mac | Todo |
 | Netlist (cells, nets, hierarchy of the opened design) | Remote data + Mac | Done: Nets and Leaf Cells folders per module, buses grouped, Vivado's icons, shared selection that opens the tree to what is selected elsewhere, Go To Source, Schematic (F4) |
 | Properties (any selected object) | Remote | Todo |
