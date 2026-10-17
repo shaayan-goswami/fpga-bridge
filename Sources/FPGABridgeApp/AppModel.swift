@@ -517,21 +517,50 @@ final class AppModel: ObservableObject {
     // MARK: Design views
 
     /// Shows what the last build left in `build/` (reports and design data), so reopening a project doesn't lose them.
-    /// Run states are left alone: the results may be older than the sources, and only a run can say they are current.
+    /// As in Vivado, the runs that produced them show as complete, and as out-of-date if a source, constraint or the
+    /// project file changed after that build.
     private func restorePreviousBuild(in directory: URL) {
-        guard !backend.isDemo else { return }
+        guard !backend.isDemo, let project else { return }
         let out = directory.appendingPathComponent(Remote.localOutputDir)
         Task { [weak self] in
-            let (files, designs) = await Task.detached { () -> ([ReportFile], [DesignStage: DesignSnapshot]) in
+            let (files, designs, completed, stale) = await Task.detached { () -> ([ReportFile], [DesignStage: DesignSnapshot], Set<RunKind>, Bool) in
                 var found: [DesignStage: DesignSnapshot] = [:]
                 for stage in DesignStage.allCases {
                     if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { found[stage] = snapshot }
                 }
-                return (LiveBackend.reports(in: out), found)
+                let files = LiveBackend.reports(in: out)
+                return (files, found, AppModel.completedSteps(reports: files.map(\.name), designs: Set(found.keys), out: out, top: project.top),
+                        AppModel.isStale(build: out, project: project, root: directory))
             }.value
             guard let self, self.projectURL == directory, !files.isEmpty || !designs.isEmpty else { return }
-            self.apply(RunOutcome(completed: [], reports: files, designs: designs))
+            self.apply(RunOutcome(completed: completed, reports: files, designs: designs))
+            if stale {
+                for kind in [RunKind.synthesis, .implementation] where self.runs[kind]?.status == .complete { self.runs[kind]?.outOfDate = true }
+            }
         }
+    }
+
+    /// Which steps a build folder shows were finished: synthesis if it has synthesis results, implementation if it
+    /// has implementation reports, the bitstream if the .bit is there.
+    nonisolated static func completedSteps(reports: [String], designs: Set<DesignStage>, out: URL, top: String) -> Set<RunKind> {
+        var done: Set<RunKind> = []
+        if designs.contains(.synth) || reports.contains(where: { $0.hasPrefix("synth_") }) { done.insert(.synthesis) }
+        if designs.contains(.impl) || reports.contains(BuildSummary.timingReport) || reports.contains(BuildSummary.utilizationReport) {
+            done.insert(.implementation)
+        }
+        if FileManager.default.fileExists(atPath: out.appendingPathComponent("\(top).bit").path) { done.insert(.bitstream) }
+        return done
+    }
+
+    /// Whether anything the build read changed after it: a source, a constraint, or the project file.
+    nonisolated static func isStale(build out: URL, project: Project, root: URL) -> Bool {
+        let fm = FileManager.default
+        func modified(_ url: URL) -> Date? { (try? fm.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date }
+        let built = ((try? fm.contentsOfDirectory(atPath: out.path)) ?? []).compactMap { modified(out.appendingPathComponent($0)) }.min()
+        guard let built else { return false }
+        let inputs = ((try? project.resolveSources(in: root)) ?? []) + ((try? project.resolveConstraints(in: root)) ?? [])
+        let urls = inputs.map { root.appendingPathComponent($0) } + [root.appendingPathComponent(Project.fileName)]
+        return urls.contains { (modified($0) ?? .distantPast) > built }
     }
 
     /// Opens the Elaborated, Synthesized or Implemented Design. If no build has produced it yet, runs one, and opens the

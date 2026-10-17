@@ -12,6 +12,10 @@ public struct TimingSummary: Equatable, Sendable {
     public var thsFailingEndpoints: Int?
     public var thsTotalEndpoints: Int?
     public var tpwsFailingEndpoints: Int?
+    /// Pulse width: worst slack, total negative slack, and how many endpoints were checked.
+    public var wpws: Double? = nil
+    public var tpws: Double? = nil
+    public var tpwsTotalEndpoints: Int? = nil
     /// True when Vivado reports every constraint as met.
     public var constraintsMet: Bool
 
@@ -51,6 +55,7 @@ public struct TimingSummary: Equatable, Sendable {
             whs: number("WHS(ns)"), ths: number("THS(ns)"),
             thsFailingEndpoints: count("THS Failing Endpoints"), thsTotalEndpoints: count("THS Total Endpoints"),
             tpwsFailingEndpoints: count("TPWS Failing Endpoints"),
+            wpws: number("WPWS(ns)"), tpws: number("TPWS(ns)"), tpwsTotalEndpoints: count("TPWS Total Endpoints"),
             constraintsMet: true)
 
         if text.contains("Timing constraints are not met") {

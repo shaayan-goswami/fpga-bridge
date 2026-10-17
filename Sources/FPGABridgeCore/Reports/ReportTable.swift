@@ -35,8 +35,10 @@ struct ReportTable {
                                       rows: Array(rows)))
         }
 
-        for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = rawLine.trimmingCharacters(in: CharacterSet(charactersIn: "\r"))
+        // Split on whole line breaks: some reports (report_power on Windows) end lines with CR LF, which Swift reads
+        // as one character that never equals "\n".
+        for rawLine in text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
+            let line = String(rawLine)
             if line.hasPrefix("+") || line.hasPrefix("|") {
                 block.append(line)
             } else if !block.isEmpty {

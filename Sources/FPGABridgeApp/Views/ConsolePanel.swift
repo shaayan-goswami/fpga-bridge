@@ -259,63 +259,160 @@ private struct ReportsListView: View {
     }
 }
 
-private struct DesignRunRow: Identifiable {
+/// One run in the Design Runs table, with Vivado's columns.
+struct DesignRunRow: Identifiable {
     let id: String
+    let isChild: Bool
     let state: RunState
-    let wns: String
-    let tns: String
-    let whs: String
-    let lut: String
-    let ff: String
-    let bram: String
-    let elapsed: String
-    let strategy: String
+    let status: String
+    let values: [String: String]
 }
 
-/// Vivado's Design Runs table.
-private struct DesignRunsView: View {
+/// Vivado's Design Runs window: synth_1 with impl_1 under it, every column Vivado shows, and its toolbar.
+struct DesignRunsView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var showPercent = false
+    @State private var collapsed = false
+    @State private var search = ""
+    @State private var searching = false
+
+    static let columns: [(title: String, width: CGFloat)] = [
+        ("Constraints", 86), ("Status", 200), ("WNS", 56), ("TNS", 56), ("WHS", 56), ("THS", 56), ("WBSS", 52), ("TPWS", 56),
+        ("Total Power", 80), ("Failed Routes", 92), ("Methodology", 96), ("RQA Score", 76), ("QoR Suggestions", 112),
+        ("LUT", 56), ("FF", 56), ("BRAM", 52), ("URAM", 52), ("DSP", 48), ("Start", 128), ("Elapsed", 70), ("Run Strategy", 340),
+    ]
 
     var body: some View {
-        Table(rows) {
-            TableColumn("Name") { row in Text(row.id).monospaced() }
-            TableColumn("Status") { row in
-                HStack(spacing: 5) {
-                    RunStatusIcon(state: row.state)
-                    Text(row.state.label)
+        VStack(spacing: 0) {
+            toolbar
+            Divider()
+            ScrollView([.horizontal, .vertical]) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 0) {
+                        cell("Name", width: 120, bold: true)
+                        ForEach(Self.columns, id: \.title) { cell($0.title, width: $0.width, bold: true) }
+                    }
+                    .padding(.vertical, 5)
+                    .background(Color.primary.opacity(0.05))
+                    Divider()
+                    ForEach(shown) { row in
+                        HStack(spacing: 0) {
+                            HStack(spacing: 4) {
+                                if !row.isChild {
+                                    Button { collapsed.toggle() } label: {
+                                        Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
+                                            .rotationEffect(.degrees(collapsed ? 0 : 90))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                RunStatusIcon(state: row.state).font(.caption)
+                                Text(row.id).monospaced()
+                            }
+                            .padding(.leading, row.isChild ? 26 : 6)
+                            .frame(width: 120, alignment: .leading)
+                            ForEach(Self.columns, id: \.title) { column in
+                                let value = row.values[column.title] ?? ""
+                                cell(column.title == "Status" ? row.status : value, width: column.width,
+                                     color: column.title == "Methodology" && value.hasSuffix("CW") ? Accent.error
+                                        : (column.title.count == 3 && value.hasPrefix("-")) ? Accent.error : nil)
+                            }
+                        }
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                        .contextMenu {
+                            Button("Launch Runs") { model.run(row.isChild ? .implementation : .synthesis) }.disabled(model.isRunning)
+                            Button("Reset Runs") { model.resetRuns() }.disabled(model.isRunning)
+                            Button("Open Run") { model.openDesign(row.isChild ? .impl : .synth) }
+                            if row.isChild { Button("Generate Bitstream") { model.run(.bitstream) }.disabled(model.isRunning) }
+                        }
+                        Divider().opacity(0.4)
+                    }
                 }
+                .font(.callout.monospacedDigit())
             }
-            TableColumn("WNS", value: \.wns)
-            TableColumn("TNS", value: \.tns)
-            TableColumn("WHS", value: \.whs)
-            TableColumn("LUT", value: \.lut)
-            TableColumn("FF", value: \.ff)
-            TableColumn("BRAM", value: \.bram)
-            TableColumn("Elapsed", value: \.elapsed)
-            TableColumn("Strategy", value: \.strategy)
         }
-        .font(.callout.monospacedDigit())
         .surfaceBackground()
     }
 
+    private func cell(_ text: String, width: CGFloat, bold: Bool = false, color: Color? = nil) -> some View {
+        Text(text)
+            .fontWeight(bold ? .semibold : .regular)
+            .foregroundStyle(color ?? (bold ? Color.secondary : Color.primary))
+            .lineLimit(1)
+            .padding(.horizontal, 6)
+            .frame(width: width, alignment: .leading)
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 12) {
+            Button { searching.toggle(); if !searching { search = "" } } label: { Image(systemName: "magnifyingglass") }.help("Search")
+            if searching { TextField("Search runs", text: $search).textFieldStyle(.roundedBorder).frame(width: 160) }
+            Button { collapsed = true } label: { Image(systemName: "chevron.up.chevron.down") }.help("Collapse All")
+            Button { collapsed = false } label: { Image(systemName: "chevron.down.2") }.help("Expand All")
+            Divider().frame(height: 14)
+            Button { model.resetRuns() } label: { Image(systemName: "backward.end") }
+                .disabled(model.isRunning).help("Reset Runs")
+            Button {} label: { Image(systemName: "backward") }.disabled(true)
+                .help("Reset to Previous Step: runs are one Vivado session here, so steps can't be undone one at a time yet")
+            Button { model.run(.bitstream) } label: { Image(systemName: "play.fill").foregroundStyle(Accent.remote) }
+                .disabled(model.isRunning).help("Launch Runs")
+            Button {} label: { Image(systemName: "forward") }.disabled(true)
+                .help("Launch Next Step: runs are one Vivado session here, so steps can't be run one at a time yet")
+            Button {} label: { Image(systemName: "plus") }.disabled(true).help("Create Runs: one synthesis and one implementation run for now")
+            Toggle(isOn: $showPercent) { Image(systemName: "percent") }.toggleStyle(.button).help("Show Percentage")
+            Spacer()
+        }
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 10)
+        .frame(height: 30)
+    }
+
+    private var shown: [DesignRunRow] {
+        let all = rows.filter { !collapsed || !$0.isChild }
+        guard !search.isEmpty else { return all }
+        return all.filter { row in row.id.localizedCaseInsensitiveContains(search) || row.values.values.contains { $0.localizedCaseInsensitiveContains(search) } }
+    }
+
     private var rows: [DesignRunRow] {
-        let synthUtil = model.reports.first { $0.run == .synthesis }.flatMap { try? UtilizationSummary.parse($0.text) }
-        let implUtil = model.reports.first { $0.run == .implementation && $0.fileName == BuildSummary.utilizationReport }
-            .flatMap { try? UtilizationSummary.parse($0.text) }
-        func row(_ kind: RunKind, util: UtilizationSummary?, timing: TimingSummary?, strategy: String) -> DesignRunRow {
-            let state = model.runs[kind] ?? RunState()
-            func count(_ k: ResourceUsage.Kind) -> String { util?.usage(k).map { formatCount($0.used) } ?? "" }
-            return DesignRunRow(
-                id: kind.runName, state: state,
-                wns: timing.map { formatSigned($0.wns) } ?? "", tns: timing.map { formatSigned($0.tns) } ?? "",
-                whs: timing.map { formatSigned($0.whs) } ?? "",
-                lut: count(.lut), ff: count(.ff), bram: count(.bram),
-                elapsed: state.elapsed > 0 ? formatDuration(state.elapsed) : "",
-                strategy: strategy)
+        let version = model.project?.vivadoVersion ?? ""
+        func usage(_ u: UtilizationSummary?, _ k: ResourceUsage.Kind) -> String {
+            guard let r = u?.usage(k) else { return u == nil ? "" : "0" }
+            return showPercent ? String(format: "%.2f", r.percent) : formatCount(r.used)
+        }
+        func start(_ state: RunState) -> String {
+            state.started.map { $0.formatted(date: .numeric, time: .shortened) } ?? ""
+        }
+        func elapsed(_ state: RunState) -> String {
+            guard state.elapsed > 0 else { return "" }
+            let s = Int(state.elapsed)
+            return String(format: "%02d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
+        }
+        func common(_ u: UtilizationSummary?, _ state: RunState) -> [String: String] {
+            ["Constraints": "constrs_1", "LUT": usage(u, .lut), "FF": usage(u, .ff), "BRAM": usage(u, .bram),
+             "URAM": u == nil ? "" : "0", "DSP": usage(u, .dsp), "Start": start(state), "Elapsed": elapsed(state)]
+        }
+        let synthState = model.runs[.synthesis] ?? RunState()
+        var synth = common(model.utilization(at: .synth), synthState)
+        synth["Run Strategy"] = "\(model.synthesisStrategy) (Vivado Synthesis\(version.isEmpty ? "" : " " + version))"
+
+        let implState = model.runs[.implementation] ?? RunState()
+        var impl = common(model.utilization(at: .impl), implState)
+        impl["Run Strategy"] = "\(model.implementationStrategy) (Vivado Implementation\(version.isEmpty ? "" : " " + version))"
+        if let t = model.timing, t.isTimed {
+            func ns(_ v: Double?) -> String { v.map { String(format: "%.3f", $0) } ?? "NA" }
+            impl["WNS"] = ns(t.wns); impl["TNS"] = ns(t.tns); impl["WHS"] = ns(t.whs); impl["THS"] = ns(t.ths); impl["TPWS"] = ns(t.tpws)
+        } else if model.timing != nil {
+            for k in ["WNS", "TNS", "WHS", "THS", "TPWS"] { impl[k] = "NA" }
+        }
+        if let p = model.power(at: .impl)?.totalOnChip { impl["Total Power"] = String(format: "%.3f", p) }
+        if let r = model.routeStatus { impl["Failed Routes"] = "\(r.failedRoutes)" }
+        if let m = model.checks(.methodology, at: .impl) {
+            let critical = m.count("Critical Warning")
+            impl["Methodology"] = critical > 0 ? "\(critical) CW" : m.total > 0 ? "\(m.total) Warn" : "0"
         }
         return [
-            row(.synthesis, util: synthUtil, timing: nil, strategy: "Vivado Synthesis Defaults"),
-            row(.implementation, util: implUtil, timing: model.timing, strategy: "Vivado Implementation Defaults"),
+            DesignRunRow(id: "synth_1", isChild: false, state: synthState, status: model.runStatusText(.synthesis), values: synth),
+            DesignRunRow(id: "impl_1", isChild: true, state: implState, status: model.runStatusText(.implementation), values: impl),
         ]
     }
 }

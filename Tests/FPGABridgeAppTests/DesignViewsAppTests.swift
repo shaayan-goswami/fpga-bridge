@@ -188,7 +188,20 @@ final class DesignViewsAppTests: ExampleSandboxTestCase {
         try await until("the restored build") { model.designs[.synth] != nil }
         XCTAssertEqual(model.designs[.synth]?.cells.count, 1)
         XCTAssertEqual(Set(model.reports.map(\.fileName)), ["timing_summary.rpt", "synth_utilization.rpt"])
-        XCTAssertEqual(model.runs[.synthesis]?.status, .notStarted, "results may be older than the sources: only a run can mark it complete")
+        // As in Vivado, the runs show as done. The example's sources were written before this build folder, so not stale.
+        XCTAssertEqual(model.runs[.synthesis]?.status, .complete)
+        XCTAssertEqual(model.runs[.implementation]?.status, .complete, "a timing summary means implementation ran")
+        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, false)
+        XCTAssertFalse(model.bitstreamReady, "no .bit in build/")
+
+        // Edit a source after the build, and reopen: now out-of-date, as Vivado shows it.
+        let source = try XCTUnwrap(model.allSourcePaths.first { $0.hasSuffix(".v") })
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)],
+                                              ofItemAtPath: project.appendingPathComponent(source).path)
+        model.closeProject()
+        model.openProject(at: project)
+        try await until("the stale build") { model.runs[.synthesis]?.outOfDate == true }
+        XCTAssertEqual(model.runs[.implementation]?.outOfDate, true)
         XCTAssertNil(model.selectedTab.designStage, "restoring doesn't open any view")
     }
 
