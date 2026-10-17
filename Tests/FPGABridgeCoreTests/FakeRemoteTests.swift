@@ -193,6 +193,14 @@ class FakeRemoteTests: XCTestCase {
         XCTAssertTrue(summary.notes.isEmpty, "\(summary.notes)")
         XCTAssertEqual(summary.timing?.constraintsMet, true)
         XCTAssertEqual(summary.utilization?.usage(.lut)?.used, 12)
+
+        // And a record of what it was built from, next to the bitstream.
+        let manifest = try XCTUnwrap(BuildManifest.load(from: build))
+        XCTAssertEqual(Set(manifest.files.keys), ["src/top.v", "src/sub/alu.sv", "constraints/pins.xdc"])
+        XCTAssertEqual(manifest.vivadoVersion, "2023.2", "from the install path when the build wrote no design data")
+        XCTAssertEqual(manifest.buildMachine, "buildbox")
+        XCTAssertEqual(manifest.top, "top")
+        XCTAssertEqual(manifest.changes(project: project, root: root), [])
     }
 
     func testBuildCallOrderAndCommands() throws {

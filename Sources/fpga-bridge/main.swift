@@ -131,7 +131,15 @@ struct Build: ParsableCommand {
         let status = try Remote(config: config).build(project: project, root: root)
         if status != 0 { throw ExitCode(status) }
         print("")
-        print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+        let out = root.appendingPathComponent(Remote.localOutputDir)
+        print(BuildSummary.load(from: out).render())
+        if let manifest = BuildManifest.load(from: out) {
+            let changes = manifest.changes(project: project, root: root)
+            print("Sources    \(manifest.sourceID)" + (manifest.git.map { "   git \($0.commit.prefix(8))\($0.uncommittedChanges ? " + uncommitted changes" : "")" } ?? ""))
+            if !changes.isEmpty {
+                print("Warning: changed while building, so not in this bitstream: \(changes.joined(separator: ", ")). Build again to include them.")
+            }
+        }
     }
 }
 
@@ -369,6 +377,16 @@ struct Flash: ParsableCommand {
             path = try Programmer.bitstreamPath(for: project, root: root)
         }
 
+        // What the bitstream was built from, and anything that no longer matches, before it goes on the board.
+        let buildFolder = URL(fileURLWithPath: path).deletingLastPathComponent()
+        if let manifest = BuildManifest.load(from: buildFolder) {
+            let changes = project.map { manifest.changes(project: $0, root: root) } ?? []
+            let summary = manifest.summary(changes: changes, project: project, devicePart: nil)
+            for line in summary.lines { print(line) }
+            for warning in summary.warnings { print("Warning: \(warning)") }
+        } else {
+            print("No build record next to this bitstream, so what it was built from is unknown.")
+        }
         print("Programming \(selected?.displayName ?? "the connected board") with \(path)" + (persist ? " (flash)" : ""))
         fflush(stdout)  // so this line comes before the loader's output when piped
         let status = try programmer.program(bitstream: path, board: selected, target: persist ? .flash : .sram)

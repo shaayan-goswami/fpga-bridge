@@ -276,6 +276,10 @@ schematic, timing, utilization and the other reports.
 4. Select the device and click **Program Device…**. **Program Configuration Memory Device…** writes the board's flash
    instead, so the design stays after the power is turned off.
 
+The dialog shows what the bitstream was built from: when and where, the Vivado version, the board, and the git commit
+if the project is in a git repository. It warns if a file changed after the build, so the board would get an older
+version of your design; build again to include the change.
+
 ![The Hardware Manager after programming a Basys 3](images/hardware-manager.png)
 
 ### From Terminal

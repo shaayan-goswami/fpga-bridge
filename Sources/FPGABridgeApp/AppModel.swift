@@ -544,8 +544,11 @@ final class AppModel: ObservableObject {
                     if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { found[stage] = snapshot }
                 }
                 let files = LiveBackend.reports(in: out)
+                // The manifest says exactly what was built; an older build without one is judged by file dates.
+                let stale = BuildManifest.load(from: out).map { !$0.changes(project: project, root: directory).isEmpty }
+                    ?? AppModel.isStale(build: out, project: project, root: directory)
                 return (files, found, AppModel.completedSteps(reports: files.map(\.name), designs: Set(found.keys), out: out, top: project.top),
-                        AppModel.isStale(build: out, project: project, root: directory))
+                        stale)
             }.value
             guard let self, self.projectURL == directory, !files.isEmpty || !designs.isEmpty else { return }
             self.loadedBuildStamp = AppModel.buildStamp(out)
@@ -554,6 +557,19 @@ final class AppModel: ObservableObject {
                 for kind in [RunKind.synthesis, .implementation] where self.runs[kind]?.status == .complete { self.runs[kind]?.outOfDate = true }
             }
         }
+    }
+
+    /// A file saved while the build was running isn't in it, but finishing the build would otherwise mark the runs up
+    /// to date. The build's manifest says exactly what was sent; anything different on disk now keeps them out of date.
+    private func flagChangesMadeDuringTheBuild(log run: RunKind) async {
+        guard let directory = projectURL, let project,
+              let manifest = BuildManifest.load(from: directory.appendingPathComponent(Remote.localOutputDir)) else { return }
+        let changed = await Task.detached { manifest.changes(project: project, root: directory) }.value
+        guard !changed.isEmpty, projectURL == directory else { return }
+        markOutOfDate()
+        logs[run, default: []].append(ConsoleLine(
+            text: "WARNING: [FPGA Bridge] Changed while the build was running, so not in this result: \(changed.joined(separator: ", ")). Run it again to include them.",
+            kind: .warning))
     }
 
     /// Loads `build/` again if it changed since it was read: a build from the command line or another Mac while
@@ -824,6 +840,7 @@ final class AppModel: ObservableObject {
 
         apply(outcome)
         if let directory = projectURL { loadedBuildStamp = AppModel.buildStamp(directory.appendingPathComponent(Remote.localOutputDir)) }
+        await flagChangesMadeDuringTheBuild(log: run)
         lastOutcome = .complete
         switch step {
         case .synthesis: lastMessage = "synth_1 complete"

@@ -121,6 +121,11 @@ extension Remote {
         }
         try (script ?? project.buildScript(sources: sources, constraints: constraints))
             .write(to: stagedProject.appendingPathComponent("build.tcl"), atomically: true, encoding: .utf8)
+        // What is being built, fingerprinted from the copies that are sent (an edit made from now on isn't in them),
+        // for the manifest written next to the bitstream.
+        let sent = BuildManifest.fingerprint(sources + constraints + includes, root: stagedProject)
+            .merging(BuildManifest.fingerprint([Project.fileName], root: root)) { a, _ in a }
+        let git = fetchTo == nil ? nil : BuildManifest.gitState(of: root)
 
         // Take the lock before touching anything remote. The release is registered only after acquiring, so a
         // failed acquire never releases someone else's lock.
@@ -155,6 +160,10 @@ extension Remote {
             "scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + ["\(target):\(Remote.remoteDir)/\(jobName)/out", local.path],
             timeout: 300)
         guard down.succeeded else { throw RemoteError.ssh(down.stderr) }
+        let manifest = BuildManifest(project: project.name, top: project.top, part: project.part, board: project.board,
+                                     vivadoVersion: BuildManifest.vivadoVersion(out: local, vivadoPath: config.vivadoPath),
+                                     buildMachine: config.host, builtAt: Date(), files: sent, git: git)
+        try manifest.save(to: local)
         log("Results in \(fetchTo)/\n")
         return 0
     }

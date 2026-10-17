@@ -22,8 +22,69 @@ final class ScriptedBuildBackend: Backend, @unchecked Sendable {
     }
 }
 
+/// A build that records what it sent, as `Remote.build` does, and optionally has a source saved while it runs.
+final class ManifestBuildBackend: Backend, @unchecked Sendable {
+    let isDemo = false
+    let hostName = "buildbox"
+    let vivadoPath: String? = nil
+    let canStop = true
+    let editDuringBuild: Bool
+
+    init(editDuringBuild: Bool) { self.editDuringBuild = editDuringBuild }
+
+    func checkConnection() async -> ConnectionState { .connected("buildbox") }
+    func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async {}
+    func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
+        let files = BuildManifest.fingerprint((try? BuildManifest.inputs(of: project, root: directory)) ?? [], root: directory)
+        if editDuringBuild, let source = try? project.resolveSources(in: directory).first {
+            let url = directory.appendingPathComponent(source)
+            let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            try? (text + "\n// edited while building\n").write(to: url, atomically: true, encoding: .utf8)
+        }
+        let out = directory.appendingPathComponent(Remote.localOutputDir)
+        try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        for report in ["synth_utilization.rpt", "timing_summary.rpt"] {
+            try? "report".write(to: out.appendingPathComponent(report), atomically: true, encoding: .utf8)
+        }
+        try? BuildManifest(project: project.name, top: project.top, part: project.part, board: project.board, vivadoVersion: "2025.2",
+                           buildMachine: "buildbox", builtAt: Date(), files: files, git: nil).save(to: out)
+        return RunOutcome(completed: [.synthesis, .implementation, .bitstream])
+    }
+}
+
 @MainActor
 final class DesignViewsAppTests: ExampleSandboxTestCase {
+    func testAnEditSavedWhileTheBuildRunsLeavesTheResultOutOfDate() async throws {
+        let model = AppModel(backend: ManifestBuildBackend(editDuringBuild: true), persist: false)
+        model.openExampleProject()
+        model.run(.bitstream)
+        try await until("the build") { !model.isRunning && model.runs[.implementation]?.status == .complete }
+        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, true, "the edit isn't in this result")
+        XCTAssertEqual(model.runs[.implementation]?.outOfDate, true)
+        XCTAssertTrue(model.messages(for: .synthesis).contains { $0.kind == .warning && $0.text.contains("Changed while the build was running") }
+                      || model.messages(for: .implementation).contains { $0.kind == .warning && $0.text.contains("Changed while the build was running") },
+                      "and the log says why")
+    }
+
+    func testABuildNobodyTouchedIsUpToDate() async throws {
+        let model = AppModel(backend: ManifestBuildBackend(editDuringBuild: false), persist: false)
+        model.openExampleProject()
+        model.run(.bitstream)
+        try await until("the build") { !model.isRunning && model.runs[.implementation]?.status == .complete }
+        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, false)
+        XCTAssertEqual(model.runs[.implementation]?.outOfDate, false)
+
+        // Reopening reads the manifest, not file dates: saving a file again unchanged doesn't make the build stale.
+        let project = try XCTUnwrap(model.projectURL)
+        let source = try XCTUnwrap(model.allSourcePaths.first { $0.hasSuffix(".v") })
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)],
+                                              ofItemAtPath: project.appendingPathComponent(source).path)
+        model.closeProject()
+        model.openProject(at: project)
+        try await until("the restored build") { model.runs[.synthesis]?.status == .complete }
+        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, false, "same content, so still current")
+    }
+
     func until(_ what: String, _ condition: @escaping () -> Bool) async throws {
         for _ in 0..<500 {
             if condition() { return }

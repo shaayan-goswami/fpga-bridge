@@ -298,6 +298,9 @@ struct ProgramDeviceSheet: View {
     @Environment(\.dismiss) private var dismiss
     let kind: ProgramKind
     @State private var path = ""
+    /// What the chosen bitstream was built from, when its build left a manifest; `noRecord` when it didn't.
+    @State private var built: BuildManifest.Summary?
+    @State private var noRecord = false
 
     private var exists: Bool { FileManager.default.fileExists(atPath: path) }
 
@@ -338,6 +341,25 @@ struct ProgramDeviceSheet: View {
                 }
             }
 
+            if let built {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(built.lines, id: \.self) { Text($0) }
+                }
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                ForEach(built.warnings, id: \.self) { warning in
+                    Label(warning, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout)
+                        .foregroundStyle(Accent.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else if noRecord && exists {
+                Text("This bitstream has no build record next to it, so what it was built from is unknown.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
             if !path.isEmpty && !exists && !hardware.backend.isDemo {
                 Label("That file doesn't exist. Run Generate Bitstream first, or choose a .bit file.", systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
@@ -359,6 +381,24 @@ struct ProgramDeviceSheet: View {
         .padding(22)
         .frame(width: 540)
         .onAppear { if path.isEmpty { path = model.defaultBitstreamPath } }
+        .task(id: path) { await describe() }
+    }
+
+    /// Reads the manifest of the build the bitstream came from, and checks it against the project and the device.
+    private func describe() async {
+        let folder = URL(fileURLWithPath: path).deletingLastPathComponent()
+        guard !path.isEmpty, let manifest = BuildManifest.load(from: folder) else {
+            built = nil
+            noRecord = !path.isEmpty
+            return
+        }
+        let project = model.project, root = model.projectURL, part = hardware.selected?.device.partName
+        let summary = await Task.detached {
+            let changes = project.flatMap { p in root.map { manifest.changes(project: p, root: $0) } } ?? []
+            return manifest.summary(changes: changes, project: project, devicePart: part)
+        }.value
+        built = summary
+        noRecord = false
     }
 
     private func choose() {
