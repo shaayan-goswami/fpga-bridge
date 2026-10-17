@@ -3,3 +3,6 @@ design	rtl_1
 part	xc7a35tcpg236-1
 top	demo_top
 vivado	2025.2
+left_out	
+seconds	3.251
+seconds_props	2.864

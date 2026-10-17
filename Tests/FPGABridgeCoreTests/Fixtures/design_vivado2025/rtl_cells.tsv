@@ -1,84 +1,84 @@
-GND	GND	1
-VCC	VCC	1
-count0_i	RTL_AND	1
-count0_i__0	RTL_ADD0	1
-count1_i	RTL_INV	1
-count_reg[0]	RTL_REG_SYNC__BREG_5	1
-count_reg[1]	RTL_REG_SYNC__BREG_5	1
-count_reg[2]	RTL_REG_SYNC__BREG_5	1
-count_reg[3]	RTL_REG_SYNC__BREG_5	1
-count_reg[4]	RTL_REG_SYNC__BREG_5	1
-count_reg[5]	RTL_REG_SYNC__BREG_5	1
-count_reg[6]	RTL_REG_SYNC__BREG_5	1
-count_reg[7]	RTL_REG_SYNC__BREG_5	1
-dir_i	RTL_MUX2	1
-dir_i__0	RTL_ROM0	1
-dir_i__1	RTL_ROM0	1
-dir_i__2	RTL_MUX2	1
-dir_i__3	RTL_MUX2	1
-dir_reg	RTL_REG_SYNC__BREG_5	1
-led0_i	RTL_MUX1	1
-led[10]_OBUF_inst	OBUF	1
-led[11]_OBUF_inst	OBUF	1
-led[12]_OBUF_inst	OBUF	1
-led[13]_OBUF_inst	OBUF	1
-led[14]_OBUF_inst	OBUF	1
-led[15]_OBUF_inst	OBUF	1
-led[8]_OBUF_inst	OBUF	1
-led[9]_OBUF_inst	OBUF	1
-meta_reg[0]	RTL_REG__BREG_3	1
-meta_reg[1]	RTL_REG__BREG_3	1
-meta_reg[2]	RTL_REG__BREG_3	1
-scan0_i	RTL_LSHIFT	1
-scan0_i__0	RTL_RSHIFT	1
-scan_i	RTL_MUX1	1
-scan_reg[0]	RTL_REG_SYNC__BREG_6	1
-scan_reg[1]	RTL_REG_SYNC__BREG_6	1
-scan_reg[2]	RTL_REG_SYNC__BREG_6	1
-scan_reg[3]	RTL_REG_SYNC__BREG_6	1
-scan_reg[4]	RTL_REG_SYNC__BREG_6	1
-scan_reg[5]	RTL_REG_SYNC__BREG_6	1
-scan_reg[6]	RTL_REG_SYNC__BREG_6	1
-scan_reg[7]	RTL_REG_SYNC__BREG_6	1
-stable_reg[0]	RTL_REG__BREG_3	1
-stable_reg[1]	RTL_REG__BREG_3	1
-stable_reg[2]	RTL_REG__BREG_3	1
-sw[10]_IBUF_inst	IBUF	1
-sw[11]_IBUF_inst	IBUF	1
-sw[12]_IBUF_inst	IBUF	1
-sw[13]_IBUF_inst	IBUF	1
-sw[14]_IBUF_inst	IBUF	1
-sw[15]_IBUF_inst	IBUF	1
-sw[8]_IBUF_inst	IBUF	1
-sw[9]_IBUF_inst	IBUF	1
-u_tick	tick_gen	0
-u_tick/GND	GND	1
-u_tick/VCC	VCC	1
-u_tick/count0_i	RTL_ADD	1
-u_tick/count_i	RTL_MUX	1
-u_tick/count_reg[0]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[10]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[11]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[12]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[13]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[14]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[15]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[16]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[17]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[18]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[19]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[1]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[20]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[21]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[22]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[23]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[2]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[3]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[4]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[5]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[6]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[7]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[8]	RTL_REG_SYNC__BREG_1	1
-u_tick/count_reg[9]	RTL_REG_SYNC__BREG_1	1
-u_tick/tick_i	RTL_ROM	1
-u_tick/tick_reg	RTL_REG_SYNC__BREG_1	1
+GND	GND	1		
+VCC	VCC	1		
+count0_i	RTL_AND	1	src/demo_top.v	41
+count0_i__0	RTL_ADD0	1	src/demo_top.v	42
+count1_i	RTL_INV	1	src/demo_top.v	41
+count_reg[0]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[1]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[2]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[3]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[4]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[5]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[6]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+count_reg[7]	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	38
+dir_i	RTL_MUX2	1	src/demo_top.v	43
+dir_i__0	RTL_ROM0	1	src/demo_top.v	44
+dir_i__1	RTL_ROM0	1	src/demo_top.v	47
+dir_i__2	RTL_MUX2	1	src/demo_top.v	43
+dir_i__3	RTL_MUX2	1	src/demo_top.v	41
+dir_reg	RTL_REG_SYNC__BREG_5	1	src/demo_top.v	40
+led0_i	RTL_MUX1	1	src/demo_top.v	53
+led[10]_OBUF_inst	OBUF	1		
+led[11]_OBUF_inst	OBUF	1		
+led[12]_OBUF_inst	OBUF	1		
+led[13]_OBUF_inst	OBUF	1		
+led[14]_OBUF_inst	OBUF	1		
+led[15]_OBUF_inst	OBUF	1		
+led[8]_OBUF_inst	OBUF	1		
+led[9]_OBUF_inst	OBUF	1		
+meta_reg[0]	RTL_REG__BREG_3	1	src/demo_top.v	22
+meta_reg[1]	RTL_REG__BREG_3	1	src/demo_top.v	22
+meta_reg[2]	RTL_REG__BREG_3	1	src/demo_top.v	22
+scan0_i	RTL_LSHIFT	1	src/demo_top.v	45
+scan0_i__0	RTL_RSHIFT	1	src/demo_top.v	48
+scan_i	RTL_MUX1	1	src/demo_top.v	43
+scan_reg[0]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[1]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[2]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[3]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[4]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[5]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[6]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+scan_reg[7]	RTL_REG_SYNC__BREG_6	1	src/demo_top.v	39
+stable_reg[0]	RTL_REG__BREG_3	1	src/demo_top.v	23
+stable_reg[1]	RTL_REG__BREG_3	1	src/demo_top.v	23
+stable_reg[2]	RTL_REG__BREG_3	1	src/demo_top.v	23
+sw[10]_IBUF_inst	IBUF	1		
+sw[11]_IBUF_inst	IBUF	1		
+sw[12]_IBUF_inst	IBUF	1		
+sw[13]_IBUF_inst	IBUF	1		
+sw[14]_IBUF_inst	IBUF	1		
+sw[15]_IBUF_inst	IBUF	1		
+sw[8]_IBUF_inst	IBUF	1		
+sw[9]_IBUF_inst	IBUF	1		
+u_tick	tick_gen	0	src/demo_top.v	30
+u_tick/GND	GND	1		
+u_tick/VCC	VCC	1		
+u_tick/count0_i	RTL_ADD	1	src/tick_gen.v	20
+u_tick/count_i	RTL_MUX	1	src/tick_gen.v	16
+u_tick/count_reg[0]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[10]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[11]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[12]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[13]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[14]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[15]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[16]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[17]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[18]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[19]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[1]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[20]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[21]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[22]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[23]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[2]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[3]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[4]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[5]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[6]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[7]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[8]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/count_reg[9]	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	14
+u_tick/tick_i	RTL_ROM	1	src/tick_gen.v	16
+u_tick/tick_reg	RTL_REG_SYNC__BREG_1	1	src/tick_gen.v	15

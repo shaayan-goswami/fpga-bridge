@@ -1,124 +1,124 @@
-GND	GND	1
-VCC	VCC	1
-btnC_IBUF_inst	IBUF	1
-clk_IBUF_BUFG_inst	BUFG	1
-clk_IBUF_inst	IBUF	1
-count[0]_i_1	LUT1	1
-count[1]_i_1	LUT2	1
-count[2]_i_1	LUT3	1
-count[3]_i_1	LUT4	1
-count[4]_i_1	LUT5	1
-count[5]_i_1	LUT6	1
-count[6]_i_1	LUT2	1
-count[7]_i_1	LUT3	1
-count[7]_i_2	LUT6	1
-count_reg[0]	FDRE	1
-count_reg[1]	FDRE	1
-count_reg[2]	FDRE	1
-count_reg[3]	FDRE	1
-count_reg[4]	FDRE	1
-count_reg[5]	FDRE	1
-count_reg[6]	FDRE	1
-count_reg[7]	FDRE	1
-dir_reg	FDRE	1
-led_OBUF[0]_inst	OBUF	1
-led_OBUF[0]_inst_i_1	LUT3	1
-led_OBUF[10]_inst	OBUF	1
-led_OBUF[11]_inst	OBUF	1
-led_OBUF[12]_inst	OBUF	1
-led_OBUF[13]_inst	OBUF	1
-led_OBUF[14]_inst	OBUF	1
-led_OBUF[15]_inst	OBUF	1
-led_OBUF[1]_inst	OBUF	1
-led_OBUF[1]_inst_i_1	LUT3	1
-led_OBUF[2]_inst	OBUF	1
-led_OBUF[2]_inst_i_1	LUT3	1
-led_OBUF[3]_inst	OBUF	1
-led_OBUF[3]_inst_i_1	LUT3	1
-led_OBUF[4]_inst	OBUF	1
-led_OBUF[4]_inst_i_1	LUT3	1
-led_OBUF[5]_inst	OBUF	1
-led_OBUF[5]_inst_i_1	LUT3	1
-led_OBUF[6]_inst	OBUF	1
-led_OBUF[6]_inst_i_1	LUT3	1
-led_OBUF[7]_inst	OBUF	1
-led_OBUF[7]_inst_i_1	LUT3	1
-led_OBUF[8]_inst	OBUF	1
-led_OBUF[9]_inst	OBUF	1
-meta_reg[0]	FDRE	1
-meta_reg[1]	FDRE	1
-meta_reg[2]	FDRE	1
-scan[0]_i_1	LUT2	1
-scan[1]_i_1	LUT3	1
-scan[2]_i_1	LUT3	1
-scan[3]_i_1	LUT3	1
-scan[4]_i_1	LUT3	1
-scan[5]_i_1	LUT3	1
-scan[6]_i_1	LUT3	1
-scan[7]_i_2	LUT2	1
-scan_reg[0]	FDSE	1
-scan_reg[1]	FDRE	1
-scan_reg[2]	FDRE	1
-scan_reg[3]	FDRE	1
-scan_reg[4]	FDRE	1
-scan_reg[5]	FDRE	1
-scan_reg[6]	FDRE	1
-scan_reg[7]	FDRE	1
-stable_reg[0]	FDRE	1
-stable_reg[1]	FDRE	1
-stable_reg[2]	FDRE	1
-sw_IBUF[0]_inst	IBUF	1
-sw_IBUF[10]_inst	IBUF	1
-sw_IBUF[11]_inst	IBUF	1
-sw_IBUF[12]_inst	IBUF	1
-sw_IBUF[13]_inst	IBUF	1
-sw_IBUF[14]_inst	IBUF	1
-sw_IBUF[15]_inst	IBUF	1
-sw_IBUF[1]_inst	IBUF	1
-sw_IBUF[8]_inst	IBUF	1
-sw_IBUF[9]_inst	IBUF	1
-u_tick	tick_gen	0
-u_tick/GND	GND	1
-u_tick/VCC	VCC	1
-u_tick/count[0]_i_1__0	LUT5	1
-u_tick/count[0]_i_3	LUT6	1
-u_tick/count[0]_i_4	LUT6	1
-u_tick/count[0]_i_5	LUT6	1
-u_tick/count[0]_i_6	LUT6	1
-u_tick/count[0]_i_7	LUT1	1
-u_tick/count_reg[0]	FDRE	1
-u_tick/count_reg[0]_i_2	CARRY4	1
-u_tick/count_reg[10]	FDRE	1
-u_tick/count_reg[11]	FDRE	1
-u_tick/count_reg[12]	FDRE	1
-u_tick/count_reg[12]_i_1	CARRY4	1
-u_tick/count_reg[13]	FDRE	1
-u_tick/count_reg[14]	FDRE	1
-u_tick/count_reg[15]	FDRE	1
-u_tick/count_reg[16]	FDRE	1
-u_tick/count_reg[16]_i_1	CARRY4	1
-u_tick/count_reg[17]	FDRE	1
-u_tick/count_reg[18]	FDRE	1
-u_tick/count_reg[19]	FDRE	1
-u_tick/count_reg[1]	FDRE	1
-u_tick/count_reg[20]	FDRE	1
-u_tick/count_reg[20]_i_1	CARRY4	1
-u_tick/count_reg[21]	FDRE	1
-u_tick/count_reg[22]	FDRE	1
-u_tick/count_reg[23]	FDRE	1
-u_tick/count_reg[2]	FDRE	1
-u_tick/count_reg[3]	FDRE	1
-u_tick/count_reg[4]	FDRE	1
-u_tick/count_reg[4]_i_1	CARRY4	1
-u_tick/count_reg[5]	FDRE	1
-u_tick/count_reg[6]	FDRE	1
-u_tick/count_reg[7]	FDRE	1
-u_tick/count_reg[8]	FDRE	1
-u_tick/count_reg[8]_i_1	CARRY4	1
-u_tick/count_reg[9]	FDRE	1
-u_tick/dir_i_1	LUT4	1
-u_tick/dir_i_2	LUT5	1
-u_tick/dir_i_3	LUT6	1
-u_tick/scan[7]_i_1	LUT2	1
-u_tick/tick_i_1	LUT5	1
-u_tick/tick_reg	FDRE	1
+GND	GND	1		
+VCC	VCC	1		
+btnC_IBUF_inst	IBUF	1	src/demo_top.v	10
+clk_IBUF_BUFG_inst	BUFG	1	src/demo_top.v	10
+clk_IBUF_inst	IBUF	1	src/demo_top.v	10
+count[0]_i_1	LUT1	1	src/demo_top.v	27
+count[1]_i_1	LUT2	1	src/demo_top.v	27
+count[2]_i_1	LUT3	1	src/demo_top.v	27
+count[3]_i_1	LUT4	1	src/demo_top.v	27
+count[4]_i_1	LUT5	1	src/demo_top.v	27
+count[5]_i_1	LUT6	1	src/demo_top.v	27
+count[6]_i_1	LUT2	1	src/demo_top.v	27
+count[7]_i_1	LUT3	1	src/demo_top.v	27
+count[7]_i_2	LUT6	1	src/demo_top.v	27
+count_reg[0]	FDRE	1	src/demo_top.v	38
+count_reg[1]	FDRE	1	src/demo_top.v	38
+count_reg[2]	FDRE	1	src/demo_top.v	38
+count_reg[3]	FDRE	1	src/demo_top.v	38
+count_reg[4]	FDRE	1	src/demo_top.v	38
+count_reg[5]	FDRE	1	src/demo_top.v	38
+count_reg[6]	FDRE	1	src/demo_top.v	38
+count_reg[7]	FDRE	1	src/demo_top.v	38
+dir_reg	FDRE	1	src/demo_top.v	40
+led_OBUF[0]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[0]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[10]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[11]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[12]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[13]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[14]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[15]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[1]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[1]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[2]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[2]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[3]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[3]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[4]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[4]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[5]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[5]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[6]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[6]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[7]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[7]_inst_i_1	LUT3	1	src/demo_top.v	27
+led_OBUF[8]_inst	OBUF	1	src/demo_top.v	10
+led_OBUF[9]_inst	OBUF	1	src/demo_top.v	10
+meta_reg[0]	FDRE	1	src/demo_top.v	22
+meta_reg[1]	FDRE	1	src/demo_top.v	22
+meta_reg[2]	FDRE	1	src/demo_top.v	22
+scan[0]_i_1	LUT2	1	src/demo_top.v	27
+scan[1]_i_1	LUT3	1	src/demo_top.v	27
+scan[2]_i_1	LUT3	1	src/demo_top.v	27
+scan[3]_i_1	LUT3	1	src/demo_top.v	27
+scan[4]_i_1	LUT3	1	src/demo_top.v	27
+scan[5]_i_1	LUT3	1	src/demo_top.v	27
+scan[6]_i_1	LUT3	1	src/demo_top.v	27
+scan[7]_i_2	LUT2	1	src/demo_top.v	27
+scan_reg[0]	FDSE	1	src/demo_top.v	39
+scan_reg[1]	FDRE	1	src/demo_top.v	39
+scan_reg[2]	FDRE	1	src/demo_top.v	39
+scan_reg[3]	FDRE	1	src/demo_top.v	39
+scan_reg[4]	FDRE	1	src/demo_top.v	39
+scan_reg[5]	FDRE	1	src/demo_top.v	39
+scan_reg[6]	FDRE	1	src/demo_top.v	39
+scan_reg[7]	FDRE	1	src/demo_top.v	39
+stable_reg[0]	FDRE	1	src/demo_top.v	23
+stable_reg[1]	FDRE	1	src/demo_top.v	23
+stable_reg[2]	FDRE	1	src/demo_top.v	23
+sw_IBUF[0]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[10]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[11]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[12]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[13]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[14]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[15]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[1]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[8]_inst	IBUF	1	src/demo_top.v	10
+sw_IBUF[9]_inst	IBUF	1	src/demo_top.v	10
+u_tick	tick_gen	0	src/demo_top.v	30
+u_tick/GND	GND	1		
+u_tick/VCC	VCC	1		
+u_tick/count[0]_i_1__0	LUT5	1	src/demo_top.v	27
+u_tick/count[0]_i_3	LUT6	1	src/demo_top.v	27
+u_tick/count[0]_i_4	LUT6	1	src/demo_top.v	27
+u_tick/count[0]_i_5	LUT6	1	src/demo_top.v	27
+u_tick/count[0]_i_6	LUT6	1	src/demo_top.v	27
+u_tick/count[0]_i_7	LUT1	1	src/demo_top.v	27
+u_tick/count_reg[0]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[0]_i_2	CARRY4	1	src/demo_top.v	27
+u_tick/count_reg[10]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[11]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[12]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[12]_i_1	CARRY4	1	src/demo_top.v	27
+u_tick/count_reg[13]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[14]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[15]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[16]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[16]_i_1	CARRY4	1	src/demo_top.v	27
+u_tick/count_reg[17]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[18]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[19]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[1]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[20]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[20]_i_1	CARRY4	1	src/demo_top.v	27
+u_tick/count_reg[21]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[22]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[23]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[2]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[3]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[4]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[4]_i_1	CARRY4	1	src/demo_top.v	27
+u_tick/count_reg[5]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[6]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[7]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[8]	FDRE	1	src/tick_gen.v	14
+u_tick/count_reg[8]_i_1	CARRY4	1	src/demo_top.v	27
+u_tick/count_reg[9]	FDRE	1	src/tick_gen.v	14
+u_tick/dir_i_1	LUT4	1	src/demo_top.v	40
+u_tick/dir_i_2	LUT5	1	src/demo_top.v	27
+u_tick/dir_i_3	LUT6	1	src/demo_top.v	27
+u_tick/scan[7]_i_1	LUT2	1	src/demo_top.v	27
+u_tick/tick_i_1	LUT5	1	src/tick_gen.v	15
+u_tick/tick_reg	FDRE	1	src/tick_gen.v	15

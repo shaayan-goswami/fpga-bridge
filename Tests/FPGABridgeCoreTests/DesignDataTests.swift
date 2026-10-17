@@ -2,8 +2,8 @@ import XCTest
 @testable import FPGABridgeCore
 
 final class DesignDataTests: XCTestCase {
-    /// What Vivado 2025.2 wrote for the demo_top design on a Basys 3 (see Fixtures/design_vivado2025). Windows wrote
-    /// these with CR LF line endings, which is exactly what the parser has to cope with.
+    /// What Vivado 2025.2 wrote for the demo_top design on a Basys 3 (see Fixtures/design_vivado2025). The build now
+    /// writes plain line endings; older builds wrote CR LF, which the inline tests below still cover.
     var fixtureDirectory: URL {
         get throws {
             try XCTUnwrap(Bundle.module.url(forResource: "design_vivado2025", withExtension: nil, subdirectory: "Fixtures"))
@@ -16,7 +16,7 @@ final class DesignDataTests: XCTestCase {
 
     func testTheSynthesizedDesignFromRealVivado() throws {
         let s = try snapshot(.synth)
-        XCTAssertEqual(s.info, DesignInfo(stage: "synth", design: "design_1", part: "xc7a35tcpg236-1", top: "demo_top", vivado: "2025.2"))
+        XCTAssertEqual(s.info, DesignInfo(stage: "synth", design: "design_1", part: "xc7a35tcpg236-1", top: "demo_top", vivado: "2025.2", leftOut: []))
         XCTAssertEqual(s.cells.count, 124)
         XCTAssertEqual(s.ports.count, 34)
         XCTAssertEqual(s.root.name, "demo_top")
