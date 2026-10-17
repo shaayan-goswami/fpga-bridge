@@ -37,7 +37,7 @@
           "glass" : true,
           "image-name" : "cpu-layer-3-die.svg",
           "name" : "cpu-layer-3-die",
-          "opacity" : 0.5,
+          "opacity" : 0,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
@@ -67,7 +67,7 @@
           "glass" : true,
           "image-name" : "cpu-layer-2-body.svg",
           "name" : "cpu-layer-2-body",
-          "opacity" : 0.5,
+          "opacity" : 0.25,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
@@ -100,7 +100,7 @@
           "glass" : true,
           "image-name" : "cpu-layer-1-pins.svg",
           "name" : "cpu-layer-1-pins",
-          "opacity" : 0.5,
+          "opacity" : 0.25,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
