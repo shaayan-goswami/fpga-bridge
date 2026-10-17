@@ -13,9 +13,6 @@ public enum BuildOS: String, Codable, CaseIterable, Sendable {
     }
 
     public var displayName: String { self == .windows ? "Windows" : "Linux" }
-
-    /// What the machine's Vivado launcher is called.
-    public var vivadoExecutable: String { self == .windows ? "vivado.bat" : "vivado" }
 }
 
 /// The command lines fpga-bridge sends to the build machine over SSH. Windows lines run through `cmd.exe`; Linux

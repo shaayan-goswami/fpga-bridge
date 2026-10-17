@@ -243,6 +243,8 @@ final class DesignViewsAppTests: ExampleSandboxTestCase {
         XCTAssertTrue(FlowItem.runSynthesis.needsVivado && FlowItem.runLinter.needsVivado && FlowItem.ipCatalog.needsVivado)
         XCTAssertFalse(FlowItem.runSimulation.needsVivado || FlowItem.openHardwareManager.needsVivado
                        || FlowItem.openSynthesizedDesign.needsVivado || FlowItem.languageTemplates.needsVivado)
+        let broken = await LocalBackend(configProblem: "config.json can't be used: bad JSON").checkConnection()
+        XCTAssertEqual(broken, .offline("config.json can't be used: bad JSON"), "a broken config says so rather than passing for none")
         let lint = await LocalBackend().lint(project: try XCTUnwrap(model.project), directory: try XCTUnwrap(model.projectURL)) { _ in }
         XCTAssertEqual(lint, .failure(LintFailure(message: NoBuildMachine.message)))
         do {

@@ -302,7 +302,8 @@ final class LineNumberGutter: NSView {
 
         // The first visible line is one more than the number of line breaks above it.
         var number = 1
-        if chars.location > 0 { number += text.substring(to: chars.location).filter { $0 == "\n" }.count }
+        // Count line breaks the way lineRange(for:) sees them: a CR LF from Windows is one Character that isn't "\n".
+        if chars.location > 0 { number += text.substring(to: chars.location).filter(\.isNewline).count }
 
         var index = chars.location
         while index < text.length, index <= NSMaxRange(chars) {

@@ -1,6 +1,30 @@
 import FPGABridgeCore
 import SwiftUI
 
+/// The strip across the top of the Hardware Manager and the Simulation view: what state it is in, and what to do next.
+struct StatusBanner<Icon: View, Actions: View>: View {
+    let title: String
+    let detail: String?
+    let tint: Color
+    @ViewBuilder var icon: () -> Icon
+    @ViewBuilder var actions: () -> Actions
+
+    var body: some View {
+        HStack(spacing: 10) {
+            icon()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.callout.weight(.semibold))
+                if let detail { Text(detail).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
+            }
+            Spacer(minLength: 12)
+            actions()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(tint.opacity(0.10))
+    }
+}
+
 /// A rounded panel used on the Project Summary, in the style of macOS System Settings.
 struct Card<Content: View, Accessory: View>: View {
     let title: String

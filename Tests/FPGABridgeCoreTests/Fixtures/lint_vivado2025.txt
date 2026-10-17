@@ -9,11 +9,11 @@ INFO: [Synth 8-7075] Helper process launched with PID 28224
 Starting Synthesize : Time (s): cpu = 00:00:06 ; elapsed = 00:00:07 . Memory (MB): peak = 1070.863 ; gain = 537.336
 ---------------------------------------------------------------------------------
 Clean up Linter database...
-INFO: [Synth 8-6157] synthesizing module 'demo_top' [C:/Users/shaay/probe_rpt_src/demo_top.v:10]
-INFO: [Synth 8-6157] synthesizing module 'tick_gen' [C:/Users/shaay/probe_rpt_src/tick_gen.v:3]
+INFO: [Synth 8-6157] synthesizing module 'demo_top' [C:/Users/builder/probe_rpt_src/demo_top.v:10]
+INFO: [Synth 8-6157] synthesizing module 'tick_gen' [C:/Users/builder/probe_rpt_src/tick_gen.v:3]
 	Parameter DIVIDE bound to: 12500000 - type: integer 
-INFO: [Synth 8-6155] done synthesizing module 'tick_gen' (1#1) [C:/Users/shaay/probe_rpt_src/tick_gen.v:3]
-INFO: [Synth 8-6155] done synthesizing module 'demo_top' (2#1) [C:/Users/shaay/probe_rpt_src/demo_top.v:10]
+INFO: [Synth 8-6155] done synthesizing module 'tick_gen' (1#1) [C:/Users/builder/probe_rpt_src/tick_gen.v:3]
+INFO: [Synth 8-6155] done synthesizing module 'demo_top' (2#1) [C:/Users/builder/probe_rpt_src/demo_top.v:10]
 ---------------------------------------------------------------------------------
 Finished Synthesize : Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1188.965 ; gain = 655.438
 ---------------------------------------------------------------------------------

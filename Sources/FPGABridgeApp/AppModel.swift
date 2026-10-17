@@ -95,20 +95,26 @@ final class AppModel: ObservableObject {
         self.simulation = SimulationManager(backend: simulation)
         self.persist = persist
         recentProjects = loadRecents()
-        tclLines = [ConsoleLine(text: "# FPGA Bridge Tcl console. Commands run in Vivado on the build machine.", kind: .output)]
+        tclLines = [ConsoleLine(text: "# Tcl console. What you type runs in Vivado on the build machine; the app's own actions are shown as the Vivado command each stands for.", kind: .output)]
         self.hardware.console = { [weak self] text, kind in self?.tclLines.append(ConsoleLine(text: text, kind: kind)) }
         self.simulation.console = { [weak self] text, kind in self?.tclLines.append(ConsoleLine(text: text, kind: kind)) }
     }
 
     static func make() -> AppModel {
-        if !DebugHooks.forceDemo, let config = try? BridgeConfig.load() {
-            return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), simulation: LiveSimulation(),
-                            ips: LiveIPBackend(config: config), persist: DebugHooks.persistRecents)
-        }
-        // No build machine: editing, simulation (Icarus) and programming (openFPGALoader) are all on this Mac, so
-        // they stay real; only Vivado's steps are off.
         if !DebugHooks.forceDemo {
-            return AppModel(backend: LocalBackend(), hardware: LiveHardware(), simulation: LiveSimulation(),
+            // No build machine: editing, simulation (Icarus) and programming (openFPGALoader) are all on this Mac, so
+            // they stay real; only Vivado's steps are off. A config that exists but can't be used says why.
+            let problem: String?
+            do {
+                let config = try BridgeConfig.load()
+                return AppModel(backend: LiveBackend(config: config), hardware: LiveHardware(), simulation: LiveSimulation(),
+                                ips: LiveIPBackend(config: config), persist: DebugHooks.persistRecents)
+            } catch ConfigError.missing {
+                problem = nil
+            } catch {
+                problem = "\(BridgeConfig.defaultURL.path) can't be used: \(error.userMessage)"
+            }
+            return AppModel(backend: LocalBackend(configProblem: problem), hardware: LiveHardware(), simulation: LiveSimulation(),
                             ips: LocalIPBackend(), persist: DebugHooks.persistRecents)
         }
         return AppModel(backend: DemoBackend(speed: DebugHooks.demoSpeed), hardware: DemoHardware(speed: DebugHooks.demoSpeed),

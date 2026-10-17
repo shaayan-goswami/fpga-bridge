@@ -101,6 +101,7 @@ extension Remote {
         let log: @Sendable (String) -> Void = captured ?? { print($0, terminator: "") }
         let sources = try project.resolveSources(in: root)
         let constraints = try project.resolveConstraints(in: root)
+        let includes = try project.resolveIncludeFiles(in: root).filter { !sources.contains($0) }
         guard !sources.isEmpty else {
             throw ProjectError.invalid("no design source files found. Add at least one .v, .sv or .vhd file")
         }
@@ -113,7 +114,7 @@ extension Remote {
         try FileManager.default.createDirectory(at: stagedProject, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: stage) }
 
-        for file in sources + constraints {
+        for file in sources + constraints + includes {
             let dest = stagedProject.appendingPathComponent(file)
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: root.appendingPathComponent(file), to: dest)
@@ -130,7 +131,7 @@ extension Remote {
         let prep = try exec(commands.prep(jobDir: remoteProject))
         guard prep.succeeded else { throw RemoteError.ssh(prep.stderr) }
 
-        log("Copying \(sources.count + constraints.count) files to \(config.host)...\n")
+        log("Copying \(sources.count + constraints.count + includes.count) files to \(config.host)...\n")
         let up = try Shell.run(
             "scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + [stagedProject.path, "\(target):\(Remote.remoteDir)/"],
             timeout: 120)

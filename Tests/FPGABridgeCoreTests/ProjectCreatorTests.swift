@@ -215,6 +215,13 @@ final class ProjectCreatorTests: XCTestCase {
         XCTAssertEqual(try ProjectCreator.pickTop(from: ["module a; b u (); endmodule", "module b; a u (); endmodule"]), "a")
     }
 
+    func testFilesSavedOnWindowsWork() throws {
+        // CR LF is one Character but two UTF-16 units: a regex match's offset counted as Characters ran past the end.
+        let blank = String(repeating: "\r\n", count: 200)
+        let top = try ProjectCreator.pickTop(from: ["module core;\r\nendmodule\r\n", "module board_top;\(blank)    core u_core ();\r\nendmodule\r\n"])
+        XCTAssertEqual(top, "board_top")
+    }
+
     func testNoModulesIsAnError() {
         XCTAssertThrowsError(try ProjectCreator.pickTop(from: ["// nothing here"]))
     }

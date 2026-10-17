@@ -80,18 +80,7 @@ private struct TargetBanner: View {
     @EnvironmentObject private var hardware: HardwareManager
 
     var body: some View {
-        HStack(spacing: 10) {
-            icon
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.callout.weight(.semibold))
-                if let detail { Text(detail).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-            }
-            Spacer(minLength: 12)
-            actions
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(tint.opacity(0.10))
+        StatusBanner(title: title, detail: detail, tint: tint) { icon } actions: { actions }
     }
 
     @ViewBuilder private var icon: some View {

@@ -24,6 +24,15 @@ final class EditingTests: XCTestCase {
         XCTAssertEqual(restored.text, text, "toggling twice must give back the original")
     }
 
+    func testWindowsLineEndingsKeepTheSelectionOnTheLines() {
+        let text = "wire a;\r\nwire b;\r\n"
+        let all = NSRange(location: 0, length: (text as NSString).length)
+        let r = CommentToggler.toggle(text, selection: all, language: .verilog)
+        XCTAssertEqual(r.text, "// wire a;\r\n// wire b;\r\n")
+        XCTAssertEqual(r.selection, NSRange(location: 0, length: (r.text as NSString).length - 1), "the last line break isn't selected")
+        XCTAssertEqual(CommentToggler.toggle(r.text, selection: r.selection, language: .verilog).text, text)
+    }
+
     func testMixedSelectionCommentsEverythingRatherThanUncommentingSome() {
         let r = CommentToggler.toggle("// a\nb\n", selection: NSRange(location: 0, length: 7), language: .verilog)
         XCTAssertEqual(r.text, "// // a\n// b\n")

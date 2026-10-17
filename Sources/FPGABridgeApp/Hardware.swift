@@ -121,7 +121,6 @@ final class HardwareManager: ObservableObject {
     var console: (String, ConsoleLine.Kind) -> Void = { _, _ in }
 
     private var buffer = LineBuffer()
-    private var programTask: Task<Bool, Never>?
 
     init(backend: HardwareBackend) { self.backend = backend }
 

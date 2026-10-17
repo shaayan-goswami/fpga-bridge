@@ -124,8 +124,12 @@ final class LocalBackend: Backend, Sendable {
     let hostName = "No build machine"
     let vivadoPath: String? = nil
     let canStop = false
+    /// Why the config on this Mac couldn't be used, when there is one.
+    let configProblem: String?
 
-    func checkConnection() async -> ConnectionState { .notConfigured }
+    init(configProblem: String? = nil) { self.configProblem = configProblem }
+
+    func checkConnection() async -> ConnectionState { configProblem.map { .offline($0) } ?? .notConfigured }
 
     func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
         log("ERROR: \(NoBuildMachine.message)\n")

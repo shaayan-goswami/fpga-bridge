@@ -290,8 +290,9 @@ public enum ProjectCreator {
             let matches = (try? NSRegularExpression(pattern: pattern))?
                 .matches(in: all, range: NSRange(all.startIndex..., in: all)) ?? []
             return matches.contains { match in
-                let start = all.index(all.startIndex, offsetBy: match.range.location)
-                let before = all[..<start].trimmingCharacters(in: .whitespacesAndNewlines)
+                // NSRange counts UTF-16 units, not Characters (CR LF is two units but one Character).
+                guard let range = Range(match.range, in: all) else { return false }
+                let before = all[..<range.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
                 return !before.hasSuffix("module") && !before.hasSuffix("macromodule")
             }
         })

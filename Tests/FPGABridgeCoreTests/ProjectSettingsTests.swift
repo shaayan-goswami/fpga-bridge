@@ -73,7 +73,35 @@ final class ProjectSettingsTests: XCTestCase {
             $0.language.generics = ["WIDTH=10"]
             $0.language.includeDirectories = ["inc", "more inc"]
         }.first { $0.hasPrefix("synth_design -top") }
-        XCTAssertEqual(line, "synth_design -top top -part xc7a35tcpg236-1 -verilog_define FAST -verilog_define LEVEL=3 -generic WIDTH=10 -include_dirs {inc more inc}")
+        // Each folder braced: "more inc" is one folder, not two.
+        XCTAssertEqual(line, "synth_design -top top -part xc7a35tcpg236-1 -verilog_define FAST -verilog_define LEVEL=3 -generic WIDTH=10 -include_dirs {{inc} {more inc}}")
+    }
+
+    func testHeadersAreIncludedNotReadAndTheirFoldersAreSearched() {
+        // Vivado's project mode treats .vh/.svh as headers: pulled in by `include, never compiled on their own.
+        let project = Project(name: "p", top: "top", part: "xc7a35tcpg236-1", sources: ["src"], constraints: [])
+        let lines = project.buildScript(sources: ["common/defs.svh", "src/params.vh", "src/top.v", "src/core.sv"], constraints: []).split(separator: "\n")
+        XCTAssertFalse(lines.contains { $0.contains("params.vh") || $0.contains("defs.svh") }, "no read_verilog of a header")
+        XCTAssertTrue(lines.contains("read_verilog {src/top.v}"))
+        XCTAssertTrue(lines.contains("read_verilog -sv {src/core.sv}"))
+        XCTAssertTrue(lines.contains { $0.hasPrefix("synth_design -top") && $0.hasSuffix("-include_dirs {{common} {src}}") },
+                      "a header can be included from a file in another folder")
+        let plain = project.buildScript(sources: ["src/top.v"], constraints: [])
+        XCTAssertFalse(plain.contains("-include_dirs"), "no headers, no include folders: the script is as it always was")
+    }
+
+    func testTheIncludeFoldersAreUploaded() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("inc-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        for file in ["src/top.v", "inc/defs.vh", "inc/sub/more.svh", "inc/notes.txt", "my headers/space.vh"] {
+            let url = root.appendingPathComponent(file)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try "x".write(to: url, atomically: true, encoding: .utf8)
+        }
+        var settings = ProjectSettings()
+        settings.language.includeDirectories = ["inc", "my headers"]
+        let project = Project(name: "p", top: "top", part: "x", sources: ["src"], constraints: [], settings: settings)
+        XCTAssertEqual(try project.resolveIncludeFiles(in: root), ["inc/defs.vh", "inc/sub/more.svh", "my headers/space.vh"])
     }
 
     func testImplementationStepsAndDirectives() {
@@ -294,7 +322,7 @@ final class ProjectSettingsTests: XCTestCase {
             file mkdir out
             read_verilog {src/probe.v}
             read_xdc {constraints/probe.xdc}
-            synth_design -top probe -part xc7a35tcpg236-1 -directive RuntimeOptimized -flatten_hierarchy full -fsm_extraction one_hot -retiming -resource_sharing off -verilog_define FAST -verilog_define LEVEL=3 -generic WIDTH=10 -include_dirs {inc}
+            synth_design -top probe -part xc7a35tcpg236-1 -directive RuntimeOptimized -flatten_hierarchy full -fsm_extraction one_hot -retiming -resource_sharing off -verilog_define FAST -verilog_define LEVEL=3 -generic WIDTH=10 -include_dirs {{inc}}
             opt_design -directive Explore
             place_design -directive Explore
             phys_opt_design -directive Explore

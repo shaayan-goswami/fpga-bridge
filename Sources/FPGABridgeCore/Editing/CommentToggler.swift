@@ -23,7 +23,8 @@ public enum CommentToggler {
         if touched.length > 0, ns.character(at: NSMaxRange(touched) - 1) == 10 { touched.length -= 1 }
         let lineRange = ns.lineRange(for: touched)
         let block = ns.substring(with: lineRange)
-        let hasTrailingNewline = block.hasSuffix("\n")
+        // Checked in UTF-16: a Windows CR LF is one Character, so `hasSuffix("\n")` would say no.
+        let hasTrailingNewline = block.utf16.last == 10
         var lines = block.components(separatedBy: "\n")
         if hasTrailingNewline { lines.removeLast() }
 

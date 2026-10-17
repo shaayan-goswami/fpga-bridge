@@ -48,7 +48,9 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Hardware Manager**: Auto Connect, device properties, Program Device and Program Configuration Memory Device
 - [x] **Language Templates**: about 50 Verilog, SystemVerilog, VHDL and XDC templates with search, preview and Insert Template
 - [x] **Run Simulation** with a log, Stop, and a **native waveform viewer** (zoom, pan, cursor, bus radix, signal picker)
-- [x] **Elaborated, Synthesized and Implemented Design**: the netlist hierarchy with cells, the I/O ports with pins and standards, utilization by module, and the reports of each stage (timing, clocks, power, DRC, methodology, I/O, route status), written by the build and restored when you reopen a project
+- [x] **Elaborated, Synthesized and Implemented Design**: the netlist hierarchy with cells, the I/O ports with pins and standards, utilization by module, and the reports of each stage (timing, clocks, power, DRC, methodology, I/O, route status), written by the build and restored when you reopen a project. They open with the build machine asleep: everything is saved on the Mac at build time
+- [x] **Netlist window, Properties and Schematic**: browse cells, nets and pins, see every Vivado property, and draw any level as a schematic (Vivado's symbols, modules opened in place, Schematic of selection with F4, Go To Source)
+- [x] **Run Linter**: Vivado's RTL linter, with each finding linked to its source line
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
 - [x] Liquid Glass design, light and dark mode
@@ -56,8 +58,8 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 
 **Not built yet** (greyed out or missing; see the backlog for the full list)
 - [ ] Separate synthesis and implementation runs with checkpoints, Launch Runs, run strategies, and stopping a live build from the app
-- [ ] Most reports (timing paths, power, DRC, methodology, clock reports) and their option dialogs
-- [ ] The schematic, device view and pin planning by dragging, and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
+- [ ] The report option dialogs (each report is run once, with Vivado's defaults, at build time)
+- [ ] The device view and pin planning by dragging, and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
 - [ ] Save As, Archive, Write Tcl, Find and Replace in Files, Sources context menus
 - [ ] VHDL and post-synthesis simulation, waveform markers and saved layouts
 - [ ] Zynq boards and other FPGA vendors
