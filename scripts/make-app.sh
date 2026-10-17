@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds "FPGA Bridge.app" (release, ad-hoc signed) into dist/.
+# Builds "FPGA Bridge.app" (release, ad-hoc signed) into dist/, with the fpga-bridge command-line tool inside it
+# (Contents/MacOS/fpga-bridge), so one download has both.
 #   scripts/make-app.sh
 # Set SCRATCH_PATH to build somewhere other than .build (needed when the repo is under ~/Desktop, where Finder
 # attributes break code signing of build products).
@@ -8,6 +9,7 @@ cd "$(dirname "$0")/.."
 
 scratch=${SCRATCH_PATH:-.build}
 swift build -c release --product "FPGA Bridge" --scratch-path "$scratch"
+swift build -c release --product fpga-bridge --scratch-path "$scratch"
 bin=$(swift build -c release --product "FPGA Bridge" --scratch-path "$scratch" --show-bin-path)
 
 app="dist/FPGA Bridge.app"
@@ -15,6 +17,7 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
 cp "$bin/FPGA Bridge" "$app/Contents/MacOS/FPGA Bridge"
+cp "$bin/fpga-bridge" "$app/Contents/MacOS/fpga-bridge"
 cp Sources/FPGABridgeApp/Resources/AppIcon-*.png "$app/Contents/Resources/"
 
 # The icon is an Icon Composer document. actool compiles it, as Xcode does, into Assets.car (the Liquid Glass icon
@@ -74,5 +77,6 @@ for nested in "$app"/Contents/Resources/*.bundle; do
   fi
 done
 xattr -cr "$app"
+codesign --force --sign - "$app/Contents/MacOS/fpga-bridge"
 codesign --force --sign - "$app"
 echo "Built $app"

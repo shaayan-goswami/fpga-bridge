@@ -2,9 +2,19 @@
 
 Build FPGA designs from a Mac, even though Vivado doesn't run on macOS.
 
-fpga-bridge lets you write, simulate, and flash on your Mac while a remote Windows or Linux machine with Vivado does the heavy build in the background. It comes as a command-line tool (`fpga-bridge`) and a native Mac app (**FPGA Bridge**) that mirrors Vivado's layout and dialogs, so it feels familiar if you already know Vivado.
+**[Getting started: install and set up FPGA Bridge on your Mac →](docs/getting-started.md)**
+&nbsp;·&nbsp; [Download the app](https://github.com/shaayan-goswami/fpga-bridge/releases/latest)
+&nbsp;·&nbsp; [Help test other boards](docs/getting-started.md#help-test-other-boards)
 
-> **Status:** early development, but the whole path works on real hardware: a design written on a Mac, built by Vivado 2025.2 on a Windows machine over Tailscale and SSH, fetched back, simulated, and flashed to a Digilent Basys 3. That is the only board and the only Vivado version tested on real hardware. A Linux build machine is supported and tested against a real shell and on a Linux CI runner, but not yet on a real Linux machine running Vivado. The app's own Run buttons (as opposed to the command line) have not yet been exercised against a real build machine. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done and what is not.
+fpga-bridge lets you write, simulate, and flash on your Mac while a remote Windows or Linux machine with Vivado does the heavy build in the background. It comes as a native Mac app (**FPGA Bridge**) that mirrors Vivado's layout and dialogs, so it feels familiar if you already know Vivado, and a command-line tool (`fpga-bridge`) inside it.
+
+![The schematic of an elaborated design, drawn with Vivado's symbols](docs/images/schematic.png)
+
+| Simulation and waveforms | Programming the board |
+| --- | --- |
+| ![The waveform viewer after a simulation](docs/images/waveform.png) | ![The Hardware Manager after programming a Basys 3](docs/images/hardware-manager.png) |
+
+> **Tested boards: only the Digilent Basys 3 so far.** The whole path works on real hardware: a design written on a Mac, built by Vivado 2025.2 on a Windows machine over Tailscale and SSH, fetched back, simulated, and flashed to a Basys 3. Seven more Digilent boards are set up but untested. **If you have one, please [try it and report back](docs/getting-started.md#help-test-other-boards).** A Linux build machine is supported and tested against a real shell, but not yet with Vivado on real hardware. See [BACKLOG.md](BACKLOG.md) and [docs/vivado-parity.md](docs/vivado-parity.md) for what is done and what is not.
 
 ## Why
 
@@ -68,7 +78,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 ## Requirements
 
 **On your Mac**
-- macOS 14 or later, and the Swift toolchain (Xcode) to build from source
+- A Mac with Apple silicon (M1 or later) and macOS 14 or later. Building from source also needs Xcode.
 - [Homebrew](https://brew.sh), then: `brew install openfpgaloader icarus-verilog surfer`
   - openFPGALoader flashes the board (check that your board is on its supported list)
   - Icarus Verilog runs simulations; Surfer is an optional external waveform viewer (the app has its own)
@@ -83,62 +93,13 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 **Hardware**
 - An FPGA board supported by both Vivado and openFPGALoader, plus a USB data cable. The 8 boards in [docs/boards.md](docs/boards.md) are set up; for another AMD/Xilinx part, pass `--part`.
 
-## Quick Start
+## Install
 
-**1. Build the tools**
+Follow **[Getting started](docs/getting-started.md)**. It covers each step with links: downloading the app,
+installing Homebrew, Icarus Verilog and openFPGALoader, installing Vivado and Tailscale on the Windows PC, running
+the setup script, connecting the two, and building and programming your first design.
 
-```sh
-git clone <this repository> && cd fpga-bridge
-swift build -c release
-scripts/make-app.sh            # optional: builds dist/FPGA Bridge.app
-```
-
-The command is `.build/release/fpga-bridge`; the examples below call it `fpga-bridge`.
-
-**2. Give your Mac an SSH key** (skip if you already have `~/.ssh/id_ed25519`)
-
-```sh
-ssh-keygen -t ed25519
-cat ~/.ssh/id_ed25519.pub
-```
-
-**3. Set up the build machine.** Copy the setup script for its operating system to it. Install Tailscale on both machines first if you want to build away from home.
-
-*Windows:* run `windows/setup.ps1` from an elevated (Administrator) PowerShell with your Mac's public key:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-.\setup.ps1 -PublicKey "<contents of id_ed25519.pub>"
-```
-
-It enables OpenSSH, opens the firewall, authorizes your key, checks Tailscale, and finds Vivado. Run `hostname` (or use its Tailscale name) and `whoami` to get the name and user for the next step.
-
-*Linux:* run `linux/setup.sh` as your normal user (not root):
-
-```sh
-./setup.sh --public-key "<contents of id_ed25519.pub>"    # add --install-ssh if no SSH server is installed
-```
-
-It checks the SSH server, authorizes your key, looks for Tailscale, finds the newest Vivado (both the older `<root>/Vivado/<version>` and the newer `<root>/<version>/Vivado` layouts), checks that it starts from a login shell, and prints the `init` command for you.
-
-**4. Point fpga-bridge at it and check everything**
-
-```sh
-fpga-bridge init --host <name or address> --user <user on the build machine> --vivado "<path to vivado.bat, or the vivado script on Linux>"
-fpga-bridge doctor
-```
-
-**5. Make a project, build it, simulate it, and flash it**
-
-```sh
-mkdir blinky && cd blinky          # put your .v files, a testbench, and an .xdc here
-fpga-bridge new --board basys3 --top blinky
-fpga-bridge sim                    # simulate on the Mac (list the testbench folder under "simulationSources" in fpga-bridge.json first)
-fpga-bridge build                  # Vivado on the build machine; results land in build/
-fpga-bridge flash                  # program the board from build/<top>.bit
-```
-
-Or do the same from the app: open `dist/FPGA Bridge.app`, choose **New Project**, then use the Flow Navigator. With no build machine configured you can still write code and run simulations; Vivado's steps are greyed out until you run `fpga-bridge init`.
+Writing Verilog and running simulations needs only the Mac. The Windows PC is needed only to build bitstreams.
 
 ### Commands
 
@@ -158,6 +119,8 @@ Or do the same from the app: open `dist/FPGA Bridge.app`, choose **New Project**
 | `unlock` | Release the build lock after a crashed build |
 
 More detail: [docs/setup.md](docs/setup.md), [docs/boards.md](docs/boards.md).
+
+The command-line tool is inside the app; [Getting started](docs/getting-started.md#13-make-the-fpga-bridge-command-available) shows how to make `fpga-bridge` available in Terminal.
 
 ## Remote Access Tips
 
@@ -193,6 +156,15 @@ More detail: [docs/setup.md](docs/setup.md), [docs/boards.md](docs/boards.md).
 - Different Vivado versions behave differently, so one version per build machine is recommended
 
 ## Development
+
+To build from source instead of downloading the app (needs Xcode, macOS 14 or later):
+
+```sh
+git clone https://github.com/shaayan-goswami/fpga-bridge.git && cd fpga-bridge
+scripts/make-app.sh            # builds dist/FPGA Bridge.app, with the fpga-bridge tool inside
+```
+
+Other commands:
 
 ```sh
 swift build                    # debug build of everything

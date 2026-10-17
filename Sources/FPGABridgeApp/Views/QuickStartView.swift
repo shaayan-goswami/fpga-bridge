@@ -37,7 +37,7 @@ struct QuickStartView: View {
                             section("Learning Center") {
                                 QuickActionRow(symbol: "book", title: "Documentation",
                                                subtitle: "Setup, build machine and troubleshooting", tint: Accent.simulation) {
-                                    if let url = URL(string: "https://github.com/shaayan-goswami/fpga-bridge/blob/main/docs/setup.md") {
+                                    if let url = URL(string: "https://github.com/shaayan-goswami/fpga-bridge/blob/main/docs/getting-started.md") {
                                         NSWorkspace.shared.open(url)
                                     }
                                 }

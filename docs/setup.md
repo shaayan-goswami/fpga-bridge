@@ -1,4 +1,7 @@
-# Setup and usage (current CLI)
+# Command-line reference
+
+New to FPGA Bridge? Start with **[Getting started](getting-started.md)**, which walks through installing everything
+step by step. This page is the reference for the setup scripts, the `fpga-bridge` commands, and building from source.
 
 **1. On the build machine.** Windows or Linux both work; follow the section for yours (Linux is 1b, below).
 
