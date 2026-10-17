@@ -178,9 +178,9 @@ The code is a Swift package: `FPGABridgeCore` (the library), `fpga-bridge` (the 
 
 fpga-bridge does not include, bundle, or redistribute Vivado. You must install Vivado yourself and comply with AMD's license terms. Vivado and Xilinx are trademarks of AMD. Apple, Mac, and macOS are trademarks of Apple Inc. This project is independent and is not affiliated with or endorsed by AMD or Apple.
 
-## Contributing
+## Feedback
 
-Ideas and pull requests are welcome. Open an issue first for larger changes so we can talk through the approach.
+Bug reports, board test results and ideas are welcome as [issues](https://github.com/shaayan-goswami/fpga-bridge/issues/new). Code contributions aren't accepted. [docs/feedback.md](docs/feedback.md) lists the feedback received so far and what is being done about it.
 
 ## License
 
