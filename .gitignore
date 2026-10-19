@@ -222,3 +222,6 @@ __marimo__/
 # SwiftPM
 .build/
 .swiftpm/
+
+# Finder
+.DS_Store
