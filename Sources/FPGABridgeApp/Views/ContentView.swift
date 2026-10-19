@@ -88,13 +88,18 @@ struct MainWindowView: View {
             .ignoresSafeArea(.container, edges: .top)
         }
         .modifier(WindowGlassContainers())
+        // The window's name in the Window menu and Mission Control. The toolbar shows its own title instead: the
+        // system's doesn't know where the sidebar ends, and a long subtitle ran on over the Sources pane.
         .navigationTitle(model.project?.name ?? "FPGA Bridge")
-        .navigationSubtitle(subtitle)
+        .modifier(OwnToolbarTitle(subtitle: subtitle))
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button { showSidebar.toggle() } label: { Label("Flow Navigator", systemImage: "sidebar.leading") }
                     .help(showSidebar ? "Hide the Flow Navigator" : "Show the Flow Navigator")
             }
+            WindowTitle(title: model.project?.name ?? "FPGA Bridge", subtitle: subtitle,
+                        // Window buttons and the sidebar button take about 140 points of the sidebar's width.
+                        maxWidth: showSidebar ? max(60, sidebarWidth - 140) : nil)
             MainToolbar(model: model)
         }
     }
@@ -103,6 +108,55 @@ struct MainWindowView: View {
         guard let project = model.project else { return "" }
         let board = project.board.flatMap { BoardCatalog.lookup($0)?.displayName }
         return [board, project.part].compactMap { $0 }.joined(separator: " · ")
+    }
+}
+
+/// The project's name and board in the toolbar, kept within the space it's given: truncated, with the whole text as
+/// a tooltip.
+struct WindowTitle: ToolbarContent {
+    let title: String
+    let subtitle: String
+    let maxWidth: CGFloat?
+
+    var body: some ToolbarContent {
+        if #available(macOS 26.0, *) {
+            ToolbarItem(placement: .navigation) { label }
+                .sharedBackgroundVisibility(.hidden)
+        } else if #available(macOS 15.0, *) {
+            ToolbarItem(placement: .navigation) { label }
+        } else {
+            // macOS 14 can't hide the system's title (see OwnToolbarTitle), so it shows that one instead.
+            ToolbarItem(placement: .navigation) { EmptyView() }
+        }
+    }
+
+    private var label: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(.headline)
+            if !subtitle.isEmpty {
+                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .frame(maxWidth: maxWidth, alignment: .leading)
+        .fixedSize(horizontal: maxWidth == nil, vertical: false)
+        .help(subtitle.isEmpty ? title : "\(title)\n\(subtitle)")
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Hides the system's title so `WindowTitle` can take its place (macOS 15+). macOS 14 keeps the system's title and
+/// subtitle, which can still run past the sidebar there.
+private struct OwnToolbarTitle: ViewModifier {
+    let subtitle: String
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content.toolbar(removing: .title)
+        } else {
+            content.navigationSubtitle(subtitle)
+        }
     }
 }
 

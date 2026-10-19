@@ -274,3 +274,24 @@ final class AppModelTests: XCTestCase {
         XCTAssertFalse(model.openTabs.contains(.file(path)))
     }
 }
+
+/// The glass setting: Frosted is the default, and a Liquid Glass saved before it existed moves to Frosted once.
+final class GlassChoiceTests: XCTestCase {
+    func testASavedLiquidGlassMovesToFrostedOnceAndAChoiceAfterThatSticks() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "glass-\(UUID().uuidString)"))
+        XCTAssertEqual(GlassChoice.standard, .frosted)
+        defaults.set(GlassChoice.liquid.rawValue, forKey: AppearanceKey.glass)
+        GlassChoice.adoptFrosted(defaults)
+        XCTAssertEqual(defaults.string(forKey: AppearanceKey.glass), GlassChoice.frosted.rawValue)
+        defaults.set(GlassChoice.liquid.rawValue, forKey: AppearanceKey.glass)
+        GlassChoice.adoptFrosted(defaults)
+        XCTAssertEqual(defaults.string(forKey: AppearanceKey.glass), GlassChoice.liquid.rawValue, "chosen again afterwards: kept")
+    }
+
+    func testOtherSavedChoicesAreLeftAlone() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "glass-\(UUID().uuidString)"))
+        defaults.set(GlassChoice.off.rawValue, forKey: AppearanceKey.glass)
+        GlassChoice.adoptFrosted(defaults)
+        XCTAssertEqual(defaults.string(forKey: AppearanceKey.glass), GlassChoice.off.rawValue)
+    }
+}

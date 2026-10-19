@@ -63,7 +63,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Run Linter**: Vivado's RTL linter, with each finding linked to its source line
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
-- [x] Liquid Glass design, light and dark mode
+- [x] Frosted glass sidebar like Finder's (Liquid Glass available in Settings), light and dark mode
 - [x] Works without a build machine or a board: write Verilog, simulate and view waveforms on the Mac; only Vivado's steps need the build machine
 
 **Not built yet** (greyed out or missing; see the backlog for the full list)

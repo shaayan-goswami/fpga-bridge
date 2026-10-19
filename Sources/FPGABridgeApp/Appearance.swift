@@ -27,17 +27,33 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
 }
 
 enum GlassChoice: String, CaseIterable, Identifiable {
-    /// Regular Liquid Glass. The default.
+    /// The macOS sidebar material: the desktop behind the window, heavily blurred and darkened. The default.
+    case frosted
+    /// Regular Liquid Glass (macOS 26+).
     case liquid
     case clear
     case off
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .frosted: "Frosted"
         case .liquid: "Liquid Glass"
-        case .clear: "Clear"
+        case .clear: "Clear Liquid Glass"
         case .off: "Off (solid)"
         }
+    }
+
+    static let standard = GlassChoice.frosted
+
+    /// Liquid Glass was the default before Frosted. Move a saved Liquid Glass to Frosted once, so the new look
+    /// applies; choosing Liquid Glass again afterwards sticks.
+    static func adoptFrosted(_ defaults: UserDefaults = .standard) {
+        let done = "appearance.glass.frostedAdopted"
+        guard !defaults.bool(forKey: done) else { return }
+        if defaults.string(forKey: AppearanceKey.glass) == GlassChoice.liquid.rawValue {
+            defaults.set(GlassChoice.frosted.rawValue, forKey: AppearanceKey.glass)
+        }
+        defaults.set(true, forKey: done)
     }
 }
 
@@ -150,13 +166,18 @@ extension View {
 private struct GlassSurface<S: InsettableShape>: ViewModifier {
     let shape: S
     let interactive: Bool
-    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
+    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.standard
 
     func body(content: Content) -> some View {
         if glass == .off {
             content
                 .background(shape.fill(Theme.surface))
                 .overlay(shape.strokeBorder(Color(nsColor: .separatorColor).opacity(0.5)))
+        } else if glass == .frosted {
+            // Frosted inside the window, with a hairline edge, to match the frosted window behind it.
+            content
+                .background(.regularMaterial, in: shape)
+                .overlay(shape.strokeBorder(Color.primary.opacity(0.08)))
         } else if #available(macOS 26.0, *) {
             content.glassEffect(liquidGlass, in: shape)
         } else {
@@ -182,23 +203,43 @@ extension View {
     }
 }
 
-/// The fill for large surfaces (the home window and the sidebar): regular Liquid Glass on macOS 26+, blurred enough
-/// that text over a busy desktop stays readable. A material on older systems, or a solid color when glass is off.
-/// "Clear" in Settings makes it more transparent. In fullscreen there is no desktop behind the window for the glass to
-/// show, so it would draw as flat gray; it is the solid color there instead.
+/// The fill for large surfaces (the home window and the sidebar). Frosted (the default) is the macOS sidebar material,
+/// the desktop behind the window blurred and darkened; Liquid Glass and Clear use Liquid Glass on macOS 26+ and a
+/// material before; Off is a solid color. In fullscreen there is no desktop behind the window to show, so it would draw
+/// as flat gray; it is the solid color there instead.
 struct GlassFill: View {
     var solid: Color = Theme.window
-    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.liquid
+    @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.standard
     @ObservedObject private var fullScreen = FullScreenState.shared
 
     var body: some View {
         if glass == .off || fullScreen.isFullScreen {
             solid
+        } else if glass == .frosted {
+            FrostedBlur()
         } else if #available(macOS 26.0, *) {
             Color.clear.glassEffect(glass == .clear ? .clear : .regular, in: Rectangle())
         } else {
             Rectangle().fill(glass == .clear ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(.regularMaterial))
         }
+    }
+}
+
+/// AppKit's behind-window blur, as Finder's and Mail's sidebars use. Kept active when the window isn't key, so the
+/// window doesn't turn flat gray in the background.
+struct FrostedBlur: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .sidebar
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.blendingMode = .behindWindow
+        view.state = .active
+        view.material = material
+        return view
+    }
+
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {
+        view.material = material
     }
 }
 

@@ -54,7 +54,7 @@ and the Hardware Manager programs a board with a bitstream built elsewhere. Viva
 bitstream, the linter, the IP Catalog) are greyed out and say why. No board is needed for any of it. Use **Open Example
 Project** on the start page for a ready-made design.
 
-**FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the glass style (Liquid Glass, Clear, Off), editor and
+**FPGA Bridge > Settings… (⌘,)** sets light/dark appearance, the glass style (Frosted, the default; Liquid Glass; Clear Liquid Glass; Off), editor and
 console font sizes, and whether to show accent colors. The app is grey, with small accents in the colors Vivado itself
 uses, each meaning one thing: green for done and for run icons, amber for warnings and out-of-date runs, red for
 errors and failures, blue for running steps and Tcl commands, teal for design sources, navy for constraints and cyan

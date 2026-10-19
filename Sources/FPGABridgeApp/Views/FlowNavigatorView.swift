@@ -9,6 +9,23 @@ struct FlowNavigatorView: View {
     @State private var expanded: Set<FlowItem> = []
 
     var body: some View {
+        // The title sits above the list, not over it: laid over the list (as a safe-area inset), scrolled rows and the
+        // pinned section header showed through it.
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Flow Navigator")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 6)
+            .padding(.bottom, 10)
+            list
+        }
+    }
+
+    private var list: some View {
         List {
             ForEach(FlowSection.allCases) { section in
                 Section {
@@ -60,17 +77,6 @@ struct FlowNavigatorView: View {
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            HStack {
-                Text("Flow Navigator")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 6)
-            .padding(.bottom, 10)
-        }
         .modifier(NoScrollEdgeLine())
         .onChange(of: model.openTabs) { _, tabs in
             // Opening a design (or the Hardware Manager) shows its commands, as Vivado does.
@@ -222,8 +228,7 @@ private struct FlowSubRow: View {
     }
 }
 
-/// The list draws a hard line under the pinned "Flow Navigator" header once it scrolls under it (macOS 26+); the
-/// header sits on glass, so hide it.
+/// The list draws a hard line along its top edge once rows scroll past it (macOS 26+); the sidebar is glass, so hide it.
 private struct NoScrollEdgeLine: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {

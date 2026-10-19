@@ -7,6 +7,10 @@ struct FPGABridgeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = AppModel.make()
 
+    init() {
+        GlassChoice.adoptFrosted()
+    }
+
     var body: some Scene {
         // One window, like Vivado.
         Window("FPGA Bridge", id: "main") {
