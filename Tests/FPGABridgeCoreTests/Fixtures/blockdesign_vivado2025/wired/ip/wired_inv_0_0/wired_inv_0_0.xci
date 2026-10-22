@@ -1,0 +1,54 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "wired_inv_0_0",
+    "cell_name": "inv_0",
+    "component_reference": "xilinx.com:ip:util_vector_logic:2.0",
+    "ip_revision": "5",
+    "parameters": {
+      "component_parameters": {
+        "Component_Name": [
+          {
+            "value": "wired_inv_0_0"
+          }
+        ],
+        "C_SIZE": [
+          {
+            "value": "1",
+            "value_src": "user"
+          }
+        ],
+        "C_OPERATION": [
+          {
+            "value": "not",
+            "value_src": "user"
+          }
+        ],
+        "LOGO_FILE": [
+          {
+            "value": "data/sym_notgate.png"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "Op1": [
+          {
+            "direction": "in",
+            "size_left": "0",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "Res": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "0"
+          }
+        ]
+      }
+    }
+  }
+}

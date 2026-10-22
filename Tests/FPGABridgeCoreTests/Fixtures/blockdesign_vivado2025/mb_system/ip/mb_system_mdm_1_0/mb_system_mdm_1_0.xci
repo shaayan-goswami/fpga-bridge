@@ -1,0 +1,333 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "mb_system_mdm_1_0",
+    "cell_name": "mdm_1",
+    "component_reference": "xilinx.com:ip:mdm:3.2",
+    "ip_revision": "29",
+    "parameters": {
+      "component_parameters": {
+        "C_XMTC": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_BRK": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_JTAG_CHAIN": [
+          {
+            "value": "2"
+          }
+        ],
+        "C_USE_BSCAN": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_BSCANID": [
+          {
+            "value": "76547328"
+          }
+        ],
+        "C_DEBUG_INTERFACE": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_USE_CONFIG_RESET": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_AVOID_PRIMITIVES": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_INTERCONNECT": [
+          {
+            "value": "2"
+          }
+        ],
+        "C_S_AXI_ADDR_WIDTH": [
+          {
+            "value": "4"
+          }
+        ],
+        "C_S_AXI_DATA_WIDTH": [
+          {
+            "value": "32"
+          }
+        ],
+        "C_S_AXI_ACLK_FREQ_HZ": [
+          {
+            "value": "100000000"
+          }
+        ],
+        "C_M_AXI_ADDR_WIDTH": [
+          {
+            "value": "32",
+            "value_src": "propagated"
+          }
+        ],
+        "C_M_AXI_DATA_WIDTH": [
+          {
+            "value": "32"
+          }
+        ],
+        "C_M_AXI_THREAD_ID_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_ADDR_SIZE": [
+          {
+            "value": "32",
+            "value_src": "propagated"
+          }
+        ],
+        "C_DATA_SIZE": [
+          {
+            "value": "32"
+          }
+        ],
+        "C_LMB_PROTOCOL": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_M_AXIS_DATA_WIDTH": [
+          {
+            "value": "32"
+          }
+        ],
+        "C_M_AXIS_ID_WIDTH": [
+          {
+            "value": "7"
+          }
+        ],
+        "C_MB_DBG_PORTS": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_USE_UART": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_DBG_REG_ACCESS": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_DBG_MEM_ACCESS": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_USE_CROSS_TRIGGER": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_TRIG_IN_PORTS": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_TRIG_OUT_PORTS": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_EXT_TRIG_RESET_VALUE": [
+          {
+            "value": "0xF1234"
+          }
+        ],
+        "C_TRACE_OUTPUT": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_TRACE_DATA_WIDTH": [
+          {
+            "value": "32"
+          }
+        ],
+        "C_TRACE_CLK_FREQ_HZ": [
+          {
+            "value": "200000000"
+          }
+        ],
+        "C_TRACE_CLK_OUT_PHASE": [
+          {
+            "value": "90"
+          }
+        ],
+        "C_TRACE_ASYNC_RESET": [
+          {
+            "value": "0"
+          }
+        ],
+        "C_TRACE_PROTOCOL": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_TRACE_ID": [
+          {
+            "value": "110"
+          }
+        ],
+        "Component_Name": [
+          {
+            "value": "mb_system_mdm_1_0"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "Debug_SYS_Rst": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Clk_0": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_TDI_0": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_TDO_0": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_Reg_En_0": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "7"
+          }
+        ],
+        "Dbg_Capture_0": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Shift_0": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Update_0": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Rst_0": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Disable_0": [
+          {
+            "direction": "out"
+          }
+        ]
+      },
+      "interfaces": {
+        "RST.Debug_SYS_Rst": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "Debug_SYS_Rst"
+              }
+            ]
+          }
+        },
+        "MBDEBUG_0": {
+          "vlnv": "xilinx.com:interface:mbdebug:3.0",
+          "abstraction_type": "xilinx.com:interface:mbdebug_rtl:3.0",
+          "mode": "master",
+          "port_maps": {
+            "CAPTURE": [
+              {
+                "physical_name": "Dbg_Capture_0"
+              }
+            ],
+            "CLK": [
+              {
+                "physical_name": "Dbg_Clk_0"
+              }
+            ],
+            "DISABLE": [
+              {
+                "physical_name": "Dbg_Disable_0"
+              }
+            ],
+            "REG_EN": [
+              {
+                "physical_name": "Dbg_Reg_En_0"
+              }
+            ],
+            "RST": [
+              {
+                "physical_name": "Dbg_Rst_0"
+              }
+            ],
+            "SHIFT": [
+              {
+                "physical_name": "Dbg_Shift_0"
+              }
+            ],
+            "TDI": [
+              {
+                "physical_name": "Dbg_TDI_0"
+              }
+            ],
+            "TDO": [
+              {
+                "physical_name": "Dbg_TDO_0"
+              }
+            ],
+            "UPDATE": [
+              {
+                "physical_name": "Dbg_Update_0"
+              }
+            ]
+          }
+        }
+      },
+      "memory_maps": {
+        "S_AXI": {
+          "description": "S_AXI memory map",
+          "address_blocks": {
+            "Reg": {
+              "base_address": "0",
+              "range": "4096",
+              "display_name": "Reg",
+              "description": "Register Block",
+              "usage": "register",
+              "access": "read-write"
+            }
+          }
+        }
+      }
+    }
+  }
+}

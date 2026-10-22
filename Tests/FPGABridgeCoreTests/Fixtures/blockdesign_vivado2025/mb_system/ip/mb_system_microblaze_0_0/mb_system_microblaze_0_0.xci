@@ -1,0 +1,760 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "mb_system_microblaze_0_0",
+    "cell_name": "microblaze_0",
+    "component_reference": "xilinx.com:ip:microblaze:11.0",
+    "ip_revision": "16",
+    "parameters": {
+      "component_parameters": {
+        "C_FREQ": [
+          {
+            "value": "100000000",
+            "value_src": "propagated"
+          }
+        ],
+        "C_BASE_VECTORS": [
+          {
+            "value": "0x0000000000000000",
+            "value_src": "propagated"
+          }
+        ],
+        "C_D_AXI": [
+          {
+            "value": "1",
+            "value_src": "user"
+          }
+        ],
+        "C_D_LMB": [
+          {
+            "value": "1",
+            "value_src": "user"
+          }
+        ],
+        "C_I_LMB": [
+          {
+            "value": "1",
+            "value_src": "user"
+          }
+        ],
+        "C_M_AXI_DC_USER_SIGNALS": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_M_AXI_IC_USER_SIGNALS": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_DEBUG_ENABLED": [
+          {
+            "value": "1",
+            "value_src": "user"
+          }
+        ],
+        "C_INTERRUPT_IS_EDGE": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_EDGE_IS_POSITIVE": [
+          {
+            "value": "1",
+            "value_src": "propagated"
+          }
+        ],
+        "C_ASYNC_WAKEUP": [
+          {
+            "value": "3",
+            "value_src": "propagated"
+          }
+        ],
+        "C_USE_INTERRUPT": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_USE_EXT_BRK": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_USE_EXT_NM_BRK": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_USE_NON_SECURE": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "Clk": [
+          {
+            "direction": "in"
+          }
+        ],
+        "Reset": [
+          {
+            "direction": "in"
+          }
+        ],
+        "Interrupt": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Interrupt_Address": [
+          {
+            "direction": "in",
+            "size_left": "0",
+            "size_right": "31",
+            "driver_value": "0"
+          }
+        ],
+        "Interrupt_Ack": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "1"
+          }
+        ],
+        "Instr_Addr": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "31"
+          }
+        ],
+        "Instr": [
+          {
+            "direction": "in",
+            "size_left": "0",
+            "size_right": "31",
+            "driver_value": "0"
+          }
+        ],
+        "IFetch": [
+          {
+            "direction": "out"
+          }
+        ],
+        "I_AS": [
+          {
+            "direction": "out"
+          }
+        ],
+        "IReady": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "IWAIT": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "ICE": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "IUE": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Data_Addr": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "31"
+          }
+        ],
+        "Data_Read": [
+          {
+            "direction": "in",
+            "size_left": "0",
+            "size_right": "31",
+            "driver_value": "0"
+          }
+        ],
+        "Data_Write": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "31"
+          }
+        ],
+        "D_AS": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Read_Strobe": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Write_Strobe": [
+          {
+            "direction": "out"
+          }
+        ],
+        "DReady": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "DWait": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "DCE": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "DUE": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Byte_Enable": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "3"
+          }
+        ],
+        "M_AXI_DP_AWADDR": [
+          {
+            "direction": "out",
+            "size_left": "31",
+            "size_right": "0"
+          }
+        ],
+        "M_AXI_DP_AWPROT": [
+          {
+            "direction": "out",
+            "size_left": "2",
+            "size_right": "0"
+          }
+        ],
+        "M_AXI_DP_AWVALID": [
+          {
+            "direction": "out"
+          }
+        ],
+        "M_AXI_DP_AWREADY": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_WDATA": [
+          {
+            "direction": "out",
+            "size_left": "31",
+            "size_right": "0"
+          }
+        ],
+        "M_AXI_DP_WSTRB": [
+          {
+            "direction": "out",
+            "size_left": "3",
+            "size_right": "0"
+          }
+        ],
+        "M_AXI_DP_WVALID": [
+          {
+            "direction": "out"
+          }
+        ],
+        "M_AXI_DP_WREADY": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_BRESP": [
+          {
+            "direction": "in",
+            "size_left": "1",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_BVALID": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_BREADY": [
+          {
+            "direction": "out"
+          }
+        ],
+        "M_AXI_DP_ARADDR": [
+          {
+            "direction": "out",
+            "size_left": "31",
+            "size_right": "0"
+          }
+        ],
+        "M_AXI_DP_ARPROT": [
+          {
+            "direction": "out",
+            "size_left": "2",
+            "size_right": "0"
+          }
+        ],
+        "M_AXI_DP_ARVALID": [
+          {
+            "direction": "out"
+          }
+        ],
+        "M_AXI_DP_ARREADY": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_RDATA": [
+          {
+            "direction": "in",
+            "size_left": "31",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_RRESP": [
+          {
+            "direction": "in",
+            "size_left": "1",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_RVALID": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "M_AXI_DP_RREADY": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Clk": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_TDI": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_TDO": [
+          {
+            "direction": "out"
+          }
+        ],
+        "Dbg_Reg_En": [
+          {
+            "direction": "in",
+            "size_left": "0",
+            "size_right": "7",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_Shift": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_Capture": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_Update": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Debug_Rst": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "Dbg_Disable": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ]
+      },
+      "interfaces": {
+        "CLK.CLK": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "CLK": [
+              {
+                "physical_name": "Clk"
+              }
+            ]
+          }
+        },
+        "RST.RESET": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "Reset"
+              }
+            ]
+          }
+        },
+        "INTERRUPT": {
+          "vlnv": "xilinx.com:interface:mbinterrupt:1.0",
+          "abstraction_type": "xilinx.com:interface:mbinterrupt_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "ACK": [
+              {
+                "physical_name": "Interrupt_Ack"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "physical_name": "Interrupt_Address"
+              }
+            ],
+            "INTERRUPT": [
+              {
+                "physical_name": "Interrupt"
+              }
+            ]
+          }
+        },
+        "DLMB": {
+          "vlnv": "xilinx.com:interface:lmb:1.0",
+          "abstraction_type": "xilinx.com:interface:lmb_rtl:1.0",
+          "mode": "master",
+          "address_space_ref": "Data",
+          "port_maps": {
+            "ABUS": [
+              {
+                "physical_name": "Data_Addr"
+              }
+            ],
+            "ADDRSTROBE": [
+              {
+                "physical_name": "D_AS"
+              }
+            ],
+            "BE": [
+              {
+                "physical_name": "Byte_Enable"
+              }
+            ],
+            "CE": [
+              {
+                "physical_name": "DCE"
+              }
+            ],
+            "READDBUS": [
+              {
+                "physical_name": "Data_Read"
+              }
+            ],
+            "READSTROBE": [
+              {
+                "physical_name": "Read_Strobe"
+              }
+            ],
+            "READY": [
+              {
+                "physical_name": "DReady"
+              }
+            ],
+            "UE": [
+              {
+                "physical_name": "DUE"
+              }
+            ],
+            "WAIT": [
+              {
+                "physical_name": "DWait"
+              }
+            ],
+            "WRITEDBUS": [
+              {
+                "physical_name": "Data_Write"
+              }
+            ],
+            "WRITESTROBE": [
+              {
+                "physical_name": "Write_Strobe"
+              }
+            ]
+          }
+        },
+        "ILMB": {
+          "vlnv": "xilinx.com:interface:lmb:1.0",
+          "abstraction_type": "xilinx.com:interface:lmb_rtl:1.0",
+          "mode": "master",
+          "address_space_ref": "Instruction",
+          "port_maps": {
+            "ABUS": [
+              {
+                "physical_name": "Instr_Addr"
+              }
+            ],
+            "ADDRSTROBE": [
+              {
+                "physical_name": "I_AS"
+              }
+            ],
+            "CE": [
+              {
+                "physical_name": "ICE"
+              }
+            ],
+            "READDBUS": [
+              {
+                "physical_name": "Instr"
+              }
+            ],
+            "READSTROBE": [
+              {
+                "physical_name": "IFetch"
+              }
+            ],
+            "READY": [
+              {
+                "physical_name": "IReady"
+              }
+            ],
+            "UE": [
+              {
+                "physical_name": "IUE"
+              }
+            ],
+            "WAIT": [
+              {
+                "physical_name": "IWAIT"
+              }
+            ]
+          }
+        },
+        "M_AXI_DP": {
+          "vlnv": "xilinx.com:interface:aximm:1.0",
+          "abstraction_type": "xilinx.com:interface:aximm_rtl:1.0",
+          "mode": "master",
+          "address_space_ref": "Data",
+          "port_maps": {
+            "ARADDR": [
+              {
+                "physical_name": "M_AXI_DP_ARADDR"
+              }
+            ],
+            "ARPROT": [
+              {
+                "physical_name": "M_AXI_DP_ARPROT"
+              }
+            ],
+            "ARREADY": [
+              {
+                "physical_name": "M_AXI_DP_ARREADY"
+              }
+            ],
+            "ARVALID": [
+              {
+                "physical_name": "M_AXI_DP_ARVALID"
+              }
+            ],
+            "AWADDR": [
+              {
+                "physical_name": "M_AXI_DP_AWADDR"
+              }
+            ],
+            "AWPROT": [
+              {
+                "physical_name": "M_AXI_DP_AWPROT"
+              }
+            ],
+            "AWREADY": [
+              {
+                "physical_name": "M_AXI_DP_AWREADY"
+              }
+            ],
+            "AWVALID": [
+              {
+                "physical_name": "M_AXI_DP_AWVALID"
+              }
+            ],
+            "BREADY": [
+              {
+                "physical_name": "M_AXI_DP_BREADY"
+              }
+            ],
+            "BRESP": [
+              {
+                "physical_name": "M_AXI_DP_BRESP"
+              }
+            ],
+            "BVALID": [
+              {
+                "physical_name": "M_AXI_DP_BVALID"
+              }
+            ],
+            "RDATA": [
+              {
+                "physical_name": "M_AXI_DP_RDATA"
+              }
+            ],
+            "RREADY": [
+              {
+                "physical_name": "M_AXI_DP_RREADY"
+              }
+            ],
+            "RRESP": [
+              {
+                "physical_name": "M_AXI_DP_RRESP"
+              }
+            ],
+            "RVALID": [
+              {
+                "physical_name": "M_AXI_DP_RVALID"
+              }
+            ],
+            "WDATA": [
+              {
+                "physical_name": "M_AXI_DP_WDATA"
+              }
+            ],
+            "WREADY": [
+              {
+                "physical_name": "M_AXI_DP_WREADY"
+              }
+            ],
+            "WSTRB": [
+              {
+                "physical_name": "M_AXI_DP_WSTRB"
+              }
+            ],
+            "WVALID": [
+              {
+                "physical_name": "M_AXI_DP_WVALID"
+              }
+            ]
+          }
+        },
+        "DEBUG": {
+          "vlnv": "xilinx.com:interface:mbdebug:3.0",
+          "abstraction_type": "xilinx.com:interface:mbdebug_rtl:3.0",
+          "mode": "slave",
+          "port_maps": {
+            "CAPTURE": [
+              {
+                "physical_name": "Dbg_Capture"
+              }
+            ],
+            "CLK": [
+              {
+                "physical_name": "Dbg_Clk"
+              }
+            ],
+            "DISABLE": [
+              {
+                "physical_name": "Dbg_Disable"
+              }
+            ],
+            "REG_EN": [
+              {
+                "physical_name": "Dbg_Reg_En"
+              }
+            ],
+            "RST": [
+              {
+                "physical_name": "Debug_Rst"
+              }
+            ],
+            "SHIFT": [
+              {
+                "physical_name": "Dbg_Shift"
+              }
+            ],
+            "TDI": [
+              {
+                "physical_name": "Dbg_TDI"
+              }
+            ],
+            "TDO": [
+              {
+                "physical_name": "Dbg_TDO"
+              }
+            ],
+            "UPDATE": [
+              {
+                "physical_name": "Dbg_Update"
+              }
+            ]
+          }
+        }
+      },
+      "memory_maps": {
+        "S_AXI_DEBUG": {
+          "description": "AXI debug memory map",
+          "address_blocks": {
+            "Reg": {
+              "base_address": "0",
+              "range": "4096",
+              "display_name": "Reg",
+              "description": "Debug Register Block",
+              "usage": "register",
+              "access": "read-write"
+            }
+          }
+        }
+      }
+    }
+  }
+}

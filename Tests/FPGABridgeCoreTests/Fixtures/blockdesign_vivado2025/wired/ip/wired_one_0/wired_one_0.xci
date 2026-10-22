@@ -1,0 +1,39 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "wired_one_0",
+    "cell_name": "one",
+    "component_reference": "xilinx.com:ip:xlconstant:1.1",
+    "ip_revision": "10",
+    "parameters": {
+      "component_parameters": {
+        "Component_Name": [
+          {
+            "value": "wired_one_0"
+          }
+        ],
+        "CONST_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "CONST_VAL": [
+          {
+            "value": "1"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "dout": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "0"
+          }
+        ]
+      }
+    }
+  }
+}

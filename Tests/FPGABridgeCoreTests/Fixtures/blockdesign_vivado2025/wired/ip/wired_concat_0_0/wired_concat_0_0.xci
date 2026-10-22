@@ -1,0 +1,698 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "wired_concat_0_0",
+    "cell_name": "concat_0",
+    "component_reference": "xilinx.com:ip:xlconcat:2.1",
+    "ip_revision": "7",
+    "parameters": {
+      "component_parameters": {
+        "Component_Name": [
+          {
+            "value": "wired_concat_0_0"
+          }
+        ],
+        "NUM_PORTS": [
+          {
+            "value": "2",
+            "value_src": "user"
+          }
+        ],
+        "IN0_WIDTH": [
+          {
+            "value": "2",
+            "value_src": "propagated"
+          }
+        ],
+        "IN1_WIDTH": [
+          {
+            "value": "1",
+            "value_src": "propagated"
+          }
+        ],
+        "IN2_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN3_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN4_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN5_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN6_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN7_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN8_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN9_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN10_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN11_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN12_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN13_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN14_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN15_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN16_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN17_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN18_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN19_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN20_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN21_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN22_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN23_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN24_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN25_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN26_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN27_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN28_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN29_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN30_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN31_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN32_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN33_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN34_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN35_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN36_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN37_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN38_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN39_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN40_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN41_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN42_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN43_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN44_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN45_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN46_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN47_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN48_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN49_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN50_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN51_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN52_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN53_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN54_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN55_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN56_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN57_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN58_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN59_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN60_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN61_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN62_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN63_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN64_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN65_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN66_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN67_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN68_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN69_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN70_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN71_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN72_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN73_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN74_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN75_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN76_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN77_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN78_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN79_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN80_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN81_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN82_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN83_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN84_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN85_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN86_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN87_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN88_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN89_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN90_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN91_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN92_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN93_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN94_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN95_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN96_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN97_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN98_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN99_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN100_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN101_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN102_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN103_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN104_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN105_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN106_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN107_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN108_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN109_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN110_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN111_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN112_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN113_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN114_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN115_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN116_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN117_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN118_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN119_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN120_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN121_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN122_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN123_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN124_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN125_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN126_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "IN127_WIDTH": [
+          {
+            "value": "1"
+          }
+        ],
+        "dout_width": [
+          {
+            "value": "3"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "In0": [
+          {
+            "direction": "in",
+            "size_left": "1",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "In1": [
+          {
+            "direction": "in",
+            "size_left": "0",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "dout": [
+          {
+            "direction": "out",
+            "size_left": "2",
+            "size_right": "0"
+          }
+        ]
+      }
+    }
+  }
+}

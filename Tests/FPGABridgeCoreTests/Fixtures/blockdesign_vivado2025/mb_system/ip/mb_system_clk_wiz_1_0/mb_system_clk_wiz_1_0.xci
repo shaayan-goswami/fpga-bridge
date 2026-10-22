@@ -1,0 +1,88 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "mb_system_clk_wiz_1_0",
+    "cell_name": "clk_wiz_1",
+    "component_reference": "xilinx.com:ip:clk_wiz:6.0",
+    "ip_revision": "17",
+    "parameters": {
+      "component_parameters": {
+        "PRIM_IN_FREQ": [
+          {
+            "value": "100.000",
+            "value_src": "propagated"
+          }
+        ],
+        "PRIM_SOURCE": [
+          {
+            "value": "Single_ended_clock_capable_pin",
+            "value_src": "user"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "reset": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "clk_in1": [
+          {
+            "direction": "in"
+          }
+        ],
+        "clk_out1": [
+          {
+            "direction": "out"
+          }
+        ],
+        "locked": [
+          {
+            "direction": "out"
+          }
+        ]
+      },
+      "interfaces": {
+        "reset": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "reset"
+              }
+            ]
+          }
+        },
+        "clock_CLK_IN1": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "CLK_IN1": [
+              {
+                "physical_name": "clk_in1"
+              }
+            ]
+          }
+        },
+        "clock_CLK_OUT1": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "CLK_OUT1": [
+              {
+                "physical_name": "clk_out1"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

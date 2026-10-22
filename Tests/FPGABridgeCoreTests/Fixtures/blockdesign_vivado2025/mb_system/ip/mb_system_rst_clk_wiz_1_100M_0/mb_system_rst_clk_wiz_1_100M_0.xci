@@ -1,0 +1,250 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "mb_system_rst_clk_wiz_1_100M_0",
+    "cell_name": "rst_clk_wiz_1_100M",
+    "component_reference": "xilinx.com:ip:proc_sys_reset:5.0",
+    "ip_revision": "17",
+    "parameters": {
+      "component_parameters": {
+        "C_NUM_PERP_ARESETN": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_NUM_INTERCONNECT_ARESETN": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_NUM_PERP_RST": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_NUM_BUS_RST": [
+          {
+            "value": "1"
+          }
+        ],
+        "C_AUX_RESET_HIGH": [
+          {
+            "value": "0",
+            "value_src": "propagated"
+          }
+        ],
+        "C_EXT_RESET_HIGH": [
+          {
+            "value": "1",
+            "value_src": "propagated"
+          }
+        ],
+        "C_AUX_RST_WIDTH": [
+          {
+            "value": "4"
+          }
+        ],
+        "C_EXT_RST_WIDTH": [
+          {
+            "value": "4"
+          }
+        ],
+        "Component_Name": [
+          {
+            "value": "mb_system_rst_clk_wiz_1_100M_0"
+          }
+        ],
+        "USE_BOARD_FLOW": [
+          {
+            "value": "false"
+          }
+        ],
+        "RESET_BOARD_INTERFACE": [
+          {
+            "value": "Custom"
+          }
+        ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "slowest_sync_clk": [
+          {
+            "direction": "in"
+          }
+        ],
+        "ext_reset_in": [
+          {
+            "direction": "in"
+          }
+        ],
+        "aux_reset_in": [
+          {
+            "direction": "in",
+            "driver_value": "1"
+          }
+        ],
+        "mb_debug_sys_rst": [
+          {
+            "direction": "in",
+            "driver_value": "0"
+          }
+        ],
+        "dcm_locked": [
+          {
+            "direction": "in",
+            "driver_value": "0x1"
+          }
+        ],
+        "mb_reset": [
+          {
+            "direction": "out",
+            "driver_value": "0x0"
+          }
+        ],
+        "bus_struct_reset": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "peripheral_reset": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "0",
+            "driver_value": "0"
+          }
+        ],
+        "interconnect_aresetn": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "0",
+            "driver_value": "1"
+          }
+        ],
+        "peripheral_aresetn": [
+          {
+            "direction": "out",
+            "size_left": "0",
+            "size_right": "0",
+            "driver_value": "1"
+          }
+        ]
+      },
+      "interfaces": {
+        "clock": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "CLK": [
+              {
+                "physical_name": "slowest_sync_clk"
+              }
+            ]
+          }
+        },
+        "ext_reset": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "ext_reset_in"
+              }
+            ]
+          }
+        },
+        "aux_reset": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "aux_reset_in"
+              }
+            ]
+          }
+        },
+        "dbg_reset": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "slave",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "mb_debug_sys_rst"
+              }
+            ]
+          }
+        },
+        "mb_rst": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "mb_reset"
+              }
+            ]
+          }
+        },
+        "bus_struct_reset": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "bus_struct_reset"
+              }
+            ]
+          }
+        },
+        "interconnect_low_rst": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "interconnect_aresetn"
+              }
+            ]
+          }
+        },
+        "peripheral_high_rst": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "peripheral_reset"
+              }
+            ]
+          }
+        },
+        "peripheral_low_rst": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "RST": [
+              {
+                "physical_name": "peripheral_aresetn"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
