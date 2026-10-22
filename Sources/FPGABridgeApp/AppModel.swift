@@ -14,6 +14,8 @@ final class AppModel: ObservableObject {
     let timingWindow = TimingWindowState()
     /// The Package and Device windows' part data and I/O planning (ChipViews.swift).
     lazy var chipViews = ChipViews(backend: ChipViews.backend(for: backend))
+    /// Save As, Archive, Write Tcl, Find/Replace in Files and the Sources context menu (ProjectTools.swift).
+    let tools = ProjectTools()
     private let ipBackend: IPBackend
     private let persist: Bool
 
@@ -48,7 +50,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var stepStarted: Date?
     @Published private(set) var logs: [RunKind: [ConsoleLine]] = [:]
-    @Published private(set) var tclLines: [ConsoleLine] = []
+    @Published var tclLines: [ConsoleLine] = []
     @Published private(set) var reports: [ReportEntry] = []
     /// What the last build wrote about the design at each stage.
     @Published private(set) var designs: [DesignStage: DesignSnapshot] = [:]
@@ -311,7 +313,7 @@ final class AppModel: ObservableObject {
         return []
     }
 
-    private func reloadProjectAfterChange(outOfDate kinds: [RunKind] = [.synthesis, .implementation]) {
+    func reloadProjectAfterChange(outOfDate kinds: [RunKind] = [.synthesis, .implementation]) {
         guard let projectURL else { return }
         do {
             project = try Project.load(from: projectURL)
@@ -330,15 +332,10 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func rebuildSourceTree() {
+    func rebuildSourceTree() {
         guard let project, let projectURL else { sourceTree = []; return }
         do {
-            sourceTree = SourceTreeBuilder.build(
-                top: project.top,
-                design: try project.resolveSources(in: projectURL),
-                constraints: try project.resolveConstraints(in: projectURL),
-                simulation: try project.resolveSimulationSources(in: projectURL),
-                read: contents(of:))
+            sourceTree = try SourceTreeBuilder.build(project: project, root: projectURL, read: contents(of:))
             sourceTree = BlockDesignSources.adding(to: sourceTree, project: project, root: projectURL)
         } catch {
             // An empty tree with no explanation looks like an empty project.

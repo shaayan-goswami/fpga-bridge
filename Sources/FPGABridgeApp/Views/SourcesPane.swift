@@ -112,6 +112,8 @@ struct SourcesPane: View {
             List(selection: $model.selectedSourceID) {
                 ForEach(compileOrder, id: \.self) { path in
                     Label((path as NSString).lastPathComponent, systemImage: "doc.text").tag("file:\(path)")
+                        .contextMenu { SourceContextMenu(node: SourceNode(id: "file:\(path)", title: (path as NSString).lastPathComponent,
+                                                                          symbol: "doc.text", path: path)) }
                 }
             }
             .listStyle(.inset)
@@ -168,8 +170,15 @@ private struct SourceLabel: View {
             if node.isTop {
                 Pill(text: "Top", color: Accent.source)
             }
+            if node.isDisabled {
+                Text("(disabled)").foregroundStyle(.secondary)
+            }
         }
         .lineLimit(1)
+        // Vivado greys a disabled file out.
+        .opacity(node.isDisabled ? 0.5 : 1)
+        .help(node.isDisabled ? "Disabled: kept in the project, left out of builds and simulation" : "")
+        .contextMenu { SourceContextMenu(node: node) }
     }
 
     private var symbolColor: Color {
@@ -220,7 +229,7 @@ private struct PropertiesPanel: View {
                 ScrollView {
                     Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 7) {
                         InfoRow(label: "Name", value: (path as NSString).lastPathComponent)
-                        InfoRow(label: "Enabled", value: "Yes")
+                        InfoRow(label: "Enabled", value: model.isFileEnabled(path) ? "Yes" : "No")
                         InfoRow(label: "Location", value: (path as NSString).deletingLastPathComponent, monospaced: true)
                         InfoRow(label: "Type", value: fileType(path))
                         InfoRow(label: "Library", value: "xil_defaultlib")

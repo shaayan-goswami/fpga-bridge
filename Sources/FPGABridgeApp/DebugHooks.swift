@@ -23,6 +23,7 @@ import SwiftUI
 ///   FPGA_BRIDGE_BD_SELECT=kind:name in the blockdesign scenario, select this (cell:axi_uartlite_0, port:UART_0)
 ///   (FPGA_BRIDGE_EXPAND also opens these hierarchies in the blockdesign scenario.)
 ///   FPGA_BRIDGE_TIMING_PATH=n     in a design scenario, open the Timing window on path n (0 = Design Timing Summary)
+///   FPGA_BRIDGE_FAKE_UPDATE=0.3.0  show the update notice for this version (no network; the app pretends to be 0.2.1)
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -159,6 +160,25 @@ extension AppModel {
                 openFile(top)
                 updateDraft(editedText(for: top) + "\n// saved from the editor\n", for: top)
                 saveFile(top)
+            }
+        case "saveas", "archive", "writetcl", "find", "replace", "findresults", "disabled":
+            // File > Project dialogs, Find/Replace in Files and its results, and a disabled file in Sources.
+            openExampleProject()
+            switch DebugHooks.scenario {
+            case "saveas": tools.sheet = .saveAs
+            case "archive": tools.sheet = .archive
+            case "writetcl": tools.sheet = .writeTcl
+            case "disabled":
+                if let file = allProjectFiles.first(where: { $0.path.hasSuffix("debounce.v") })?.path {
+                    setFileEnabled(file, false)
+                    selectedSourceID = "file:\(file)"
+                }
+            default:
+                tools.options = FileSearch.Options(text: "clk", wholeWord: true)
+                tools.replacement = "clock"
+                findInFiles(replacing: DebugHooks.scenario == "replace")
+                await tools.waitForSearch()
+                if DebugHooks.scenario != "findresults" { tools.sheet = .find(replace: DebugHooks.scenario == "replace") }
             }
         case "edit":
             openExampleProject()

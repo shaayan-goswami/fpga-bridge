@@ -5,13 +5,14 @@ import SwiftUI
 /// implemented design is open.
 struct ConsolePanel: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var tools: ProjectTools
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 GlassGroup(spacing: 4) {
                     HStack(spacing: 4) {
-                        ForEach(ConsoleTab.allCases.filter { $0 != .timing || model.timingStage != nil || model.consoleTab == .timing }) { tab in
+                        ForEach(ConsoleTab.allCases.filter { ($0 != .timing || model.timingStage != nil || model.consoleTab == .timing) && ($0 != .findResults || tools.results != nil) }) { tab in
                             ConsoleTabButton(title: label(for: tab), selected: model.consoleTab == tab) {
                                 model.consoleTab = tab
                             }
@@ -51,6 +52,7 @@ struct ConsolePanel: View {
             case .reports: ReportsListView()
             case .designRuns: DesignRunsView()
             case .timing: TimingPanel()
+            case .findResults: FindResultsView()
             }
         }
     }

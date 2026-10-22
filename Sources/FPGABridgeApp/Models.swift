@@ -310,6 +310,8 @@ struct SourceNode: Identifiable, Hashable {
     var path: String?
     var isTop = false
     var children: [SourceNode]?
+    /// Disabled with Disable File: kept in the project, left out of builds and simulation.
+    var isDisabled = false
 }
 
 // MARK: Unsaved changes
@@ -355,6 +357,9 @@ enum ConsoleTab: String, CaseIterable, Identifiable {
     case log = "Log"
     case reports = "Reports"
     case designRuns = "Design Runs"
+    // MARK: Find in Files (ProjectTools.swift)
+    /// Vivado's Find Results: shown only once Find or Replace in Files has run.
+    case findResults = "Find Results"
 
     // MARK: Timing
     /// Vivado's Timing window for the open synthesized or implemented design (see TimingViews.swift).

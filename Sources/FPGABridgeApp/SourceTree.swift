@@ -4,11 +4,21 @@ import Foundation
 /// Builds the Sources pane's Hierarchy view: the top module with its instances underneath, like Vivado's
 /// "blinky (blinky.v)" > "u_div : clk_div (clk_div.v)".
 enum SourceTreeBuilder {
-    static func build(top: String, design: [String], constraints: [String], simulation: [String],
+    /// The tree for a project, disabled files included (greyed, as Vivado shows them).
+    static func build(project: Project, root: URL, read: (String) -> String) throws -> [SourceNode] {
+        build(top: project.top,
+              design: try project.resolveSources(in: root, includingDisabled: true),
+              constraints: try project.resolveConstraints(in: root, includingDisabled: true),
+              simulation: try project.resolveSimulationSources(in: root, includingDisabled: true),
+              disabled: Set(project.disabled ?? []), read: read)
+    }
+
+    /// Disabled design files add no modules to the hierarchy; they are listed as plain files under Design Sources.
+    static func build(top: String, design: [String], constraints: [String], simulation: [String], disabled: Set<String> = [],
                       read: (String) -> String) -> [SourceNode] {
         var fileOf: [String: String] = [:]
         var bodyOf: [String: String] = [:]
-        for path in design {
+        for path in design where !disabled.contains(path) {
             for (name, body) in moduleBodies(in: ProjectCreator.stripComments(read(path))) {
                 fileOf[name] = path
                 bodyOf[name] = body
@@ -38,28 +48,30 @@ enum SourceTreeBuilder {
             designChildren.append(moduleNode(top, instance: nil, id: "top:\(top)", visiting: []))
         }
         for path in design where !covered.contains(path) {
-            designChildren.append(fileNode(path))
+            designChildren.append(fileNode(path, disabled: disabled))
         }
 
         return [
             SourceNode(id: "group.design", title: "Design Sources", detail: "(\(design.count))", symbol: "folder",
                        children: designChildren),
             SourceNode(id: "group.constraints", title: "Constraints", detail: "(\(constraints.count))", symbol: "folder",
-                       children: [setNode("constrs_1", constraints)]),
+                       children: [setNode("constrs_1", constraints, disabled: disabled)]),
             SourceNode(id: "group.simulation", title: "Simulation Sources", detail: "(\(simulation.count))", symbol: "folder",
-                       children: [setNode("sim_1", simulation)]),
+                       children: [setNode("sim_1", simulation, disabled: disabled)]),
         ]
     }
 
-    private static func setNode(_ name: String, _ files: [String]) -> SourceNode {
+    private static func setNode(_ name: String, _ files: [String], disabled: Set<String>) -> SourceNode {
         SourceNode(id: "set.\(name)", title: name, detail: "(\(files.count))", symbol: "folder",
-                   children: files.isEmpty ? nil : files.map(fileNode))
+                   children: files.isEmpty ? nil : files.map { fileNode($0, disabled: disabled) })
     }
 
-    private static func fileNode(_ path: String) -> SourceNode {
+    private static func fileNode(_ path: String, disabled: Set<String>) -> SourceNode {
         let isConstraint = (path as NSString).pathExtension.lowercased() == "xdc"
-        return SourceNode(id: "file:\(path)", title: (path as NSString).lastPathComponent, detail: nil,
-                          symbol: isConstraint ? "pin" : "doc.text", path: path)
+        var node = SourceNode(id: "file:\(path)", title: (path as NSString).lastPathComponent, detail: nil,
+                              symbol: isConstraint ? "pin" : "doc.text", path: path)
+        node.isDisabled = disabled.contains(path)
+        return node
     }
 
     static func moduleBodies(in text: String) -> [(String, String)] {

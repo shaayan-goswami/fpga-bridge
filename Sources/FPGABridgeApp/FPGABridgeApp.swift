@@ -21,6 +21,8 @@ struct FPGABridgeApp: App {
                 .environmentObject(model.simulation)
                 .environmentObject(model.waveform)
                 .environmentObject(model.timingWindow)
+                .environmentObject(model.tools)
+                .modifier(ProjectToolSheets(tools: model.tools, model: model))
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
                 // A build from the command line (or another Mac) while the app was in the background shows up on return.
@@ -116,6 +118,15 @@ struct AppCommands: Commands {
                 .disabled(model.recentProjects.isEmpty)
                 Button("Open Example…") { model.openExampleProject() }
                 Divider()
+                // MARK: Save As, Archive, Write Tcl (ProjectTools.swift)
+                Divider()
+                Button("Save As…") { model.tools.sheet = .saveAs }
+                    .disabled(!model.hasProject)
+                Button("Archive…") { model.tools.sheet = .archive }
+                    .disabled(!model.hasProject)
+                Button("Write Tcl…") { model.tools.sheet = .writeTcl }
+                    .disabled(!model.hasProject)
+                Divider()
                 Button("Close") { model.closeProject() }
                     .disabled(!model.hasProject)
             }
@@ -137,6 +148,17 @@ struct AppCommands: Commands {
                 NSApp.sendAction(#selector(CodeTextView.toggleComment(_:)), to: nil, from: nil)
             }
             .keyboardShortcut("/")
+        }
+
+        // MARK: Find and Replace in Files (ProjectTools.swift)
+        CommandGroup(after: .textEditing) {
+            Divider()
+            Button("Find in Files…") { model.tools.sheet = .find(replace: false) }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+                .disabled(!model.hasProject)
+            Button("Replace in Files…") { model.tools.sheet = .find(replace: true) }
+                .keyboardShortcut("f", modifiers: [.command, .shift, .option])
+                .disabled(!model.hasProject)
         }
 
         CommandMenu("Flow") {
