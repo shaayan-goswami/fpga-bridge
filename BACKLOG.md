@@ -11,10 +11,10 @@ Legend: `[x]` done, `[ ]` todo. Order within a milestone is roughly the order to
 
 ## Open decisions
 
-- [ ] README says "Python 3" and a Python script for the prototype, but the CLI is Swift. Update the README, or add Python only where needed (e.g. helper scripts).
+- [x] README updated: everything is Swift (`FPGABridgeCore`, the `fpga-bridge` CLI, the SwiftUI app); no Python is needed.
 - [x] Decided: Windows and Linux build machines. (Decided with the project owner, who has only a Windows machine to test on.)
 - [x] Decided: no pin. Any Vivado version should work; the owner tests on 2025.2. Reports are parsed header-first so naming differences between versions are tolerated.
-- [ ] README Quick Start and License lines are stale (LICENSE already exists, MIT).
+- [x] README Install section points to [docs/getting-started.md](docs/getting-started.md); the License line matches `LICENSE` (MIT).
 
 ## M0: Foundation (done)
 
@@ -127,10 +127,10 @@ Found by the review in [docs/code-review.md](docs/code-review.md). Fix the likel
 - [ ] Signed and notarized release builds (CLI and app)
 - [ ] GitHub Releases workflow (tagged builds, `.dmg` / `.zip`)
 - [ ] Homebrew tap for the CLI
-- [ ] Real Quick Start in the README (replaces "Not available yet")
+- [x] Real install steps: README Install section and [docs/getting-started.md](docs/getting-started.md)
 - [ ] Docs: build machine setup (sleep off, no auto-restart, pinned Vivado), troubleshooting (supported boards are in docs/boards.md)
 - [ ] Replace `codesign --deep` in `scripts/make-app.sh` with signing nested code individually
-- [ ] Update README: it still says Python 3 is required and that nothing is built
+- [x] README describes what is built today, in Swift, with screenshots
 - [ ] Support more boards beyond Digilent
 - [ ] User testing with other students (e.g. a hardware club) and fix what annoys them
 - [ ] Contributing guide and issue templates
