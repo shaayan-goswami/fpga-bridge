@@ -6,6 +6,7 @@ import SwiftUI
 struct FPGABridgeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = AppModel.make()
+    @StateObject private var updates = UpdateChecker.make()
 
     init() {
         GlassChoice.adoptFrosted()
@@ -30,6 +31,9 @@ struct FPGABridgeApp: App {
                     AppDelegate.model = model
                     await model.start()
                 }
+                // A newer release on GitHub shows as a small notice in the corner (Settings > General turns it off).
+                .overlay(alignment: .bottomTrailing) { UpdateBanner().environmentObject(updates) }
+                .task { await updates.checkAtLaunchIfDue() }
         }
         .defaultSize(width: 1440, height: 900)
         .windowToolbarStyle(.unified(showsTitle: true))
@@ -47,6 +51,7 @@ struct FPGABridgeApp: App {
 
         Settings {
             AppSettingsView()
+                .environmentObject(updates)
         }
     }
 }

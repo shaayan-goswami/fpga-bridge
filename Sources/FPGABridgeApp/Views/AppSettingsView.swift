@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// FPGA Bridge > Settings… (⌘,): appearance and editor preferences. Project settings stay in Flow > Settings, as in
-/// Vivado.
+/// FPGA Bridge > Settings… (⌘,): updates, appearance and editor preferences. Project settings stay in Flow > Settings,
+/// as in Vivado.
 struct AppSettingsView: View {
     var body: some View {
         TabView {
+            GeneralSettings()
+                .tabItem { Label("General", systemImage: "gearshape") }
             AppearanceSettings()
                 .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
             EditorSettings()
@@ -12,6 +14,51 @@ struct AppSettingsView: View {
         }
         .frame(width: 540)
         .modifier(AppearanceRoot())
+    }
+}
+
+private struct GeneralSettings: View {
+    @EnvironmentObject private var updates: UpdateChecker
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Check for updates automatically", isOn: Binding(get: { updates.isEnabled }, set: { updates.isEnabled = $0 }))
+                LabeledContent("Version") {
+                    Text(updates.currentVersion ?? "Development build").monospacedDigit()
+                }
+                HStack {
+                    Button("Check Now") { Task { await updates.checkNow() } }
+                        .disabled(updates.isChecking)
+                    if updates.isChecking { ProgressView().controlSize(.small) }
+                    Spacer()
+                    if let result = updates.manualResult { resultText(result) }
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text(footer)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .frame(height: 240)
+    }
+
+    @ViewBuilder
+    private func resultText(_ result: UpdateChecker.ManualResult) -> some View {
+        switch result {
+        case .upToDate(let version): Label("\(version) is the latest version", systemImage: "checkmark.circle").foregroundStyle(.secondary)
+        case .available(let version): Label("\(version) is available", systemImage: "arrow.down.circle").foregroundStyle(Accent.active)
+        case .failed(let why): Text(why).foregroundStyle(.secondary).lineLimit(2).help(why)
+        }
+    }
+
+    private var footer: String {
+        var text = "Once a day at launch, FPGA Bridge asks GitHub for its newest release and shows a notice if there is one. Nothing else is sent, and nothing is downloaded until you choose Download."
+        if let skipped = updates.skippedVersion { text += " Skipped: \(skipped) (Check Now offers it again)." }
+        return text
     }
 }
 
