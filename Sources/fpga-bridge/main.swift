@@ -8,7 +8,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows or Linux machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Lint.self, Script.self, IPCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Lint.self, Script.self, IPCommand.self, PartCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -279,6 +279,52 @@ struct IPCommand: ParsableCommand {
             for key in ip.config.keys.sorted() { print("  \(key) = \(ip.config[key] ?? "")") }
             let template = try IPCommand.service().template(for: ip, part: project.part)
             print("\n" + IPScripts.cutSection(of: project.targetLanguage == "VHDL" ? template.vhdlTemplate : template.verilogTemplate))
+        }
+    }
+}
+
+struct PartCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "part",
+        abstract: "Fetch and show a part's package pins, I/O banks and die layout (what the Package and Device views draw).",
+        discussion: """
+            The data comes from Vivado on the build machine once per part (about a minute) and is kept in \
+            ~/Library/Application Support/fpga-bridge/parts, so the views work offline afterwards.
+            """)
+
+    @Argument(help: "The part, e.g. xc7a35tcpg236-1. Default: the project's part.") var part: String?
+    @Flag(help: "Ask the build machine again instead of using the saved copy.") var refresh = false
+    @Flag(help: "List every package pin.") var pins = false
+    @Flag(name: .customLong("tcl"), help: "Print the Tcl that would be run on the build machine, without running it.") var printScript = false
+
+    func run() throws {
+        let part = try part ?? Project.load(from: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)).part
+        if printScript {
+            print(PartData.dumpScript(part: part))
+            return
+        }
+        let data: PartData
+        if !refresh, let cached = PartData.cached(part: part) {
+            data = cached
+        } else {
+            print("Asking Vivado on the build machine about \(part)...")
+            data = try PartDataService(remote: Remote(config: try BridgeConfig.load())).partData(part: part, refresh: true)
+        }
+        print("\(data.part): \(data.family) \(data.device), package \(data.package), speed \(data.speed) (Vivado \(data.vivado))")
+        let user = data.pins.filter { $0.kind == .userIO }
+        print("\(data.pins.count) package pins, \(user.count) user I/O; die \(data.gridWidth) × \(data.gridHeight) tiles, "
+              + "\(data.tiles.reduce(0) { $0 + $1.sites.count }) sites, \(data.regions.count) clock regions")
+        for bank in data.banks {
+            let count = data.pins.filter { $0.bank == bank.name && $0.kind == .userIO }.count
+            print("  Bank \(bank.name.padding(toLength: 4, withPad: " ", startingAt: 0)) \(bank.type.title.padding(toLength: 17, withPad: " ", startingAt: 0)) \(count) user I/O")
+        }
+        if pins {
+            for pin in data.pins.sorted(by: { ($0.row.count, $0.row, $0.column) < ($1.row.count, $1.row, $1.column) }) {
+                let extras = [pin.isClockCapable ? "clock-capable" : nil, pin.diffPair.isEmpty ? nil : (pin.isPositive ? "P of " : "N of ") + pin.diffPair,
+                              pin.isVREF ? "VREF" : nil].compactMap { $0 }
+                print("  \(pin.name.padding(toLength: 5, withPad: " ", startingAt: 0)) \(pin.bank.padding(toLength: 4, withPad: " ", startingAt: 0)) "
+                      + "\(pin.function.padding(toLength: 28, withPad: " ", startingAt: 0)) \(extras.joined(separator: ", "))")
+            }
         }
     }
 }
