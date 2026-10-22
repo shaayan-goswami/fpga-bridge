@@ -256,6 +256,8 @@ public struct DesignSnapshot: Equatable, Sendable {
     public let nets: [DesignNet]
     /// Properties by object, keyed by `kind:name` (see `properties(of:name:)`).
     public let propertyTable: [String: [DesignProperty]]
+    /// The worst setup and hold paths, for the synthesized and implemented designs (see TimingPaths.swift).
+    public var timing = TimingPathSet()
     private let cellsByName: [String: DesignCell]
     private let pinsByCell: [String: [DesignPin]]
     private let netsByModule: [String: [DesignNet]]
@@ -309,13 +311,15 @@ public struct DesignSnapshot: Equatable, Sendable {
     public static func load(stage: DesignStage, from directory: URL) throws -> DesignSnapshot {
         func read(_ name: String) -> String? { try? String(contentsOf: directory.appendingPathComponent(name), encoding: .utf8) }
         guard let cellsText = read(DesignDump.cellsFile(stage.rawValue)) else { throw LoadError.notAvailable(stage) }
-        return DesignSnapshot(stage: stage,
+        var snapshot = DesignSnapshot(stage: stage,
                               info: parseInfo(read(DesignDump.infoFile(stage.rawValue)) ?? ""),
                               cells: parseCells(cellsText),
                               ports: parsePorts(read(DesignDump.portsFile(stage.rawValue)) ?? ""),
                               pins: parsePins(read(DesignDump.pinsFile(stage.rawValue)) ?? ""),
                               nets: parseConnections(read(DesignDump.connectionsFile(stage.rawValue)) ?? ""),
                               properties: parseProperties(read(DesignDump.propertiesFile(stage.rawValue)) ?? ""))
+        snapshot.timing = TimingPathSet.load(stage: stage, from: directory)
+        return snapshot
     }
 
     /// Whether a build left data for this stage.

@@ -1,0 +1,98 @@
+#fpga-bridge path 1
+Slack (VIOLATED) :        -13.435ns  (required time - arrival time)
+  Source:                 scan_reg[1]/C
+                            (rising edge-triggered cell FDRE clocked by sys_clk  {rise@0.000ns fall@0.800ns period=1.600ns})
+  Destination:            led[1]
+                            (output port clocked by sys_clk  {rise@0.000ns fall@0.800ns period=1.600ns})
+  Path Group:             sys_clk
+  Path Type:              Max at Slow Process Corner
+  Requirement:            1.600ns  (sys_clk rise@1.600ns - sys_clk rise@0.000ns)
+  Data Path Delay:        7.849ns  (logic 4.172ns (53.149%)  route 3.677ns (46.851%))
+  Logic Levels:           2  (LUT3=1 OBUF=1)
+  Output Delay:           2.000ns
+  Clock Path Skew:        -5.150ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.000ns = ( 1.600 - 1.600 ) 
+    Source Clock Delay      (SCD):    5.150ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock sys_clk rise edge)    0.000     0.000 r  
+    W5                                                0.000     0.000 r  clk (IN)
+                         net (fo=0)                   0.000     0.000    clk
+    W5                                                                r  clk_IBUF_inst/I
+    W5                   IBUF (Prop_ibuf_I_O)         1.458     1.458 r  clk_IBUF_inst/O
+                         net (fo=1, routed)           1.967     3.425    clk_IBUF
+    BUFGCTRL_X0Y0                                                     r  clk_IBUF_BUFG_inst/I
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.096     3.521 r  clk_IBUF_BUFG_inst/O
+                         net (fo=48, routed)          1.629     5.150    clk_IBUF_BUFG
+    SLICE_X2Y17          FDRE                                         r  scan_reg[1]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X2Y17          FDRE (Prop_fdre_C_Q)         0.518     5.668 r  scan_reg[1]/Q
+                         net (fo=4, routed)           1.142     6.810    sel0[1]
+    SLICE_X1Y14                                                       r  led_OBUF[1]_inst_i_1/I0
+    SLICE_X1Y14          LUT3 (Prop_lut3_I0_O)        0.124     6.934 r  led_OBUF[1]_inst_i_1/O
+                         net (fo=1, routed)           2.536     9.470    led_OBUF[1]
+    E19                                                               r  led_OBUF[1]_inst/I
+    E19                  OBUF (Prop_obuf_I_O)         3.530    12.999 r  led_OBUF[1]_inst/O
+                         net (fo=0)                   0.000    12.999    led[1]
+    E19                                                               r  led[1] (OUT)
+  -------------------------------------------------------------------    -------------------
+
+                         (clock sys_clk rise edge)    1.600     1.600 r  
+                         clock pessimism              0.000     1.600    
+                         clock uncertainty           -0.035     1.565    
+                         output delay                -2.000    -0.435    
+  -------------------------------------------------------------------
+                         required time                         -0.435    
+                         arrival time                         -12.999    
+  -------------------------------------------------------------------
+                         slack                                -13.435
+#fpga-bridge path 9
+Slack (VIOLATED) :        -11.700ns  (required time - arrival time)
+  Source:                 sw[8]
+                            (input port clocked by sys_clk  {rise@0.000ns fall@0.800ns period=1.600ns})
+  Destination:            led[8]
+                            (output port clocked by sys_clk  {rise@0.000ns fall@0.800ns period=1.600ns})
+  Path Group:             sys_clk
+  Path Type:              Max at Slow Process Corner
+  Requirement:            1.600ns  (sys_clk rise@1.600ns - sys_clk rise@0.000ns)
+  Data Path Delay:        9.265ns  (logic 4.959ns (53.521%)  route 4.306ns (46.479%))
+  Logic Levels:           2  (IBUF=1 OBUF=1)
+  Input Delay:            2.000ns
+  Output Delay:           2.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock sys_clk rise edge)    0.000     0.000 r  
+                         input delay                  2.000     2.000    
+    V2                                                0.000     2.000 r  sw[8] (IN)
+                         net (fo=0)                   0.000     2.000    sw[8]
+    V2                                                                r  sw_IBUF[8]_inst/I
+    V2                   IBUF (Prop_ibuf_I_O)         1.454     3.454 r  sw_IBUF[8]_inst/O
+                         net (fo=1, routed)           4.306     7.761    led_OBUF[8]
+    V13                                                               r  led_OBUF[8]_inst/I
+    V13                  OBUF (Prop_obuf_I_O)         3.504    11.265 r  led_OBUF[8]_inst/O
+                         net (fo=0)                   0.000    11.265    led[8]
+    V13                                                               r  led[8] (OUT)
+  -------------------------------------------------------------------    -------------------
+
+                         (clock sys_clk rise edge)    1.600     1.600 r  
+                         clock pessimism              0.000     1.600    
+                         clock uncertainty           -0.035     1.565    
+                         output delay                -2.000    -0.435    
+  -------------------------------------------------------------------
+                         required time                         -0.435    
+                         arrival time                         -11.265    
+  -------------------------------------------------------------------
+                         slack                                -11.700

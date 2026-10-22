@@ -140,6 +140,8 @@ final class DesignNetlistTests: XCTestCase {
         XCTAssertTrue(tcl.contains("<= \(DesignDump.maxConnectivityCells)"))
         XCTAssertTrue(tcl.contains("<= \(DesignDump.maxPropertyObjects)"))
         XCTAssertTrue(tcl.contains("fpgabridge_relative"), "source paths are made relative to the project")
-        XCTAssertEqual(tcl.components(separatedBy: "-translation lf").count - 1, 6, "every file has plain line endings")
+        let opened = tcl.components(separatedBy: "[open \"out/").count - 1
+        XCTAssertGreaterThanOrEqual(opened, 6)
+        XCTAssertEqual(tcl.components(separatedBy: "-translation lf").count - 1, opened, "every file has plain line endings")
     }
 }

@@ -12,6 +12,7 @@ import Foundation
 ///   `<stage>_conn.tsv`    one line per connection: net, net type, the pin or port it reaches, `pin` or `port`
 ///   `<stage>_props.tsv`   every property with a value: object kind (cell, net, port), name, property, value
 ///   `<stage>_info.tsv`    key and value lines: stage, design, part, top, Vivado version, and what was left out
+/// and, for the synthesized and implemented designs, the worst timing paths (see `fpgabridge_timing` below)
 /// and a few reports for the stage (see `reports`). Source files are written relative to the project, as the Mac
 /// knows them. Everything is wrapped in `catch`: a failure here must never fail the build, so the worst case is a
 /// view with less in it.
@@ -23,11 +24,27 @@ public enum DesignDump {
     public static func pinsFile(_ stage: String) -> String { "\(stage)_pins.tsv" }
     public static func connectionsFile(_ stage: String) -> String { "\(stage)_conn.tsv" }
     public static func propertiesFile(_ stage: String) -> String { "\(stage)_props.tsv" }
+    public static func timingPathsFile(_ stage: String) -> String { "\(stage)_timing_paths.tsv" }
+    public static func timingElementsFile(_ stage: String) -> String { "\(stage)_timing_elements.tsv" }
+    public static func timingReportsFile(_ stage: String) -> String { "\(stage)_timing_reports.txt" }
 
     /// Above these sizes the per-object files are left out, so a huge design still builds in reasonable time and the
     /// download stays small. The hierarchy and ports are always written.
     public static let maxConnectivityCells = 150_000
     public static let maxPropertyObjects = 40_000
+
+    /// The worst paths saved per path group, for setup and for hold, and how many of them also get Vivado's full
+    /// path report (each takes a few milliseconds).
+    public static let maxTimingPaths = 100
+    public static let maxTimingReports = 400
+
+    /// The timing path properties written, in this order, after the path's number. The file's first line names them,
+    /// so the reader doesn't depend on the order.
+    public static let timingPathProperties = [
+        "DELAY_TYPE", "GROUP", "SLACK", "REQUIREMENT", "DATAPATH_DELAY", "DATAPATH_LOGIC_DELAY", "DATAPATH_NET_DELAY",
+        "LOGIC_LEVELS", "MAX_FANOUT", "STARTPOINT_PIN", "ENDPOINT_PIN", "STARTPOINT_CLOCK", "ENDPOINT_CLOCK",
+        "SKEW", "UNCERTAINTY", "EXCEPTION", "CORNER", "ARRIVAL_TIME", "REQUIRED_TIME",
+    ]
 
     /// Properties never written: routing strings can be megabytes per net, and these are long or meaningless here.
     public static let skippedProperties = ["ROUTE", "FIXED_ROUTE", "RELATIVE_ROUTE", "HIERARCHICALNAME", "XLNX_LINE_COL", "FILE_NAMES"]
@@ -129,6 +146,47 @@ public enum DesignDump {
                 fpgabridge_props_of $f cell [filter $objs "REF_NAME == \\"$ref\\""]
             }
         }
+        # The worst setup and hold paths of each path group (what Vivado's Timing window lists), one line each in
+        # `<stage>_timing_paths.tsv`; the ports, pins, nets and cells each goes through, in path order, in
+        # `<stage>_timing_elements.tsv`; and Vivado's report of each path in `<stage>_timing_reports.txt`.
+        # `get_pins` of a path starts at the startpoint's output (Q, not C), and `get_ports` of a path includes the
+        # clock port, so only ports that are the startpoint or the endpoint are kept.
+        proc fpgabridge_timing {stage} {
+            set props {\(timingPathProperties.joined(separator: " "))}
+            set paths [concat \\
+                [get_timing_paths -quiet -delay_type max -max_paths \(maxTimingPaths) -nworst 1 -sort_by group] \\
+                [get_timing_paths -quiet -delay_type min -max_paths \(maxTimingPaths) -nworst 1 -sort_by group]]
+            set f [open "out/${stage}_timing_paths.tsv" w]
+            fconfigure $f -translation lf
+            set e [open "out/${stage}_timing_elements.tsv" w]
+            fconfigure $e -translation lf
+            set r [open "out/${stage}_timing_reports.txt" w]
+            fconfigure $r -translation lf
+            puts $f "#ID\t[join $props "\t"]"
+            set id 0
+            foreach p $paths {
+                incr id
+                set line $id
+                foreach prop $props { append line "\t[fpgabridge_clean [get_property -quiet $prop $p]]" }
+                puts $f $line
+                set ends [list [get_property -quiet STARTPOINT_PIN $p] [get_property -quiet ENDPOINT_PIN $p]]
+                foreach o [get_ports -quiet -of_objects $p] { if {[lsearch -exact $ends $o] >= 0} { puts $e "$id\tport\t$o" } }
+                foreach o [get_pins -quiet -of_objects $p] { puts $e "$id\tpin\t$o" }
+                foreach o [get_nets -quiet -of_objects $p] { puts $e "$id\tnet\t$o" }
+                foreach o [get_cells -quiet -of_objects $p] { puts $e "$id\tcell\t$o" }
+                if {$id <= \(maxTimingReports)} {
+                    # Leave out the header Vivado repeats for every path: the report starts at "Slack".
+                    set text [report_timing -quiet -of_objects $p -return_string]
+                    set at [string first "\nSlack" $text]
+                    if {$at >= 0} { set text [string range $text [expr {$at + 1}] end] }
+                    puts $r "#fpga-bridge path $id"
+                    puts $r [string trimright $text]
+                }
+            }
+            close $f
+            close $e
+            close $r
+        }
         proc fpgabridge_dump {stage} {
             set started [clock milliseconds]
             set left_out {}
@@ -202,9 +260,11 @@ public enum DesignDump {
                 }
                 synth {
         \(reportLines("synth"))
+                catch { fpgabridge_timing synth }
                 }
                 impl {
         \(reportLines("impl"))
+                catch { fpgabridge_timing impl }
                 }
             }
         }

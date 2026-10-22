@@ -1,0 +1,201 @@
+#ID	DELAY_TYPE	GROUP	SLACK	REQUIREMENT	DATAPATH_DELAY	DATAPATH_LOGIC_DELAY	DATAPATH_NET_DELAY	LOGIC_LEVELS	MAX_FANOUT	STARTPOINT_PIN	ENDPOINT_PIN	STARTPOINT_CLOCK	ENDPOINT_CLOCK	SKEW	UNCERTAINTY	EXCEPTION	CORNER	ARRIVAL_TIME	REQUIRED_TIME
+1	max	sys_clk	-13.435	1.600	7.849	4.172	3.677	2	4	scan_reg[1]/C	led[1]	sys_clk	sys_clk	-5.150	0.035		Slow	12.999	-0.435
+2	max	sys_clk	-13.221	1.600	7.629	4.468	3.161	2	8	stable_reg[1]/C	led[5]	sys_clk	sys_clk	-5.156	0.035		Slow	12.786	-0.435
+3	max	sys_clk	-12.994	1.600	7.406	4.516	2.890	2	3	scan_reg[7]/C	led[7]	sys_clk	sys_clk	-5.152	0.035		Slow	12.558	-0.435
+4	max	sys_clk	-12.910	1.600	7.324	4.381	2.943	2	3	scan_reg[0]/C	led[0]	sys_clk	sys_clk	-5.150	0.035		Slow	12.474	-0.435
+5	max	sys_clk	-12.894	1.600	7.307	4.279	3.028	2	4	scan_reg[6]/C	led[6]	sys_clk	sys_clk	-5.152	0.035		Slow	12.459	-0.435
+6	max	sys_clk	-12.837	1.600	7.252	4.534	2.718	2	4	scan_reg[3]/C	led[3]	sys_clk	sys_clk	-5.150	0.035		Slow	12.402	-0.435
+7	max	sys_clk	-12.709	1.600	7.123	4.143	2.980	2	4	scan_reg[2]/C	led[2]	sys_clk	sys_clk	-5.150	0.035		Slow	12.273	-0.435
+8	max	sys_clk	-12.637	1.600	7.046	4.227	2.819	2	8	stable_reg[1]/C	led[4]	sys_clk	sys_clk	-5.156	0.035		Slow	12.202	-0.435
+9	max	sys_clk	-11.700	1.600	9.265	4.959	4.306	2	1	sw[8]	led[8]	sys_clk	sys_clk		0.035		Slow	11.265	-0.435
+10	max	sys_clk	-10.517	1.600	8.082	4.987	3.095	2	1	sw[12]	led[12]	sys_clk	sys_clk		0.035		Slow	10.082	-0.435
+11	max	sys_clk	-10.464	1.600	8.029	4.978	3.051	2	1	sw[15]	led[15]	sys_clk	sys_clk		0.035		Slow	10.029	-0.435
+12	max	sys_clk	-10.268	1.600	7.833	4.960	2.873	2	1	sw[13]	led[13]	sys_clk	sys_clk		0.035		Slow	9.833	-0.435
+13	max	sys_clk	-9.789	1.600	7.354	4.971	2.383	2	1	sw[14]	led[14]	sys_clk	sys_clk		0.035		Slow	9.354	-0.435
+14	max	sys_clk	-9.746	1.600	7.310	4.968	2.343	2	1	sw[11]	led[11]	sys_clk	sys_clk		0.035		Slow	9.310	-0.435
+15	max	sys_clk	-9.608	1.600	7.172	4.983	2.189	2	1	sw[10]	led[10]	sys_clk	sys_clk		0.035		Slow	9.172	-0.435
+16	max	sys_clk	-9.531	1.600	7.096	4.960	2.135	2	1	sw[9]	led[9]	sys_clk	sys_clk		0.035		Slow	9.096	-0.435
+17	max	sys_clk	-2.044	1.600	3.158	0.704	2.454	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[10]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.309	6.265
+18	max	sys_clk	-2.044	1.600	3.158	0.704	2.454	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[11]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.309	6.265
+19	max	sys_clk	-2.044	1.600	3.158	0.704	2.454	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[8]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.309	6.265
+20	max	sys_clk	-2.044	1.600	3.158	0.704	2.454	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[9]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.309	6.265
+21	max	sys_clk	-2.020	1.600	3.156	0.704	2.452	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[20]/R	sys_clk	sys_clk	0.000	0.035		Slow	8.307	6.287
+22	max	sys_clk	-2.020	1.600	3.156	0.704	2.452	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[21]/R	sys_clk	sys_clk	0.000	0.035		Slow	8.307	6.287
+23	max	sys_clk	-2.020	1.600	3.156	0.704	2.452	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[22]/R	sys_clk	sys_clk	0.000	0.035		Slow	8.307	6.287
+24	max	sys_clk	-2.020	1.600	3.156	0.704	2.452	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[23]/R	sys_clk	sys_clk	0.000	0.035		Slow	8.307	6.287
+25	max	sys_clk	-1.943	1.600	3.058	0.704	2.354	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[0]/R	sys_clk	sys_clk	-0.020	0.035		Slow	8.210	6.267
+26	max	sys_clk	-1.943	1.600	3.058	0.704	2.354	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[1]/R	sys_clk	sys_clk	-0.020	0.035		Slow	8.210	6.267
+27	max	sys_clk	-1.943	1.600	3.058	0.704	2.354	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[2]/R	sys_clk	sys_clk	-0.020	0.035		Slow	8.210	6.267
+28	max	sys_clk	-1.943	1.600	3.058	0.704	2.354	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[3]/R	sys_clk	sys_clk	-0.020	0.035		Slow	8.210	6.267
+29	max	sys_clk	-1.905	1.600	3.018	0.704	2.314	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[16]/R	sys_clk	sys_clk	-0.023	0.035		Slow	8.169	6.264
+30	max	sys_clk	-1.905	1.600	3.018	0.704	2.314	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[17]/R	sys_clk	sys_clk	-0.023	0.035		Slow	8.169	6.264
+31	max	sys_clk	-1.905	1.600	3.018	0.704	2.314	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[18]/R	sys_clk	sys_clk	-0.023	0.035		Slow	8.169	6.264
+32	max	sys_clk	-1.905	1.600	3.018	0.704	2.314	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[19]/R	sys_clk	sys_clk	-0.023	0.035		Slow	8.169	6.264
+33	max	sys_clk	-1.905	1.600	3.019	0.704	2.315	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[4]/R	sys_clk	sys_clk	-0.021	0.035		Slow	8.171	6.266
+34	max	sys_clk	-1.905	1.600	3.019	0.704	2.315	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[5]/R	sys_clk	sys_clk	-0.021	0.035		Slow	8.171	6.266
+35	max	sys_clk	-1.905	1.600	3.019	0.704	2.315	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[6]/R	sys_clk	sys_clk	-0.021	0.035		Slow	8.171	6.266
+36	max	sys_clk	-1.905	1.600	3.019	0.704	2.315	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[7]/R	sys_clk	sys_clk	-0.021	0.035		Slow	8.171	6.266
+37	max	sys_clk	-1.756	1.600	2.869	0.704	2.165	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[12]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.020	6.265
+38	max	sys_clk	-1.756	1.600	2.869	0.704	2.165	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[13]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.020	6.265
+39	max	sys_clk	-1.756	1.600	2.869	0.704	2.165	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[14]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.020	6.265
+40	max	sys_clk	-1.756	1.600	2.869	0.704	2.165	2	24	u_tick/count_reg[21]/C	u_tick/count_reg[15]/R	sys_clk	sys_clk	-0.022	0.035		Slow	8.020	6.265
+41	max	sys_clk	-1.076	1.600	2.700	0.704	1.996	2	2	u_tick/count_reg[21]/C	u_tick/tick_reg/D	sys_clk	sys_clk	-0.022	0.035		Slow	7.851	6.775
+42	max	sys_clk	-0.984	1.600	2.605	0.766	1.839	2	5	count_reg[3]/C	count_reg[6]/D	sys_clk	sys_clk	-0.024	0.035		Slow	7.760	6.776
+43	max	sys_clk	-0.973	1.600	2.631	0.792	1.839	2	5	count_reg[3]/C	count_reg[7]/D	sys_clk	sys_clk	-0.024	0.035		Slow	7.786	6.813
+44	max	sys_clk	-0.972	1.600	2.589	0.897	1.692	2	4	scan_reg[6]/C	dir_reg/D	sys_clk	sys_clk	-0.025	0.035		Slow	7.741	6.769
+45	max	sys_clk	-0.898	1.600	2.266	0.642	1.624	1	16	u_tick/tick_reg/C	scan_reg[0]/CE	sys_clk	sys_clk	-0.028	0.035		Slow	7.420	6.522
+46	max	sys_clk	-0.898	1.600	2.266	0.642	1.624	1	16	u_tick/tick_reg/C	scan_reg[1]/CE	sys_clk	sys_clk	-0.028	0.035		Slow	7.420	6.522
+47	max	sys_clk	-0.898	1.600	2.266	0.642	1.624	1	16	u_tick/tick_reg/C	scan_reg[2]/CE	sys_clk	sys_clk	-0.028	0.035		Slow	7.420	6.522
+48	max	sys_clk	-0.898	1.600	2.266	0.642	1.624	1	16	u_tick/tick_reg/C	scan_reg[3]/CE	sys_clk	sys_clk	-0.028	0.035		Slow	7.420	6.522
+49	max	sys_clk	-0.885	1.600	1.722	0.419	1.303	0	19	stable_reg[0]/C	scan_reg[0]/S	sys_clk	sys_clk	-0.028	0.035		Slow	6.876	5.992
+50	max	sys_clk	-0.885	1.600	1.722	0.419	1.303	0	19	stable_reg[0]/C	scan_reg[1]/R	sys_clk	sys_clk	-0.028	0.035		Slow	6.876	5.992
+51	max	sys_clk	-0.885	1.600	1.722	0.419	1.303	0	19	stable_reg[0]/C	scan_reg[2]/R	sys_clk	sys_clk	-0.028	0.035		Slow	6.876	5.992
+52	max	sys_clk	-0.885	1.600	1.722	0.419	1.303	0	19	stable_reg[0]/C	scan_reg[3]/R	sys_clk	sys_clk	-0.028	0.035		Slow	6.876	5.992
+53	max	sys_clk	-0.814	1.600	2.412	1.920	0.492	6	2	u_tick/count_reg[1]/C	u_tick/count_reg[21]/D	sys_clk	sys_clk	-0.029	0.035		Slow	7.568	6.754
+54	max	sys_clk	-0.793	1.600	2.391	1.899	0.492	6	2	u_tick/count_reg[1]/C	u_tick/count_reg[23]/D	sys_clk	sys_clk	-0.029	0.035		Slow	7.547	6.754
+55	max	sys_clk	-0.739	1.600	2.108	0.642	1.466	1	16	u_tick/tick_reg/C	scan_reg[4]/CE	sys_clk	sys_clk	-0.026	0.035		Slow	7.263	6.524
+56	max	sys_clk	-0.739	1.600	2.108	0.642	1.466	1	16	u_tick/tick_reg/C	scan_reg[5]/CE	sys_clk	sys_clk	-0.026	0.035		Slow	7.263	6.524
+57	max	sys_clk	-0.739	1.600	2.108	0.642	1.466	1	16	u_tick/tick_reg/C	scan_reg[6]/CE	sys_clk	sys_clk	-0.026	0.035		Slow	7.263	6.524
+58	max	sys_clk	-0.739	1.600	2.108	0.642	1.466	1	16	u_tick/tick_reg/C	scan_reg[7]/CE	sys_clk	sys_clk	-0.026	0.035		Slow	7.263	6.524
+59	max	sys_clk	-0.719	1.600	2.317	1.825	0.492	6	2	u_tick/count_reg[1]/C	u_tick/count_reg[22]/D	sys_clk	sys_clk	-0.029	0.035		Slow	7.473	6.754
+60	max	sys_clk	-0.703	1.600	2.301	1.809	0.492	6	2	u_tick/count_reg[1]/C	u_tick/count_reg[20]/D	sys_clk	sys_clk	-0.029	0.035		Slow	7.457	6.754
+61	max	sys_clk	-0.699	1.600	2.298	1.806	0.492	5	2	u_tick/count_reg[1]/C	u_tick/count_reg[17]/D	sys_clk	sys_clk	-0.028	0.035		Slow	7.454	6.755
+62	max	sys_clk	-0.680	1.600	2.015	0.642	1.373	1	16	u_tick/tick_reg/C	count_reg[0]/CE	sys_clk	sys_clk	-0.025	0.035		Slow	7.169	6.489
+63	max	sys_clk	-0.678	1.600	2.277	1.785	0.492	5	2	u_tick/count_reg[1]/C	u_tick/count_reg[19]/D	sys_clk	sys_clk	-0.028	0.035		Slow	7.433	6.755
+64	max	sys_clk	-0.604	1.600	2.203	1.711	0.492	5	2	u_tick/count_reg[1]/C	u_tick/count_reg[18]/D	sys_clk	sys_clk	-0.028	0.035		Slow	7.359	6.755
+65	max	sys_clk	-0.588	1.600	2.187	1.695	0.492	5	2	u_tick/count_reg[1]/C	u_tick/count_reg[16]/D	sys_clk	sys_clk	-0.028	0.035		Slow	7.343	6.755
+66	max	sys_clk	-0.587	1.600	1.958	0.642	1.316	1	16	u_tick/tick_reg/C	count_reg[3]/CE	sys_clk	sys_clk	-0.025	0.035		Slow	7.112	6.525
+67	max	sys_clk	-0.587	1.600	1.958	0.642	1.316	1	16	u_tick/tick_reg/C	count_reg[4]/CE	sys_clk	sys_clk	-0.025	0.035		Slow	7.112	6.525
+68	max	sys_clk	-0.587	1.600	1.958	0.642	1.316	1	16	u_tick/tick_reg/C	count_reg[5]/CE	sys_clk	sys_clk	-0.025	0.035		Slow	7.112	6.525
+69	max	sys_clk	-0.584	1.600	2.184	1.692	0.492	4	2	u_tick/count_reg[1]/C	u_tick/count_reg[13]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.340	6.756
+70	max	sys_clk	-0.563	1.600	2.163	1.671	0.492	4	2	u_tick/count_reg[1]/C	u_tick/count_reg[15]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.319	6.756
+71	max	sys_clk	-0.489	1.600	2.089	1.597	0.492	4	2	u_tick/count_reg[1]/C	u_tick/count_reg[14]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.245	6.756
+72	max	sys_clk	-0.473	1.600	2.073	1.581	0.492	4	2	u_tick/count_reg[1]/C	u_tick/count_reg[12]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.229	6.756
+73	max	sys_clk	-0.470	1.600	2.070	1.578	0.492	3	2	u_tick/count_reg[1]/C	u_tick/count_reg[9]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.226	6.756
+74	max	sys_clk	-0.449	1.600	2.049	1.557	0.492	3	2	u_tick/count_reg[1]/C	u_tick/count_reg[11]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.205	6.756
+75	max	sys_clk	-0.418	1.600	2.064	0.773	1.291	1	4	scan_reg[6]/C	scan_reg[5]/D	sys_clk	sys_clk	0.000	0.035		Slow	7.216	6.798
+76	max	sys_clk	-0.412	1.600	1.252	0.419	0.833	0	19	stable_reg[0]/C	scan_reg[4]/R	sys_clk	sys_clk	-0.026	0.035		Slow	6.406	5.994
+77	max	sys_clk	-0.412	1.600	1.252	0.419	0.833	0	19	stable_reg[0]/C	scan_reg[5]/R	sys_clk	sys_clk	-0.026	0.035		Slow	6.406	5.994
+78	max	sys_clk	-0.412	1.600	1.252	0.419	0.833	0	19	stable_reg[0]/C	scan_reg[6]/R	sys_clk	sys_clk	-0.026	0.035		Slow	6.406	5.994
+79	max	sys_clk	-0.412	1.600	1.252	0.419	0.833	0	19	stable_reg[0]/C	scan_reg[7]/R	sys_clk	sys_clk	-0.026	0.035		Slow	6.406	5.994
+80	max	sys_clk	-0.409	1.600	2.092	0.801	1.291	1	4	scan_reg[6]/C	scan_reg[7]/D	sys_clk	sys_clk	0.000	0.035		Slow	7.244	6.835
+81	max	sys_clk	-0.375	1.600	1.975	1.483	0.492	3	2	u_tick/count_reg[1]/C	u_tick/count_reg[10]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.131	6.756
+82	max	sys_clk	-0.359	1.600	1.959	1.467	0.492	3	2	u_tick/count_reg[1]/C	u_tick/count_reg[8]/D	sys_clk	sys_clk	-0.027	0.035		Slow	7.115	6.756
+83	max	sys_clk	-0.355	1.600	1.956	1.464	0.492	2	2	u_tick/count_reg[1]/C	u_tick/count_reg[5]/D	sys_clk	sys_clk	-0.026	0.035		Slow	7.112	6.757
+84	max	sys_clk	-0.334	1.600	1.935	1.443	0.492	2	2	u_tick/count_reg[1]/C	u_tick/count_reg[7]/D	sys_clk	sys_clk	-0.026	0.035		Slow	7.091	6.757
+85	max	sys_clk	-0.292	1.600	1.937	0.773	1.164	1	4	count_reg[4]/C	count_reg[5]/D	sys_clk	sys_clk	0.000	0.035		Slow	7.091	6.800
+86	max	sys_clk	-0.291	1.600	1.973	0.799	1.174	1	4	count_reg[4]/C	count_reg[4]/D	sys_clk	sys_clk	0.000	0.035		Slow	7.127	6.837
+87	max	sys_clk	-0.288	1.600	1.660	0.642	1.018	1	16	u_tick/tick_reg/C	count_reg[1]/CE	sys_clk	sys_clk	-0.024	0.035		Slow	6.814	6.526
+88	max	sys_clk	-0.288	1.600	1.660	0.642	1.018	1	16	u_tick/tick_reg/C	count_reg[2]/CE	sys_clk	sys_clk	-0.024	0.035		Slow	6.814	6.526
+89	max	sys_clk	-0.288	1.600	1.660	0.642	1.018	1	16	u_tick/tick_reg/C	count_reg[6]/CE	sys_clk	sys_clk	-0.024	0.035		Slow	6.814	6.526
+90	max	sys_clk	-0.288	1.600	1.660	0.642	1.018	1	16	u_tick/tick_reg/C	count_reg[7]/CE	sys_clk	sys_clk	-0.024	0.035		Slow	6.814	6.526
+91	max	sys_clk	-0.269	1.600	1.110	0.419	0.691	0	19	stable_reg[0]/C	count_reg[3]/R	sys_clk	sys_clk	-0.025	0.035		Slow	6.264	5.995
+92	max	sys_clk	-0.269	1.600	1.110	0.419	0.691	0	19	stable_reg[0]/C	count_reg[4]/R	sys_clk	sys_clk	-0.025	0.035		Slow	6.264	5.995
+93	max	sys_clk	-0.269	1.600	1.110	0.419	0.691	0	19	stable_reg[0]/C	count_reg[5]/R	sys_clk	sys_clk	-0.025	0.035		Slow	6.264	5.995
+94	max	sys_clk	-0.269	1.600	1.111	0.419	0.692	0	19	stable_reg[0]/C	count_reg[1]/R	sys_clk	sys_clk	-0.024	0.035		Slow	6.265	5.996
+95	max	sys_clk	-0.269	1.600	1.111	0.419	0.692	0	19	stable_reg[0]/C	count_reg[2]/R	sys_clk	sys_clk	-0.024	0.035		Slow	6.265	5.996
+96	max	sys_clk	-0.269	1.600	1.111	0.419	0.692	0	19	stable_reg[0]/C	count_reg[6]/R	sys_clk	sys_clk	-0.024	0.035		Slow	6.265	5.996
+97	max	sys_clk	-0.269	1.600	1.111	0.419	0.692	0	19	stable_reg[0]/C	count_reg[7]/R	sys_clk	sys_clk	-0.024	0.035		Slow	6.265	5.996
+98	max	sys_clk	-0.264	1.600	1.906	0.642	1.264	1	7	count_reg[1]/C	count_reg[1]/D	sys_clk	sys_clk	0.000	0.035		Slow	7.061	6.797
+99	max	sys_clk	-0.260	1.600	1.861	1.369	0.492	2	2	u_tick/count_reg[1]/C	u_tick/count_reg[6]/D	sys_clk	sys_clk	-0.026	0.035		Slow	7.017	6.757
+100	max	sys_clk	-0.245	1.600	1.928	0.664	1.264	1	7	count_reg[1]/C	count_reg[2]/D	sys_clk	sys_clk	0.000	0.035		Slow	7.083	6.838
+101	min	sys_clk	-1.215	0.000	2.146	1.383	0.763	1	1	sw[0]	meta_reg[1]/D	sys_clk	sys_clk	5.156	0.035		Slow	4.146	5.361
+102	min	sys_clk	-0.987	0.000	2.425	1.391	1.034	1	1	sw[1]	meta_reg[2]/D	sys_clk	sys_clk	5.154	0.035		Slow	4.425	5.413
+103	min	sys_clk	0.131	0.000	0.206	0.141	0.065	0	1	meta_reg[0]/C	stable_reg[0]/D	sys_clk	sys_clk	0.000			Fast	1.680	1.549
+104	min	sys_clk	0.131	0.000	0.206	0.141	0.065	0	1	meta_reg[1]/C	stable_reg[1]/D	sys_clk	sys_clk	0.000			Fast	1.682	1.551
+105	min	sys_clk	0.160	0.000	0.220	0.164	0.056	0	1	meta_reg[2]/C	stable_reg[2]/D	sys_clk	sys_clk	0.000			Fast	1.694	1.534
+106	min	sys_clk	0.239	0.000	0.382	0.212	0.170	1	4	scan_reg[4]/C	scan_reg[3]/D	sys_clk	sys_clk	0.012			Fast	1.856	1.617
+107	min	sys_clk	0.243	0.000	0.388	0.212	0.176	1	7	count_reg[1]/C	count_reg[4]/D	sys_clk	sys_clk	0.014			Fast	1.863	1.620
+108	min	sys_clk	0.251	0.000	0.385	0.209	0.176	1	7	count_reg[1]/C	count_reg[3]/D	sys_clk	sys_clk	0.014			Fast	1.860	1.609
+109	min	sys_clk	0.254	0.000	0.389	0.209	0.180	1	7	count_reg[1]/C	count_reg[5]/D	sys_clk	sys_clk	0.014			Fast	1.864	1.610
+110	min	sys_clk	0.261	0.000	0.366	0.249	0.117	1	2	u_tick/count_reg[3]/C	u_tick/count_reg[3]/D	sys_clk	sys_clk	0.000			Fast	1.842	1.581
+111	min	sys_clk	0.262	0.000	0.367	0.249	0.118	1	2	u_tick/count_reg[11]/C	u_tick/count_reg[11]/D	sys_clk	sys_clk	0.000			Fast	1.841	1.579
+112	min	sys_clk	0.263	0.000	0.368	0.249	0.119	1	2	u_tick/count_reg[15]/C	u_tick/count_reg[15]/D	sys_clk	sys_clk	0.000			Fast	1.842	1.579
+113	min	sys_clk	0.263	0.000	0.368	0.249	0.119	1	2	u_tick/count_reg[23]/C	u_tick/count_reg[23]/D	sys_clk	sys_clk	0.000			Fast	1.841	1.578
+114	min	sys_clk	0.264	0.000	0.369	0.249	0.120	1	2	u_tick/count_reg[7]/C	u_tick/count_reg[7]/D	sys_clk	sys_clk	0.000			Fast	1.844	1.580
+115	min	sys_clk	0.264	0.000	0.369	0.249	0.120	1	2	u_tick/count_reg[19]/C	u_tick/count_reg[19]/D	sys_clk	sys_clk	0.000			Fast	1.843	1.579
+116	min	sys_clk	0.266	0.000	0.371	0.256	0.115	1	2	u_tick/count_reg[8]/C	u_tick/count_reg[8]/D	sys_clk	sys_clk	0.000			Fast	1.845	1.579
+117	min	sys_clk	0.267	0.000	0.372	0.256	0.116	1	2	u_tick/count_reg[16]/C	u_tick/count_reg[16]/D	sys_clk	sys_clk	0.000			Fast	1.846	1.579
+118	min	sys_clk	0.267	0.000	0.372	0.256	0.116	1	2	u_tick/count_reg[12]/C	u_tick/count_reg[12]/D	sys_clk	sys_clk	0.000			Fast	1.846	1.579
+119	min	sys_clk	0.267	0.000	0.372	0.256	0.116	1	2	u_tick/count_reg[20]/C	u_tick/count_reg[20]/D	sys_clk	sys_clk	0.000			Fast	1.845	1.578
+120	min	sys_clk	0.267	0.000	0.372	0.252	0.120	1	2	u_tick/count_reg[22]/C	u_tick/count_reg[22]/D	sys_clk	sys_clk	0.000			Fast	1.846	1.578
+121	min	sys_clk	0.268	0.000	0.373	0.252	0.121	1	2	u_tick/count_reg[2]/C	u_tick/count_reg[2]/D	sys_clk	sys_clk	0.000			Fast	1.849	1.581
+122	min	sys_clk	0.268	0.000	0.373	0.256	0.117	1	2	u_tick/count_reg[4]/C	u_tick/count_reg[4]/D	sys_clk	sys_clk	0.000			Fast	1.848	1.580
+123	min	sys_clk	0.274	0.000	0.365	0.186	0.179	1	8	count_reg[0]/C	count_reg[0]/D	sys_clk	sys_clk	0.000			Fast	1.839	1.565
+124	min	sys_clk	0.274	0.000	0.408	0.209	0.199	1	10	dir_reg/C	scan_reg[0]/D	sys_clk	sys_clk	0.013			Fast	1.882	1.607
+125	min	sys_clk	0.281	0.000	0.412	0.249	0.163	1	6	count_reg[2]/C	count_reg[2]/D	sys_clk	sys_clk	0.000			Fast	1.887	1.606
+126	min	sys_clk	0.287	0.000	0.407	0.209	0.198	1	10	dir_reg/C	dir_reg/D	sys_clk	sys_clk	0.000			Fast	1.880	1.593
+127	min	sys_clk	0.297	0.000	0.418	0.246	0.172	1	4	scan_reg[3]/C	scan_reg[2]/D	sys_clk	sys_clk	0.000			Fast	1.891	1.593
+128	min	sys_clk	0.302	0.000	0.407	0.292	0.115	1	2	u_tick/count_reg[8]/C	u_tick/count_reg[9]/D	sys_clk	sys_clk	0.000			Fast	1.881	1.579
+129	min	sys_clk	0.303	0.000	0.408	0.292	0.116	1	2	u_tick/count_reg[16]/C	u_tick/count_reg[17]/D	sys_clk	sys_clk	0.000			Fast	1.882	1.579
+130	min	sys_clk	0.303	0.000	0.408	0.292	0.116	1	2	u_tick/count_reg[12]/C	u_tick/count_reg[13]/D	sys_clk	sys_clk	0.000			Fast	1.882	1.579
+131	min	sys_clk	0.303	0.000	0.408	0.292	0.116	1	2	u_tick/count_reg[20]/C	u_tick/count_reg[21]/D	sys_clk	sys_clk	0.000			Fast	1.881	1.578
+132	min	sys_clk	0.303	0.000	0.449	0.211	0.238	1	10	dir_reg/C	scan_reg[7]/D	sys_clk	sys_clk	0.015			Fast	1.922	1.619
+133	min	sys_clk	0.303	0.000	0.449	0.210	0.239	1	10	dir_reg/C	scan_reg[6]/D	sys_clk	sys_clk	0.015			Fast	1.922	1.619
+134	min	sys_clk	0.304	0.000	0.409	0.292	0.117	1	2	u_tick/count_reg[4]/C	u_tick/count_reg[5]/D	sys_clk	sys_clk	0.000			Fast	1.884	1.580
+135	min	sys_clk	0.309	0.000	0.440	0.208	0.232	1	3	count_reg[6]/C	count_reg[7]/D	sys_clk	sys_clk	0.000			Fast	1.915	1.606
+136	min	sys_clk	0.311	0.000	0.447	0.209	0.238	1	10	dir_reg/C	scan_reg[5]/D	sys_clk	sys_clk	0.015			Fast	1.920	1.609
+137	min	sys_clk	0.313	0.000	0.448	0.209	0.239	1	10	dir_reg/C	scan_reg[4]/D	sys_clk	sys_clk	0.015			Fast	1.921	1.608
+138	min	sys_clk	0.314	0.000	0.434	0.209	0.225	1	4	scan_reg[2]/C	scan_reg[1]/D	sys_clk	sys_clk	0.000			Fast	1.906	1.592
+139	min	sys_clk	0.318	0.000	0.423	0.256	0.167	2	2	u_tick/count_reg[0]/C	u_tick/count_reg[0]/D	sys_clk	sys_clk	0.000			Fast	1.899	1.581
+140	min	sys_clk	0.320	0.000	0.263	0.128	0.135	0	19	stable_reg[0]/C	count_reg[0]/R	sys_clk	sys_clk	0.015			Fast	1.737	1.417
+141	min	sys_clk	0.320	0.000	0.441	0.209	0.232	1	3	count_reg[6]/C	count_reg[6]/D	sys_clk	sys_clk	0.000			Fast	1.916	1.596
+142	min	sys_clk	0.322	0.000	0.427	0.251	0.176	1	2	u_tick/count_reg[1]/C	u_tick/count_reg[1]/D	sys_clk	sys_clk	0.000			Fast	1.903	1.581
+143	min	sys_clk	0.342	0.000	0.447	0.332	0.115	1	2	u_tick/count_reg[8]/C	u_tick/count_reg[10]/D	sys_clk	sys_clk	0.000			Fast	1.921	1.579
+144	min	sys_clk	0.343	0.000	0.448	0.332	0.116	1	2	u_tick/count_reg[16]/C	u_tick/count_reg[18]/D	sys_clk	sys_clk	0.000			Fast	1.922	1.579
+145	min	sys_clk	0.343	0.000	0.448	0.332	0.116	1	2	u_tick/count_reg[12]/C	u_tick/count_reg[14]/D	sys_clk	sys_clk	0.000			Fast	1.922	1.579
+146	min	sys_clk	0.344	0.000	0.449	0.332	0.117	1	2	u_tick/count_reg[4]/C	u_tick/count_reg[6]/D	sys_clk	sys_clk	0.000			Fast	1.924	1.580
+147	min	sys_clk	0.346	0.000	0.482	0.186	0.296	1	8	count_reg[0]/C	count_reg[1]/D	sys_clk	sys_clk	0.016			Fast	1.956	1.610
+148	min	sys_clk	0.356	0.000	0.490	0.231	0.259	2	2	u_tick/count_reg[0]/C	u_tick/tick_reg/D	sys_clk	sys_clk	0.013			Fast	1.966	1.610
+149	min	sys_clk	0.405	0.000	0.376	0.128	0.248	0	19	stable_reg[0]/C	count_reg[1]/R	sys_clk	sys_clk	0.016			Fast	1.850	1.445
+150	min	sys_clk	0.405	0.000	0.376	0.128	0.248	0	19	stable_reg[0]/C	count_reg[2]/R	sys_clk	sys_clk	0.016			Fast	1.850	1.445
+151	min	sys_clk	0.405	0.000	0.376	0.128	0.248	0	19	stable_reg[0]/C	count_reg[6]/R	sys_clk	sys_clk	0.016			Fast	1.850	1.445
+152	min	sys_clk	0.405	0.000	0.376	0.128	0.248	0	19	stable_reg[0]/C	count_reg[7]/R	sys_clk	sys_clk	0.016			Fast	1.850	1.445
+153	min	sys_clk	0.432	0.000	0.402	0.128	0.274	0	19	stable_reg[0]/C	count_reg[3]/R	sys_clk	sys_clk	0.015			Fast	1.876	1.444
+154	min	sys_clk	0.432	0.000	0.402	0.128	0.274	0	19	stable_reg[0]/C	count_reg[4]/R	sys_clk	sys_clk	0.015			Fast	1.876	1.444
+155	min	sys_clk	0.432	0.000	0.402	0.128	0.274	0	19	stable_reg[0]/C	count_reg[5]/R	sys_clk	sys_clk	0.015			Fast	1.876	1.444
+156	min	sys_clk	0.489	0.000	0.458	0.128	0.330	0	19	stable_reg[0]/C	scan_reg[4]/R	sys_clk	sys_clk	0.014			Fast	1.932	1.443
+157	min	sys_clk	0.489	0.000	0.458	0.128	0.330	0	19	stable_reg[0]/C	scan_reg[5]/R	sys_clk	sys_clk	0.014			Fast	1.932	1.443
+158	min	sys_clk	0.489	0.000	0.458	0.128	0.330	0	19	stable_reg[0]/C	scan_reg[6]/R	sys_clk	sys_clk	0.014			Fast	1.932	1.443
+159	min	sys_clk	0.489	0.000	0.458	0.128	0.330	0	19	stable_reg[0]/C	scan_reg[7]/R	sys_clk	sys_clk	0.014			Fast	1.932	1.443
+160	min	sys_clk	0.537	0.000	0.537	0.246	0.291	1	16	stable_reg[2]/C	count_reg[1]/CE	sys_clk	sys_clk	0.016			Fast	2.011	1.474
+161	min	sys_clk	0.537	0.000	0.537	0.246	0.291	1	16	stable_reg[2]/C	count_reg[2]/CE	sys_clk	sys_clk	0.016			Fast	2.011	1.474
+162	min	sys_clk	0.537	0.000	0.537	0.246	0.291	1	16	stable_reg[2]/C	count_reg[6]/CE	sys_clk	sys_clk	0.016			Fast	2.011	1.474
+163	min	sys_clk	0.537	0.000	0.537	0.246	0.291	1	16	stable_reg[2]/C	count_reg[7]/CE	sys_clk	sys_clk	0.016			Fast	2.011	1.474
+164	min	sys_clk	0.601	0.000	0.583	0.231	0.352	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[12]/R	sys_clk	sys_clk	0.000			Fast	2.057	1.456
+165	min	sys_clk	0.601	0.000	0.583	0.231	0.352	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[13]/R	sys_clk	sys_clk	0.000			Fast	2.057	1.456
+166	min	sys_clk	0.601	0.000	0.583	0.231	0.352	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[14]/R	sys_clk	sys_clk	0.000			Fast	2.057	1.456
+167	min	sys_clk	0.601	0.000	0.583	0.231	0.352	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[15]/R	sys_clk	sys_clk	0.000			Fast	2.057	1.456
+168	min	sys_clk	0.643	0.000	0.642	0.246	0.396	1	16	stable_reg[2]/C	count_reg[3]/CE	sys_clk	sys_clk	0.015			Fast	2.116	1.473
+169	min	sys_clk	0.643	0.000	0.642	0.246	0.396	1	16	stable_reg[2]/C	count_reg[4]/CE	sys_clk	sys_clk	0.015			Fast	2.116	1.473
+170	min	sys_clk	0.643	0.000	0.642	0.246	0.396	1	16	stable_reg[2]/C	count_reg[5]/CE	sys_clk	sys_clk	0.015			Fast	2.116	1.473
+171	min	sys_clk	0.647	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[0]/R	sys_clk	sys_clk	0.018			Fast	2.121	1.474
+172	min	sys_clk	0.647	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[1]/R	sys_clk	sys_clk	0.018			Fast	2.121	1.474
+173	min	sys_clk	0.647	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[2]/R	sys_clk	sys_clk	0.018			Fast	2.121	1.474
+174	min	sys_clk	0.647	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[3]/R	sys_clk	sys_clk	0.018			Fast	2.121	1.474
+175	min	sys_clk	0.651	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[16]/R	sys_clk	sys_clk	0.014			Fast	2.121	1.470
+176	min	sys_clk	0.651	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[17]/R	sys_clk	sys_clk	0.014			Fast	2.121	1.470
+177	min	sys_clk	0.651	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[18]/R	sys_clk	sys_clk	0.014			Fast	2.121	1.470
+178	min	sys_clk	0.651	0.000	0.647	0.231	0.416	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[19]/R	sys_clk	sys_clk	0.014			Fast	2.121	1.470
+179	min	sys_clk	0.653	0.000	0.651	0.231	0.420	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[4]/R	sys_clk	sys_clk	0.016			Fast	2.126	1.472
+180	min	sys_clk	0.653	0.000	0.651	0.231	0.420	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[5]/R	sys_clk	sys_clk	0.016			Fast	2.126	1.472
+181	min	sys_clk	0.653	0.000	0.651	0.231	0.420	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[6]/R	sys_clk	sys_clk	0.016			Fast	2.126	1.472
+182	min	sys_clk	0.653	0.000	0.651	0.231	0.420	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[7]/R	sys_clk	sys_clk	0.016			Fast	2.126	1.472
+183	min	sys_clk	0.678	0.000	0.645	0.128	0.517	0	19	stable_reg[0]/C	scan_reg[0]/S	sys_clk	sys_clk	0.012			Fast	2.119	1.441
+184	min	sys_clk	0.678	0.000	0.645	0.128	0.517	0	19	stable_reg[0]/C	scan_reg[1]/R	sys_clk	sys_clk	0.012			Fast	2.119	1.441
+185	min	sys_clk	0.678	0.000	0.645	0.128	0.517	0	19	stable_reg[0]/C	scan_reg[2]/R	sys_clk	sys_clk	0.012			Fast	2.119	1.441
+186	min	sys_clk	0.678	0.000	0.645	0.128	0.517	0	19	stable_reg[0]/C	scan_reg[3]/R	sys_clk	sys_clk	0.012			Fast	2.119	1.441
+187	min	sys_clk	0.682	0.000	0.658	0.246	0.412	1	16	stable_reg[2]/C	count_reg[0]/CE	sys_clk	sys_clk	0.015			Fast	2.132	1.450
+188	min	sys_clk	0.705	0.000	0.700	0.231	0.469	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[20]/R	sys_clk	sys_clk	0.013			Fast	2.174	1.469
+189	min	sys_clk	0.705	0.000	0.700	0.231	0.469	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[21]/R	sys_clk	sys_clk	0.013			Fast	2.174	1.469
+190	min	sys_clk	0.705	0.000	0.700	0.231	0.469	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[22]/R	sys_clk	sys_clk	0.013			Fast	2.174	1.469
+191	min	sys_clk	0.705	0.000	0.700	0.231	0.469	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[23]/R	sys_clk	sys_clk	0.013			Fast	2.174	1.469
+192	min	sys_clk	0.708	0.000	0.705	0.231	0.474	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[10]/R	sys_clk	sys_clk	0.015			Fast	2.179	1.471
+193	min	sys_clk	0.708	0.000	0.705	0.231	0.474	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[11]/R	sys_clk	sys_clk	0.015			Fast	2.179	1.471
+194	min	sys_clk	0.708	0.000	0.705	0.231	0.474	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[8]/R	sys_clk	sys_clk	0.015			Fast	2.179	1.471
+195	min	sys_clk	0.708	0.000	0.705	0.231	0.474	2	24	u_tick/count_reg[13]/C	u_tick/count_reg[9]/R	sys_clk	sys_clk	0.015			Fast	2.179	1.471
+196	min	sys_clk	0.709	0.000	0.707	0.246	0.461	1	16	stable_reg[2]/C	scan_reg[4]/CE	sys_clk	sys_clk	0.014			Fast	2.182	1.472
+197	min	sys_clk	0.709	0.000	0.707	0.246	0.461	1	16	stable_reg[2]/C	scan_reg[5]/CE	sys_clk	sys_clk	0.014			Fast	2.182	1.472
+198	min	sys_clk	0.709	0.000	0.707	0.246	0.461	1	16	stable_reg[2]/C	scan_reg[6]/CE	sys_clk	sys_clk	0.014			Fast	2.182	1.472
+199	min	sys_clk	0.709	0.000	0.707	0.246	0.461	1	16	stable_reg[2]/C	scan_reg[7]/CE	sys_clk	sys_clk	0.014			Fast	2.182	1.472
+200	min	sys_clk	0.764	0.000	0.760	0.246	0.514	1	16	stable_reg[2]/C	scan_reg[0]/CE	sys_clk	sys_clk	0.012			Fast	2.235	1.470
