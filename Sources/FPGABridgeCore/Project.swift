@@ -24,12 +24,16 @@ public struct Project: Codable, Equatable, Sendable {
     public var settings: ProjectSettings?
     /// IP from Vivado's catalog that the design uses. Recreated by every build.
     public var ips: [ProjectIP]?
+    /// Files (project-relative) that stay in the project but aren't used: Vivado's Disable File. Left out by every
+    /// `resolve…` call unless asked for, so builds and simulation skip them.
+    public var disabled: [String]?
 
     public static let fileName = "fpga-bridge.json"
 
     public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil,
                 vivadoVersion: String? = nil, simulationSources: [String]? = nil, targetLanguage: String? = nil,
-                simulationTop: String? = nil, settings: ProjectSettings? = nil, ips: [ProjectIP]? = nil) {
+                simulationTop: String? = nil, settings: ProjectSettings? = nil, ips: [ProjectIP]? = nil,
+                disabled: [String]? = nil) {
         self.name = name
         self.top = top
         self.part = part
@@ -42,6 +46,7 @@ public struct Project: Codable, Equatable, Sendable {
         self.simulationTop = simulationTop
         self.settings = settings
         self.ips = ips
+        self.disabled = disabled
     }
 
     public static func load(from directory: URL) throws -> Project {
@@ -112,17 +117,24 @@ public struct Project: Codable, Equatable, Sendable {
     static let sourceExtensions: Set<String> = ["v", "sv", "vh", "svh", "vhd", "vhdl"]
     static let constraintExtensions: Set<String> = ["xdc"]
 
-    /// Expands entries to files relative to `root`, sorted for a stable build.
-    public func resolveSources(in root: URL) throws -> [String] {
-        try Project.expand(sources, extensions: Project.sourceExtensions, root: root)
+    /// Expands entries to files relative to `root`, sorted for a stable build. Disabled files are left out unless
+    /// `includingDisabled` (the Sources window still lists them, greyed).
+    public func resolveSources(in root: URL, includingDisabled: Bool = false) throws -> [String] {
+        enabled(try Project.expand(sources, extensions: Project.sourceExtensions, root: root), includingDisabled)
     }
 
-    public func resolveConstraints(in root: URL) throws -> [String] {
-        try Project.expand(constraints, extensions: Project.constraintExtensions, root: root)
+    public func resolveConstraints(in root: URL, includingDisabled: Bool = false) throws -> [String] {
+        enabled(try Project.expand(constraints, extensions: Project.constraintExtensions, root: root), includingDisabled)
     }
 
-    public func resolveSimulationSources(in root: URL) throws -> [String] {
-        try Project.expand(simulationSources ?? [], extensions: Project.sourceExtensions, root: root)
+    public func resolveSimulationSources(in root: URL, includingDisabled: Bool = false) throws -> [String] {
+        enabled(try Project.expand(simulationSources ?? [], extensions: Project.sourceExtensions, root: root), includingDisabled)
+    }
+
+    private func enabled(_ files: [String], _ includingDisabled: Bool) -> [String] {
+        guard !includingDisabled, let disabled, !disabled.isEmpty else { return files }
+        let off = Set(disabled)
+        return files.filter { !off.contains($0) }
     }
 
     static func expand(_ entries: [String], extensions: Set<String>, root: URL) throws -> [String] {
