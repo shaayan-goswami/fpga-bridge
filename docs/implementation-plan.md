@@ -345,6 +345,14 @@ compared with Vivado's.
 
 ---
 
+## Block designs (IP Integrator)
+
+**Viewing is done (wave 1):** a project's `.bd` files are read on the Mac (JSON; each IP's pins come from its `.xci`), drawn with the schematic engine, with Block Design Properties and the Address Editor. Builds ignore block designs for now and say so in the Tcl Console.
+
+**Wave 2, building (with the Flow track):** upload each block design's folder (`.bd` and `ip/`); in the build script, before synthesis: `read_bd`, `generate_target all`, `make_wrapper -files [get_files x.bd] -top`, then read the wrapper (`.gen/sources_1/bd/<name>/hdl/<name>_wrapper.v`); allow `top` to be `<name>_wrapper`; include `.bd`/`.xci` in the build manifest so editing a block design marks runs out of date; export the `.xsa` for Vitis.
+
+**Wave 2, editing:** Create Block Design, Add IP (from the IP Catalog; pins from a cached Vivado query), connect, Make External, Customize Block; Run Connection Automation, Assign Addresses and Validate Design run as one Vivado job that replays the edits and returns the saved `.bd`. Still to check on Vivado: excluded address segments, 64-bit address spaces, Zynq `processing_system7`, slave-mode external interface ports.
+
 ## When each is done
 
 For every feature: the tests above pass, the real-hardware check is done where one is listed, the greyed-out entries

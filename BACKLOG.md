@@ -104,7 +104,8 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
 - [x] P5 Simulation: Run Simulation tab with log and Stop, and a native waveform viewer (zoom, pan, cursor, bus radix, signal picker; opens by itself when a run finishes). Still to do: simulation settings, saved signal lists, markers and measurements, analog and real signals
 - [x] P6 Design views, first slice: Elaborated, Synthesized and Implemented Design (netlist, I/O ports, utilization by module, reports) and the IP Catalog with Customize IP. Still to do: schematic, device view, constraints editors, nets, editing pins
 - [ ] P7 Workspace polish (Window/Layout/View/Help, layouts, Quick Access, tool settings)
-- [ ] P8 Stretch (schematic, block design viewer)
+- [x] P8 Stretch, first part: schematic, and the block design viewer (diagram, properties, Address Editor; reads Vivado's `.bd`/`.xci`)
+- [ ] Block designs, wave 2: build projects that contain one (generate, wrapper), then Create/Validate/Generate Block Design and editing
 
 ## Code quality
 

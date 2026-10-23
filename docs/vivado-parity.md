@@ -72,7 +72,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Device and Package views, timing path highlighting are Todo |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
-| Create Block Design… | Not possible (see §6) | — |
+| Open Block Design (diagram, Block Design Properties, Address Editor) | Mac (reads Vivado's `.bd` and `.xci`) | Done for viewing: a project's block designs are listed under Design Sources with their IP; the diagram draws IP blocks with their interfaces, external ports and connections, hierarchies open in place; the Address Editor lists the address map. Checked on Vivado 2025.2 MicroBlaze and hand-wired designs. Not yet: Address Map page, Signals/Design tabs, expanding an interface into its signals |
+| Create Block Design… / Generate Block Design / Validate Design / editing (Add IP, connect) | Remote (Vivado as the engine) | Todo, wave 2: greyed "Coming soon". Building a project that contains a block design needs the build script to generate it and its wrapper |
 
 ### Tools
 
@@ -114,7 +115,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Pane | How | Status |
 | --- | --- | --- |
-| Flow Navigator (all sections, run status icons, collapse sections) | Mac | Done as in Vivado 2025.2: every section including IP Integrator (block design items greyed), Run Linter, each open design's commands (reports, Schematic; Constraints Wizard, Edit Timing Constraints, Set Up Debug and Open Dataflow Design greyed with the reason), Open Hardware Manager's Open Target / Program Device / Add Configuration Memory Device, bold section and renamed item for the open design, collapsible sections and items |
+| Flow Navigator (all sections, run status icons, collapse sections) | Mac | Done as in Vivado 2025.2: every section including IP Integrator (Open Block Design live when the project has one; Create and Generate greyed), Run Linter, each open design's commands (reports, Schematic; Constraints Wizard, Edit Timing Constraints, Set Up Debug and Open Dataflow Design greyed with the reason), Open Hardware Manager's Open Target / Program Device / Add Configuration Memory Device, bold section and renamed item for the open design, collapsible sections and items |
 | Run Linter (RTL Analysis) | Remote | Done: `synth_design -lint` on the build machine (its own job folder, the build's lock), the Linter window with Vivado's rule summary and each message linked to its line; `fpga-bridge lint` on the command line |
 | Sources ▸ Hierarchy (module tree, top marker) | Mac | Done |
 | Sources ▸ Libraries, Compile Order (reorder, manual compile order) | Mac | Prototype (read-only) |
@@ -186,7 +187,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | --- | --- | --- |
 | Hardware Manager debug cores (ILA, VIO, JTAG-to-AXI) | Needs Xilinx `hw_server`, which has no macOS build | Program and flash the board with openFPGALoader; debug cores stay a Windows task |
 | Device view and floorplanning | Needs Vivado's device database and renderer in the GUI | Pin planning via the I/O Ports table (Remote data); placement reports |
-| IP Integrator block design editor | A full graphical editor backed by Vivado's IP engine | Open and validate block designs remotely, edit their Tcl; a visual editor is a stretch goal |
+| IP Integrator block design editor | A full graphical editor backed by Vivado's IP engine | The viewer is done (diagram, properties, Address Editor). Editing: changes on the Mac's canvas, Vivado validates and saves the `.bd` in a job on the build machine (wave 2) |
 | Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Icarus Verilog; the native waveform viewer is done (markers and saved layouts are still to do) |
 | Vitis, HLS, licensing dialogs | Separate products | Out of scope |
 
@@ -212,7 +213,7 @@ Each phase is usable on its own and is tested before the next one starts.
    pins, Constraints Wizard and timing constraints editor; IP Catalog, Customize IP, output products.
 7. **P7: Workspace polish.** Window/Layout/View/Help menus, saved layouts, Quick Access search, Tool settings
    (Display, Colors, Shortcuts, Strategies), Tcl history, Tcl Command Help, About.
-8. **P8: Stretch.** Schematic viewer from an exported netlist; a block design viewer.
+8. **P8: Stretch.** Schematic viewer from an exported netlist (done); a block design viewer (done), then editing.
 
 ## Testing constraint
 
