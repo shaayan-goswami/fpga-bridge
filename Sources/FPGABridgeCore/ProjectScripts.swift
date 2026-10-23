@@ -108,6 +108,7 @@ public enum ProjectScripts {
         let properties = settings.bitstream.properties
         if !properties.isEmpty {
             lines += ["", "# Bitstream properties, in a constraints file used by implementation only",
+                      "file mkdir $proj_dir",
                       "set xdc [file join $proj_dir bitstream_settings.xdc]",
                       "set f [open $xdc w]"]
             lines += properties.map { "puts $f {set_property \($0.0) \($0.1) [current_design]}" }
