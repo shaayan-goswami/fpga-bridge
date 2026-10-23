@@ -48,7 +48,7 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 - [ ] Non-zero exit and clear message on synthesis/implementation failure
 - [x] Parse timing summary (WNS/TNS/WHS/THS, failing endpoint counts) and utilization (LUT, FF, BRAM, DSP, IO) into a short summary; `fpga-bridge report` re-prints it
 - [x] Real Vivado 2025.2 timing and utilization reports are test fixtures (the hand-written ones stay for older layouts and failures)
-- [ ] Show the worst failing paths (needs `report_timing -max_paths` in `build.tcl`)
+- [x] Show the worst failing paths: `fpga-bridge report --paths N`, also printed after `build` when timing fails; the app's Timing window shows them offline
 - [ ] `build --strict`: exit non-zero when timing is not met
 - [ ] Incremental behavior: skip copying unchanged files; optional `--clean`
 - [x] Cancel a running build cleanly: Ctrl-C kills the remote Vivado process tree (found by a per-run marker on its command line), releases the lock, exits 130

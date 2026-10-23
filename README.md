@@ -61,6 +61,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Elaborated, Synthesized and Implemented Design**: the netlist hierarchy with cells, the I/O ports with pins and standards, utilization by module, and the reports of each stage (timing, clocks, power, DRC, methodology, I/O, route status), written by the build and restored when you reopen a project. They open with the build machine asleep: everything is saved on the Mac at build time
 - [x] **Netlist window, Properties and Schematic**: browse cells, nets and pins, see every Vivado property, and draw any level as a schematic (Vivado's symbols, modules opened in place, Schematic of selection with F4, Go To Source)
 - [x] **Run Linter**: Vivado's RTL linter, with each finding linked to its source line
+- [x] **Timing window**: the design's timing summary and its worst setup and hold paths, saved at build time; selecting a path highlights it in the schematic. `fpga-bridge report` lists the worst failing paths
 - [x] **Block designs (viewing)**: open a block design made in Vivado's IP Integrator and see its diagram, each block's settings and the Address Editor, offline
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)

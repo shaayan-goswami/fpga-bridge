@@ -69,7 +69,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
 | Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
-| Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Device and Package views, timing path highlighting are Todo |
+| Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Timing window with path highlighting (see below). Device and Package views are Todo |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
 | Hardware Manager: Open New Target, Open Recent Target, debug probes file | Local tool | Todo (disabled) |
 | Open Block Design (diagram, Block Design Properties, Address Editor) | Mac (reads Vivado's `.bd` and `.xci`) | Done for viewing: a project's block designs are listed under Design Sources with their IP; the diagram draws IP blocks with their interfaces, external ports and connections, hierarchies open in place; the Address Editor lists the address map. Checked on Vivado 2025.2 MicroBlaze and hand-wired designs. Not yet: Address Map page, Signals/Design tabs, expanding an interface into its signals |
@@ -93,7 +93,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Item | How | Status |
 | --- | --- | --- |
-| Report Timing Summary (dialog with options) | Remote | Prototype (the report is shown; the options dialog is Todo) |
+| Report Timing Summary (dialog with options) | Remote | Prototype (opens the Timing window with the build's summary and worst paths; the text report stays in the Reports menu; the options dialog is Todo) |
 | Timing ▸ Report Timing (paths table), Report Clock Networks, Report Clock Interaction, Report CDC, Report Pulse Width | Remote | Prototype (Report Timing, Clocks and Clock Utilization are written by the build and shown as text; the paths table, Clock Interaction, CDC and Pulse Width are Todo) |
 | Report Utilization (with hierarchy) | Remote | Done in two forms: Vivado's own report as text, and utilization by module from the netlist (cell counts, which can differ from Vivado's site counts) |
 | Report Power | Remote | Prototype (written by the build, shown as text) |
@@ -105,7 +105,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Item | How | Status |
 | --- | --- | --- |
-| Window ▸ show/hide each pane (Project Summary, Sources, Properties, Netlist, Tcl Console, Messages, Log, Reports, Design Runs, Package, Device, I/O Ports, Timing, Find Results, Waveform) | Mac | Prototype (console toggle only) |
+| Window ▸ show/hide each pane (Project Summary, Sources, Properties, Netlist, Tcl Console, Messages, Log, Reports, Design Runs, Package, Device, I/O Ports, Timing, Find Results, Waveform) | Mac | Prototype (console toggle, View ▸ Show Timing) |
 | Layout ▸ Default, I/O Planning, Floorplanning, Debug; Save Layout As; Remove Layout; Reset Layout | Mac | Todo |
 | View ▸ Zoom In/Out/Fit, Flow Navigator, Toolbar | Mac | Prototype (sidebar toggle) |
 | Help ▸ Documentation and Tutorials, Tcl Command Help, About | Mac | Todo |
@@ -136,7 +136,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Properties (any selected object) | Remote | Todo |
 | Schematic | Remote data + Mac renderer | Prototype: layered left-to-right layout with Vivado's RTL symbols (gates, mux, register with clock triangle, buffers, port pentagons), RTL registers and buses bundled (`count_reg[7:0]`) while synthesized flip-flops are drawn one each, loops broken at register outputs so next-state logic sits in front of its register, output buffers by the output ports, feedback looped back under the cells, long wires kept straight, constants as tie labels, modules opened in place, dotted stubs for logic not shown; zoom, pan, select (shared), Previous/Next, Schematic of selection (F4), Go To Source. Not done: Expand Cone, Select Area, schematic display settings (fanout, slack, equations), pages for huge levels |
 | I/O Ports table and Package view (pin assignment) | Remote data + Mac | Prototype (the table with pin, standard, slew, drive and pull; the Package view and editing pins are Todo) |
-| Timing results window (paths table, path report, highlight) | Remote | Todo |
+| Timing results window (paths table, path report, highlight) | Remote data + Mac | Done for the build's query (the 100 worst setup and hold paths per stage, saved at build time and shown offline): Design Timing Summary, path groups (Intra-Clock, Inter-Clock, Other), the paths table with Vivado's columns, Path Properties (summary, source clock, data path and destination clock tables, Vivado's report text), selecting a path highlights it in the Netlist and Schematic, Schematic (F4) of a path. Pulse Width per pin, User Ignored Paths and Unconstrained Paths are greyed with the reason |
 | Device view / floorplanning | Not possible | — |
 
 ## 4. Dialogs and popups
