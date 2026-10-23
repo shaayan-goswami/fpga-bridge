@@ -50,6 +50,9 @@ results come back. The board plugs into the Mac.
 
 ### 1.2 Allow it to open
 
+FPGA Bridge checks GitHub once a day and shows a notice when a newer version is out; download it the same way. (Turn the
+check off in **FPGA Bridge > Settings… > General**.)
+
 The app isn't notarized by Apple yet, so macOS blocks it the first time ("Apple could not verify…"). Open
 **Terminal** (in Applications > Utilities) and run:
 
@@ -332,8 +335,8 @@ If you have one of them, or any other AMD/Xilinx board that
 
 1. Create a project for your board, with a design that lights an LED or uses a switch.
 2. Run a simulation, a build, **Program Device**, and **Program Configuration Memory Device**.
-3. [Open an issue](https://github.com/shaayan-goswami/fpga-bridge/issues/new) with the board's name, your Vivado
-   version, which steps worked, and for anything that didn't, the error and the output of `fpga-bridge doctor`.
+3. Fill in the [Board test report](https://github.com/shaayan-goswami/fpga-bridge/issues/new/choose) form: the board, your
+   Vivado version, which steps worked, and for anything that didn't, the error and the output of `fpga-bridge doctor`.
 
 Reports that everything worked are just as useful: they're how a board gets marked as tested.
 

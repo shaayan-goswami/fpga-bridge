@@ -66,6 +66,9 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Block designs (viewing)**: open a block design made in Vivado's IP Integrator and see its diagram, each block's settings and the Address Editor, offline
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
+- [x] **Projects and editing**: Save As, Archive, Write Tcl (including a script that recreates the project in Vivado), Find and Replace in Files, and the Sources right-click menu (Remove, Disable, Set as Top, Move, Replace…)
+- [x] **Waveform markers and saved layouts**: markers with the time between them, dividers, and the signal list restored on the next run
+- [x] **Update notice**: once a day the app checks GitHub's releases page and says when a newer version is out (turn it off in Settings → General)
 - [x] Frosted glass sidebar like Finder's (Liquid Glass available in Settings), light and dark mode
 - [x] Works without a build machine or a board: write Verilog, simulate and view waveforms on the Mac; only Vivado's steps need the build machine
 
@@ -73,8 +76,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [ ] Separate synthesis and implementation runs with checkpoints, Launch Runs, run strategies, and stopping a live build from the app
 - [ ] The report option dialogs (each report is run once, with Vivado's defaults, at build time)
 - [ ] Routing in the Device view, floorplanning (pblocks), and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
-- [ ] Save As, Archive, Write Tcl, Find and Replace in Files, Sources context menus
-- [ ] VHDL and post-synthesis simulation, waveform markers and saved layouts
+- [ ] VHDL and post-synthesis simulation
 - [ ] Creating, editing, validating and generating block designs, and building projects that contain one
 - [ ] Zynq boards and other FPGA vendors
 - [ ] Signed and notarized releases, Homebrew install

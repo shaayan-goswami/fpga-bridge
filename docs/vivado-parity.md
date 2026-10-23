@@ -40,7 +40,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Project ▸ Open…, Open Recent, Close | Mac | Done (Close confirmation Todo) |
 | Project ▸ Save As… | Mac | Todo |
 | Project ▸ Archive… (zip with options: include run results, include config settings) | Mac | Todo |
-| Project ▸ Write Tcl… (script that recreates the project) | Mac | Todo |
+| Project ▸ Write Tcl… (script that recreates the project) | Mac | Done: writes the build script FPGA Bridge runs, and a Vivado project-mode script that recreates the project (checked on Vivado 2025.2: the project opens and builds to a bitstream) |
 | Checkpoint ▸ Open / Write | Remote | Todo |
 | Text Editor ▸ Save File (⌘S) and Save All; close with a "save changes?" prompt | Mac | Done |
 | Text Editor ▸ New File, Open File, Save File As | Mac | Todo |
@@ -54,7 +54,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Item | How | Status |
 | --- | --- | --- |
 | Undo / Redo / Cut / Copy / Paste / Select All, in the editor | Mac | Done |
-| Find… (objects), Find in Files…, Replace in Files… | Mac | Todo |
+| Find… (objects), Find in Files…, Replace in Files… | Mac | Find in Files and Replace in Files done (results in a Find Results tab, replace previews each change and works on unsaved edits, Undo Replace); Find (objects) Todo |
 
 ### Flow
 
@@ -67,7 +67,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |
 | Run Simulation ▸ Behavioral (Simulation tab: banner, log, Stop, Run Again, Open Waveform; Flow menu item) | Local tool | Done (Verilog and SystemVerilog, verified with Icarus Verilog 13) |
 | Waveform window (signal names with values at the cursor, time ruler, zoom/pan/fit, cursor, previous/next edge, radix per bus, add/remove signals from the design tree) | Mac | Done (VCD from Icarus Verilog) |
-| Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Todo |
+| Waveform: markers and measurements, saved waveform configurations (.wcfg), analog/real signals, grouping and dividers | Mac | Markers (add, drag, rename, time between), dividers and a saved layout per testbench (FPGA Bridge's own JSON, not `.wcfg`) done; analog/real signals Todo |
 | Run Simulation ▸ Post-Synthesis / Post-Implementation | Local tool | Todo (needs a netlist export, Remote) |
 | Open Elaborated / Synthesized / Implemented Design | Remote data + Mac | Prototype: every build saves the netlist, connections, pin directions, source lines and all properties on the Mac, so an opened design works with the build machine asleep. Netlist window, Cell/Net/Port/Pin Properties, Schematic, I/O Ports, utilization by module and the stage's reports. The elaborated design opens on a schematic of the top, as Vivado's does. Timing window with path highlighting (see below). Package view (all three designs) and Device view (synthesized and implemented) from cached part data |
 | Open Hardware Manager (target banner, Auto Connect, device tree and properties, Program Device, Program Configuration Memory Device) | Local tool | Done (verified on a real Basys 3) |
@@ -121,7 +121,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Sources ▸ Libraries, Compile Order (reorder, manual compile order) | Mac | Prototype (read-only) |
 | Sources ▸ IP Sources | Remote | Todo |
 | Sources toolbar: search, collapse/expand all, add, properties | Mac | Prototype (add only) |
-| Sources context menu: Set as Top, Remove File, Disable File, Open File, Replace File, Copy File Into Project, Hierarchy Update, Refresh Hierarchy | Mac | Todo |
+| Sources context menu: Set as Top, Remove File, Disable File, Open File, Replace File, Copy File Into Project, Hierarchy Update, Refresh Hierarchy | Mac | Done (plus Move to Design/Simulation Sources, Show in Finder, Copy Path). Remove File keeps the file on disk unless "Also delete the project local file/directory from disk" is ticked, as in Vivado. Set Used In and Hierarchy Update are greyed |
 | Source File Properties | Mac | Done |
 | Project Summary dashboard (Overview, Settings, Board, Synthesis, Implementation, DRC, Timing, Utilization, Power, Methodology, Design Runs) | Mac + Remote data | Done for the Overview as in Vivado 2025.2 (Settings; Synthesis; Implementation with Route Status; DRC Violations; Timing Setup/Hold/Pulse Width; Utilization Post-Synthesis/Post-Implementation as Graph or Table; Power Summary/On-Chip with thermal margin). Dashboard: fixed timing, utilization and power gadgets; Add Gadget is Todo |
 | Text editor: editing, save, undo, line numbers, syntax colors, find (⌘F), comment toggle (⌘/), auto-indent, Tab and Shift-Tab | Mac | Done |
@@ -157,7 +157,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Run failure popup with link to Messages / Log | Mac | Todo |
 | Reset Runs confirmation (delete generated files) | Mac | Todo |
 | Close Project / Exit confirmations | Mac | Todo |
-| Save Project As, Archive Project, Write Tcl | Mac | Todo |
+| Save Project As, Archive Project, Write Tcl | Mac | Done |
 | Report Timing Summary / Report Timing / Report Utilization / Report Power option dialogs | Mac → Remote | Todo |
 | Constraints Wizard, Timing Constraints editor (Create Clock, Input/Output Delay, False Path, Multicycle) | Mac + Remote | Todo |
 | IP Catalog, Customize IP, Generate Output Products | Remote | Prototype (see above) |
@@ -188,7 +188,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Hardware Manager debug cores (ILA, VIO, JTAG-to-AXI) | Needs Xilinx `hw_server`, which has no macOS build | Program and flash the board with openFPGALoader; debug cores stay a Windows task |
 | Device view and floorplanning | Needs Vivado's device database and renderer in the GUI | Pin planning via the I/O Ports table (Remote data); placement reports |
 | IP Integrator block design editor | A full graphical editor backed by Vivado's IP engine | The viewer is done (diagram, properties, Address Editor). Editing: changes on the Mac's canvas, Vivado validates and saves the `.bd` in a job on the build machine (wave 2) |
-| Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Icarus Verilog; the native waveform viewer is done (markers and saved layouts are still to do) |
+| Vivado Simulator (XSim) waveform window | XSim runs only where Vivado runs | Behavioral simulation with Icarus Verilog; the native waveform viewer is done, with markers and saved layouts |
 | Vitis, HLS, licensing dialogs | Separate products | Out of scope |
 
 ---

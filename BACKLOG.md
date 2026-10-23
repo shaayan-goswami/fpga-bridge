@@ -98,7 +98,7 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
       design or constraint file marks finished runs out-of-date
 - [x] Near-black dark mode (window, sidebars, editor and console surfaces)
 - [ ] P1 Flow parity (separate runs with checkpoints, Launch Runs, completion popups, run settings and strategies)
-- [ ] P2 Projects and editing (Sources context menus, File and Edit menus, Replace in Files, go to line; the editor and Define Module are done)
+- [x] P2 Projects and editing: Sources context menu, Save As, Archive, Write Tcl, Find/Replace in Files (go to line still to do)
 - [ ] P3 Reports and analysis
 - [x] P4 Program and debug: Hardware Manager screen, Program Device and Program Configuration Memory sheets (debug cores stay on Windows)
 - [x] P5 Simulation: Run Simulation tab with log and Stop, and a native waveform viewer (zoom, pan, cursor, bus radix, signal picker; opens by itself when a run finishes). Still to do: simulation settings, saved signal lists, markers and measurements, analog and real signals
@@ -126,7 +126,7 @@ Found by the review in [docs/code-review.md](docs/code-review.md). Fix the likel
 ## M5: Distribution and polish
 
 - [ ] Signed and notarized release builds (CLI and app)
-- [ ] GitHub Releases workflow (tagged builds, `.dmg` / `.zip`)
+- [x] GitHub Releases workflow: a `v*` tag builds `FPGA-Bridge.zip` and attaches it to a draft release (unsigned until notarization; first real run on the next tag)
 - [ ] Homebrew tap for the CLI
 - [x] Real install steps: README Install section and [docs/getting-started.md](docs/getting-started.md)
 - [ ] Docs: build machine setup (sleep off, no auto-restart, pinned Vivado), troubleshooting (supported boards are in docs/boards.md)
@@ -134,7 +134,7 @@ Found by the review in [docs/code-review.md](docs/code-review.md). Fix the likel
 - [x] README describes what is built today, in Swift, with screenshots
 - [ ] Support more boards beyond Digilent
 - [ ] User testing with other students (e.g. a hardware club) and fix what annoys them
-- [ ] Contributing guide and issue templates
+- [x] Issue templates (Board test report, Bug report); code contributions aren't accepted
 
 ## Risks to keep an eye on
 
