@@ -101,8 +101,8 @@ final class DesignViewsAppTests: ExampleSandboxTestCase {
     // MARK: Flow Navigator
 
     func testEveryFlowNavigatorItemIsNowAvailable() {
-        XCTAssertEqual(FlowItem.allCases.filter { !$0.isAvailable }, [.createBlockDesign, .openBlockDesign, .generateBlockDesign],
-                       "only block designs, which need Vivado's IP Integrator canvas, are greyed out")
+        XCTAssertEqual(FlowItem.allCases.filter { !$0.isAvailable }, [.createBlockDesign, .generateBlockDesign],
+                       "only creating and generating block designs are greyed out; opening one depends on the project")
         XCTAssertTrue(FlowItem.openElaboratedDesign.isAvailable)
         XCTAssertTrue(FlowItem.openSynthesizedDesign.isAvailable)
         XCTAssertTrue(FlowItem.openImplementedDesign.isAvailable)

@@ -137,6 +137,14 @@ struct AppCommands: Commands {
             Button("Settings…") { model.showSettings = true }
                 .disabled(!model.hasProject)
             Divider()
+            // IP Integrator: block designs can be opened (viewed); creating and generating them is coming.
+            Button("Create Block Design…") {}
+                .disabled(true)
+            Button("Open Block Design") { model.openBlockDesign() }
+                .disabled(model.blockDesignPaths.isEmpty)
+            Button("Generate Block Design…") {}
+                .disabled(true)
+            Divider()
             Button("Run Synthesis") { model.run(.synthesis) }
                 .disabled(!model.hasProject || model.isRunning || !model.hasBuildMachine)
             Button("Run Implementation") { model.run(.implementation) }

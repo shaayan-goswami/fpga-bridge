@@ -19,6 +19,9 @@ import SwiftUI
 ///   FPGA_BRIDGE_EXPAND=a,b         in a schematic scenario, open these module instances in place
 ///   FPGA_BRIDGE_SCHEMATIC_ONLY=a,b  in a schematic scenario, draw only these cells (as F4 on a selection does)
 ///   FPGA_BRIDGE_SCHEMATIC_VIEW=z,x,y in a schematic scenario, zoom to z (1 = 100%) centred at x,y (0...1 of the drawing)
+///   FPGA_BRIDGE_BD_PAGE=name       in the blockdesign scenario, show this page (Diagram, Address Editor)
+///   FPGA_BRIDGE_BD_SELECT=kind:name in the blockdesign scenario, select this (cell:axi_uartlite_0, port:UART_0)
+///   (FPGA_BRIDGE_EXPAND also opens these hierarchies in the blockdesign scenario.)
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -117,6 +120,8 @@ extension AppModel {
                 waveform.zoom(by: 9, anchor: 0.4)
                 waveform.setCursor(tick: waveform.viewStart + waveform.span * 0.5)
             }
+        case "blockdesign":
+            if let path = blockDesignPaths.first { openBlockDesign(path) }
         case "templates":
             openExampleProject()
             if let top = sourceTree.first?.children?.first?.path { openFile(top) }

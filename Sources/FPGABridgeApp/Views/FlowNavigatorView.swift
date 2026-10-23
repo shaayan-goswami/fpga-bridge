@@ -115,12 +115,12 @@ private struct FlowRow: View {
     @State private var hovering = false
 
     private var isEnabled: Bool {
-        item.isAvailable && !(item.needsVivado && !model.hasBuildMachine)
+        model.unavailableReason(of: item) == nil && !(item.needsVivado && !model.hasBuildMachine)
             && !(item.runKind != nil && model.isRunning) && !(item == .runLinter && (model.isRunning || model.isLinting))
     }
 
     private var unavailableReason: String? {
-        item.unavailableReason ?? (item.needsVivado && !model.hasBuildMachine ? NoBuildMachine.message : nil)
+        model.unavailableReason(of: item) ?? (item.needsVivado && !model.hasBuildMachine ? NoBuildMachine.message : nil)
     }
 
     /// Vivado renames "Open Synthesized Design" to "Synthesized Design" once it is open.

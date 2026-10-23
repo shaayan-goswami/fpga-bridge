@@ -49,7 +49,9 @@ struct SourcesPane: View {
         }
         .onChange(of: model.selectedSourceID) { _, id in
             model.propertiesShowsDesign = false
-            if let path = model.node(withID: id)?.path { model.openFile(path) }
+            if let path = model.node(withID: id)?.path {
+                if Project.isBlockDesign(path) { model.openBlockDesign(path) } else { model.openFile(path) }
+            }
         }
     }
 
@@ -241,6 +243,7 @@ private struct PropertiesPanel: View {
         case "sv", "svh": "SystemVerilog"
         case "vhd", "vhdl": "VHDL"
         case "xdc": "XDC"
+        case "bd": "Block Designs"
         default: "Text"
         }
     }

@@ -336,6 +336,7 @@ final class AppModel: ObservableObject {
                 constraints: try project.resolveConstraints(in: projectURL),
                 simulation: try project.resolveSimulationSources(in: projectURL),
                 read: contents(of:))
+            sourceTree = BlockDesignSources.adding(to: sourceTree, project: project, root: projectURL)
         } catch {
             // An empty tree with no explanation looks like an empty project.
             sourceTree = []
@@ -443,6 +444,7 @@ final class AppModel: ObservableObject {
         case .openElaboratedDesign, .openSynthesizedDesign, .openImplementedDesign:
             if let stage = item.designStage { openDesign(stage) }
         case .languageTemplates: open(.templates)
+        case .openBlockDesign: openBlockDesign()
         case .runSimulation: runSimulation()
         case .runLinter: runLinter()
         default: if let kind = item.runKind { run(kind) }
@@ -694,6 +696,7 @@ final class AppModel: ObservableObject {
             return
         }
         pendingDesign = nil     // a build the user starts by hand doesn't open a design view when it ends
+        tclLines += blockDesignBuildNotes
         execute(RunPlanner.steps(for: target,
                                  synthesisUpToDate: runs[.synthesis]?.isUpToDate == true,
                                  implementationUpToDate: runs[.implementation]?.isUpToDate == true))
@@ -1013,6 +1016,7 @@ final class AppModel: ObservableObject {
         case .templates: "Language Templates"
         case .simulation: "Simulation"
         case .waveform: "Waveform"
+        case .blockDesign(let path): blockDesignTitle(path)
         }
     }
 
@@ -1029,6 +1033,7 @@ final class AppModel: ObservableObject {
         case .templates: "doc.text.magnifyingglass"
         case .simulation: "waveform.path.ecg"
         case .waveform: "waveform"
+        case .blockDesign: BlockDesignSources.symbol
         }
     }
 

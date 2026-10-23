@@ -21,6 +21,7 @@ struct WorkspaceView: View {
                 case .templates: LanguageTemplatesView()
                 case .simulation: SimulationView()
                 case .waveform: WaveformView()
+                case .blockDesign(let path): BlockDesignView(path: path).id(path)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

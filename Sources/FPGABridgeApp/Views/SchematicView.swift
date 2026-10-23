@@ -558,7 +558,7 @@ struct SchematicMenuItem {
 
 /// A transparent layer that turns the mouse and trackpad into schematic actions: two-finger scrolling or dragging pans,
 /// pinching or ⌘-scrolling zooms about the pointer, clicks select (⌘ or ⇧ to add), and right-click shows a menu.
-private struct SchematicInteraction: NSViewRepresentable {
+struct SchematicInteraction: NSViewRepresentable {
     var onPan: (CGSize) -> Void
     var onZoom: (CGFloat, CGPoint) -> Void
     var onClick: (CGPoint, Bool, Int) -> Void

@@ -94,8 +94,9 @@ enum FlowItem: String, CaseIterable, Identifiable {
     /// What the item says when it can't be used yet.
     var unavailableReason: String? {
         switch self {
-        case .createBlockDesign, .openBlockDesign, .generateBlockDesign:
-            "Block designs need Vivado's IP Integrator canvas, which isn't in this app yet"
+        // Open Block Design depends on the project having one (AppModel.unavailableReason(of:)).
+        case .createBlockDesign, .generateBlockDesign:
+            "Coming soon: creating and generating block designs needs builds to run Vivado's IP Integrator. Open Block Design shows one made in Vivado."
         default: nil
         }
     }
@@ -283,6 +284,10 @@ enum WorkspaceTab: Hashable, Identifiable {
     case templates
     case simulation
     case waveform
+
+    // MARK: Block design
+    /// IP Integrator's window for a block design (a project-relative `.bd`).
+    case blockDesign(String)
 
     var id: Self { self }
     var isCloseable: Bool { self != .summary }
