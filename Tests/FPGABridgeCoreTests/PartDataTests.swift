@@ -125,4 +125,12 @@ final class PartDataTests: XCTestCase {
                        "ERROR: [Vivado 12-1] Part 'xc9' not found")
         XCTAssertNil(PartData.error(in: "#     puts \"FPGABRIDGE-PART\\tERROR\\t[fpgabridge_clean $err]\""), "Vivado's echo of the script isn't an error")
     }
+
+    func testAnUnknownPartIsSaidPlainly() {
+        // Checked on Vivado 2025.2: without this, an unknown part failed later with "'get_property' expects at least one object".
+        let script = PartData.dumpScript(part: "xc7zz99zz")
+        XCTAssertTrue(script.contains("if {[llength [get_parts -quiet {xc7zz99zz}]] == 0} { error \(PartData.unknownPartMessage) }"))
+        XCTAssertEqual(PartData.error(in: "FPGABRIDGE-PART\tERROR\t\(PartData.unknownPartMessage)\r\n"), PartData.unknownPartMessage)
+        XCTAssertTrue(PartDataError.unknownPart("xc7zz99zz").description.contains("no part named xc7zz99zz"))
+    }
 }

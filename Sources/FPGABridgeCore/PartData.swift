@@ -327,6 +327,8 @@ public struct PartData: Equatable, Sendable {
         return """
         proc fpgabridge_clean {v} { return [string map [list "\\t" " " "\\n" " " "\\r" ""] $v] }
         if {[catch {
+            # Checked first: an unknown part otherwise fails later with a message about get_property.
+            if {[llength [get_parts -quiet {\(part)}]] == 0} { error \(unknownPartMessage) }
             link_design -part {\(part)} -quiet
             set p [get_parts {\(part)}]
             puts "\(m)\\tVIVADO\\t[version -short]"
@@ -379,6 +381,9 @@ public struct PartData: Equatable, Sendable {
         }
         """
     }
+
+    /// What the script reports when Vivado has no part by that name.
+    static let unknownPartMessage = "FPGABRIDGE_UNKNOWN_PART"
 
     /// What went wrong, if the script caught an error (an unknown part, say).
     public static func error(in output: String) -> String? {
@@ -507,7 +512,9 @@ public struct PartDataService: Sendable {
             log?(chunk)
         }
         let output = box.value
-        if let error = PartData.error(in: output) { throw PartDataError.vivado(error) }
+        if let error = PartData.error(in: output) {
+            throw error == PartData.unknownPartMessage ? PartDataError.unknownPart(part) : PartDataError.vivado(error)
+        }
         let data = PartData.parse(output: output, part: part)
         guard !data.pins.isEmpty else {
             throw status == 0 ? PartDataError.noPins(part) : PartDataError.vivadoFailed(status, String(output.suffix(600)))
@@ -521,9 +528,11 @@ public enum PartDataError: DescribedError, Equatable {
     case vivadoFailed(Int32, String)
     case vivado(String)
     case noPins(String)
+    case unknownPart(String)
 
     public var description: String {
         switch self {
+        case .unknownPart(let part): "Vivado on the build machine has no part named \(part). Check the part number, and that its device family is installed there."
         case .vivadoFailed(let status, let tail): "Vivado exited with status \(status).\n\(tail)"
         case .vivado(let message): "Vivado said: \(message)"
         case .noPins(let part): "Vivado listed no package pins for \(part). Is the part number right, and is that device family installed?"
