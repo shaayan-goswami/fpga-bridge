@@ -190,7 +190,7 @@ private struct TimingTree: View {
                     .frame(width: 12, height: 14)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pressable)
             .opacity(hasChildren ? 1 : 0)
             Text(title).lineLimit(1).truncationMode(.middle)
         }
@@ -560,7 +560,7 @@ struct TimingPathProperties: View {
                             .padding(.vertical, 3)
                             .background(state.propertiesView == item ? Color.primary.opacity(0.1) : .clear, in: Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
                 }
                 Spacer(minLength: 0)
             }

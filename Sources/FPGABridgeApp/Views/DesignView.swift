@@ -103,7 +103,7 @@ private struct TreeLead: View {
                         .rotationEffect(.degrees(collapsed.contains(row.id) ? 0 : 90))
                         .frame(width: 12)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
             } else {
                 Color.clear.frame(width: 12, height: 1)
             }
@@ -191,7 +191,7 @@ private struct StageReports: View {
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)

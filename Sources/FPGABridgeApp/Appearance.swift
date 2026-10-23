@@ -207,6 +207,17 @@ extension View {
 /// the desktop behind the window blurred and darkened; Liquid Glass and Clear use Liquid Glass on macOS 26+ and a
 /// material before; Off is a solid color. In fullscreen there is no desktop behind the window to show, so it would draw
 /// as flat gray; it is the solid color there instead.
+/// A plain button that dims while pressed, so a click is acknowledged before the action's result appears.
+struct PressableButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.55 : 1)
+    }
+}
+
+extension ButtonStyle where Self == PressableButtonStyle {
+    static var pressable: PressableButtonStyle { PressableButtonStyle() }
+}
+
 struct GlassFill: View {
     var solid: Color = Theme.window
     @AppStorage(AppearanceKey.glass) private var glass = GlassChoice.standard

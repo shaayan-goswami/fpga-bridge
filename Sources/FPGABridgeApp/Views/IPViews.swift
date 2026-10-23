@@ -76,7 +76,7 @@ struct IPCatalogView: View {
                                 Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).frame(width: 12)
                                     .rotationEffect(.degrees(collapsed.contains(row.id) ? 0 : 90))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressable)
                         }
                         Text(row.node.title).lineLimit(1)
                         Spacer(minLength: 4)

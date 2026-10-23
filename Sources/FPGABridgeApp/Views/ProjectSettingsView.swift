@@ -205,7 +205,7 @@ struct AddSourcesSheet: View {
                                 .contentShape(Rectangle())
                                 .background(RoundedRectangle(cornerRadius: 8).fill(set == option ? Color.primary.opacity(0.06) : .clear))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressable)
                         }
                     }
                 } else {

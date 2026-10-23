@@ -203,7 +203,7 @@ struct NetlistWindow: View {
         for ref in refs where design.contains(ref) { expanded.formUnion(outline.idsToReveal(ref)) }
         selection = wanted
         if let last = refs.last, let id = wanted.first(where: { $0.hasSuffix(last.name) }) ?? wanted.first {
-            DispatchQueue.main.async { withAnimation { proxy.scrollTo(id, anchor: .center) } }
+            DispatchQueue.main.async { proxy.scrollTo(id, anchor: .center) }
         }
     }
 }
@@ -224,7 +224,7 @@ private struct NetlistRowView: View {
                         .frame(width: 12, height: 14)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
             } else {
                 Color.clear.frame(width: 12, height: 1)
             }
@@ -338,7 +338,7 @@ struct DesignPropertiesWindow: View {
                             .padding(.vertical, 3)
                             .background(view == item ? Color.primary.opacity(0.1) : .clear, in: Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
                 }
                 Spacer(minLength: 0)
             }

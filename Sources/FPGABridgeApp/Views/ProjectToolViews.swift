@@ -389,7 +389,7 @@ struct FindResultsView: View {
                                                             set: { if $0 { collapsed.remove(path) } else { collapsed.insert(path) } })) {
                             ForEach(results.matches(in: path)) { match in
                                 Button { model.reveal(match) } label: { row(match) }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(.pressable)
                             }
                         } label: {
                             HStack(spacing: 6) {

@@ -193,7 +193,7 @@ struct RunCompletionSheet: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pressable)
                         .disabled(option.unavailableReason != nil)
                         .foregroundStyle(option.unavailableReason == nil ? .primary : .tertiary)
                         .help(option.unavailableReason ?? "")

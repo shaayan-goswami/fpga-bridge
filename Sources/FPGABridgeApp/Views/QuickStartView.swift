@@ -141,7 +141,7 @@ struct QuickActionRow: View {
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(hovering && isEnabled ? Color.primary.opacity(0.06) : .clear))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.45)
         .onHover { hovering = $0 }

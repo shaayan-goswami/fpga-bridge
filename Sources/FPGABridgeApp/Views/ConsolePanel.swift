@@ -83,7 +83,7 @@ private struct ConsoleTabButton: View {
                 .glassWhenSelected(selected)
                 .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .onHover { hovering = $0 }
     }
 }
@@ -251,7 +251,7 @@ private struct ReportsListView: View {
                                     }
                                     .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.pressable)
                             }
                         }
                     }
@@ -307,7 +307,7 @@ struct DesignRunsView: View {
                                         Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
                                             .rotationEffect(.degrees(collapsed ? 0 : 90))
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(.pressable)
                                 }
                                 RunStatusIcon(state: row.state).font(.caption)
                                 Text(row.id).monospaced()

@@ -43,21 +43,31 @@ struct Card<Content: View, Accessory: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                if let symbol {
-                    Image(systemName: symbol)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 18)
-                }
-                Text(title).font(.headline)
-                Spacer()
-                accessory()
+            ViewThatFits(in: .horizontal) {
+                header(stacked: false)
+                header(stacked: true)
             }
             content()
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassSurface(cornerRadius: 16)
+    }
+
+    @ViewBuilder private func header(stacked: Bool) -> some View {
+        let heading = HStack(spacing: 8) {
+            if let symbol {
+                Image(systemName: symbol)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18)
+            }
+            Text(title).font(.headline).lineLimit(1)
+        }
+        if stacked {
+            VStack(alignment: .leading, spacing: 6) { heading; accessory() }
+        } else {
+            HStack(spacing: 8) { heading; Spacer(minLength: 8); accessory() }
+        }
     }
 }
 
@@ -95,8 +105,9 @@ struct InfoRow: View {
                 .font(monospaced ? .callout.monospaced() : .callout)
                 .textSelection(.enabled)
                 .gridColumnAlignment(.leading)
-                .lineLimit(2)
+                .lineLimit(1)
                 .truncationMode(.middle)
+                .help(value)
         }
         .font(.callout)
     }

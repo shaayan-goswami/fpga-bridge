@@ -68,7 +68,7 @@ struct SourcesPane: View {
             }
             .fixedSize()
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .help(detail.map { "\(pane.rawValue) of the \($0)" } ?? pane.rawValue)
     }
 
@@ -88,7 +88,7 @@ struct SourcesPane: View {
                                 .frame(height: 2)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
                 }
                 Spacer(minLength: 0)
             }
@@ -164,11 +164,13 @@ private struct SourceLabel: View {
                 .foregroundStyle(symbolColor)
                 .frame(width: 16)
             Text(node.title).fontWeight(node.isTop ? .semibold : .regular)
+                .truncationMode(.middle)
+                .help(node.title)
             if let detail = node.detail {
                 Text(detail).foregroundStyle(.secondary)
             }
             if node.isTop {
-                Pill(text: "Top", color: Accent.source)
+                Pill(text: "Top", color: Accent.source).fixedSize()
             }
             if node.isDisabled {
                 Text("(disabled)").foregroundStyle(.secondary)

@@ -53,7 +53,7 @@ struct FlowNavigatorView: View {
                 } header: {
                     // Vivado shows an arrow on each section; the sidebar's own hide/show only appears on hover.
                     Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
+                        withAnimation(.easeOut(duration: 0.15)) {
                             if collapsed.contains(section) { collapsed.remove(section) } else { collapsed.insert(section) }
                         }
                     } label: {
@@ -69,7 +69,7 @@ struct FlowNavigatorView: View {
                         }
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
                     .help(collapsed.contains(section) ? "Show \(section.rawValue)" : "Hide \(section.rawValue)")
                 }
                 .collapsible(false)
@@ -93,7 +93,7 @@ struct FlowNavigatorView: View {
     }
 
     private func toggle(_ item: FlowItem) {
-        withAnimation(.easeInOut(duration: 0.15)) {
+        withAnimation(.easeOut(duration: 0.15)) {
             if expanded.contains(item) { expanded.remove(item) } else { expanded.insert(item) }
         }
     }
@@ -139,7 +139,7 @@ private struct FlowRow: View {
                         .frame(width: 12, height: 18)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
                 .foregroundStyle(.secondary)
                 .help(isExpanded ? "Hide its commands" : "Show its commands")
             }
@@ -165,7 +165,7 @@ private struct FlowRow: View {
                 .padding(.vertical, 2)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pressable)
             .disabled(!isEnabled)
         }
         .help(unavailableReason ?? title)
@@ -216,7 +216,7 @@ private struct FlowSubRow: View {
             .padding(.vertical, 1)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .disabled(!isEnabled)
         .help(unavailable ?? title)
         .listRowBackground(

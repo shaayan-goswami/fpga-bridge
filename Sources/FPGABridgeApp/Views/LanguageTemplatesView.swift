@@ -19,7 +19,7 @@ struct LanguageTemplatesView: View {
                         .textFieldStyle(.plain)
                     if !query.isEmpty {
                         Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressable)
                             .foregroundStyle(.secondary)
                     }
                 }

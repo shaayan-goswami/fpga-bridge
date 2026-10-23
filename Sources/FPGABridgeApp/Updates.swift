@@ -167,8 +167,14 @@ private struct FixedRelease: ReleaseFetching {
 /// The notice in the corner of the window: "FPGA Bridge 0.2.2 is available", Download, and a menu to skip it.
 struct UpdateBanner: View {
     @EnvironmentObject private var updates: UpdateChecker
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        ZStack { notice }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: updates.available?.version)
+    }
+
+    @ViewBuilder private var notice: some View {
         if let available = updates.available {
             HStack(spacing: 10) {
                 Image(systemName: "arrow.down.circle.fill")
@@ -204,7 +210,7 @@ struct UpdateBanner: View {
             .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
             .padding(.trailing, 16)
             .padding(.bottom, 64)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .transition(reduceMotion ? .opacity : .offset(y: 12).combined(with: .opacity))
             .accessibilityElement(children: .contain)
             .accessibilityLabel("FPGA Bridge \(available.version) is available")
         }

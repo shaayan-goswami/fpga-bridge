@@ -83,7 +83,7 @@ private struct TabButton: View {
                     }
                     .frame(width: 14, height: 14)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
                 .opacity(selected || hovering || isDirty ? 1 : 0)
                 .help(isDirty ? "Close (unsaved changes)" : "Close")
             }
@@ -99,6 +99,8 @@ private struct TabButton: View {
         .contentShape(Capsule())
         .onTapGesture { model.selectedTab = tab }
         .onHover { hovering = $0 }
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { model.selectedTab = tab }
     }
 }
 
@@ -163,19 +165,21 @@ struct ProjectSummaryView: View {
             Button("Edit") { model.showSettings = true }.buttonStyle(.link)
         } content: {
             if let project = model.project {
-                HStack(alignment: .top, spacing: 40) {
-                    Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
-                        InfoRow(label: "Project name", value: project.name)
-                        InfoRow(label: "Project location", value: model.projectURL?.deletingLastPathComponent().path ?? "")
-                        InfoRow(label: "Product family", value: family(ofPart: project.part))
-                        InfoRow(label: "Project part", value: partDescription(project))
-                    }
-                    Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
-                        InfoRow(label: "Top module name", value: project.top)
-                        InfoRow(label: "Target language", value: project.targetLanguage ?? "Verilog")
-                        InfoRow(label: "Simulator language", value: "Mixed")
-                        InfoRow(label: "Target simulator", value: "Icarus Verilog (on the Mac)")
-                    }
+                let left = Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
+                    InfoRow(label: "Project name", value: project.name)
+                    InfoRow(label: "Project location", value: model.projectURL?.deletingLastPathComponent().path ?? "")
+                    InfoRow(label: "Product family", value: family(ofPart: project.part))
+                    InfoRow(label: "Project part", value: partDescription(project))
+                }
+                let right = Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
+                    InfoRow(label: "Top module name", value: project.top)
+                    InfoRow(label: "Target language", value: project.targetLanguage ?? "Verilog")
+                    InfoRow(label: "Simulator language", value: "Mixed")
+                    InfoRow(label: "Target simulator", value: "Icarus Verilog (on the Mac)")
+                }
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 40) { left; right }
+                    VStack(alignment: .leading, spacing: 8) { left; right }
                 }
             }
         }
@@ -506,7 +510,7 @@ struct Switcher: View {
             ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                 if index > 0 { Text("|").foregroundStyle(.tertiary) }
                 Button(option) { selection = option }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
                     .font(.callout.weight(selection == option ? .semibold : .regular))
                     .foregroundStyle(selection == option ? .primary : .secondary)
             }
