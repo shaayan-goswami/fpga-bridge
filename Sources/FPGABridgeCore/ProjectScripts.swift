@@ -145,9 +145,11 @@ public enum ProjectScripts {
         if !i.optMoreOptions.isEmpty { set("STEPS.OPT_DESIGN.ARGS.MORE OPTIONS", i.optMoreOptions, "impl_1") }
         if i.placeDirective != "Default" { set("STEPS.PLACE_DESIGN.ARGS.DIRECTIVE", i.placeDirective, "impl_1") }
         if !i.placeMoreOptions.isEmpty { set("STEPS.PLACE_DESIGN.ARGS.MORE OPTIONS", i.placeMoreOptions, "impl_1") }
+        // Vivado's own default enables phys_opt_design after placement, so only turning it off needs a line.
         if i.physOpt {
-            set("STEPS.PHYS_OPT_DESIGN.IS_ENABLED", "true", "impl_1")
             if i.physOptDirective != "Default" { set("STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE", i.physOptDirective, "impl_1") }
+        } else {
+            set("STEPS.PHYS_OPT_DESIGN.IS_ENABLED", "false", "impl_1")
         }
         if i.routeDirective != "Default" { set("STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE", i.routeDirective, "impl_1") }
         if !i.routeMoreOptions.isEmpty { set("STEPS.ROUTE_DESIGN.ARGS.MORE OPTIONS", i.routeMoreOptions, "impl_1") }

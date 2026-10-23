@@ -79,7 +79,6 @@ final class ProjectScriptsTests: XCTestCase {
             "set_property STEPS.SYNTH_DESIGN.ARGS.MAX_DSP 0 [get_runs synth_1]",
             "set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-verbose} -objects [get_runs synth_1]",
             "set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs impl_1]",
-            "set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]",
             "set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]",
             "set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]",
             "set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]",
@@ -90,6 +89,11 @@ final class ProjectScriptsTests: XCTestCase {
         ] {
             XCTAssertTrue(script.contains(line), "missing: \(line)")
         }
+        XCTAssertFalse(script.contains("STEPS.PHYS_OPT_DESIGN.IS_ENABLED"), "on is Vivado's own default, so no line")
+        settings.implementation.physOpt = false
+        project.settings = settings
+        XCTAssertTrue(try ProjectScripts.projectModeScript(project: project, root: dir)
+            .contains("set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED false [get_runs impl_1]"), "turned off: said so")
     }
 
     func testIPIsCreatedInTheProject() throws {

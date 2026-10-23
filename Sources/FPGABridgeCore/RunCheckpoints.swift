@@ -3,11 +3,10 @@ import Foundation
 /// One short key per run for everything its result depends on, so a later step can tell whether the checkpoint it
 /// would open on the build machine was made from the files and settings as they are now.
 ///
-/// - synth_1: the design sources and include files, the top, part, language and synthesis settings, the IP, and the
-///   Vivado install.
-/// - impl_1: synth_1's key, the constraints and the implementation settings. Implementation reads the constraints
-///   afresh on top of the synthesized netlist (as Vivado's own implementation run does), so a constraint change
-///   reruns implementation only.
+/// - synth_1: the design sources and include files, the constraints, the top, part, language and synthesis settings,
+///   the IP, and the Vivado install. Synthesis reads the constraints (Vivado marks constraint files "used in
+///   synthesis" by default), so, as in Vivado, a constraint change makes synthesis out of date too.
+/// - impl_1: synth_1's key and the implementation settings.
 /// - write_bitstream: impl_1's key and the bitstream settings.
 public struct RunKeys: Equatable, Sendable {
     public var synthesis: String
@@ -27,8 +26,8 @@ public struct RunKeys: Equatable, Sendable {
             String(BuildManifest.sha256(Data(parts.joined(separator: "\n--\n").utf8)).prefix(16))
         }
         synthesis = key(["synth_1", project.top, project.part, vivadoPath, json(settings.language), json(settings.synthesis),
-                         json(project.ips ?? []), files(design)])
-        implementation = key(["impl_1", synthesis, json(settings.implementation), files(constraints)])
+                         json(project.ips ?? []), files(design), files(constraints)])
+        implementation = key(["impl_1", synthesis, json(settings.implementation)])
         bitstream = key(["write_bitstream", implementation, json(settings.bitstream)])
     }
 

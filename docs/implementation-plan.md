@@ -118,7 +118,7 @@ Model tests: markers at exact times, deltas, a layout saved and restored, a layo
 
 ## 3. Separate runs with checkpoints, Launch Runs, strategies, Stop
 
-**Done (wave 1):** everything below except Reset to Previous Step and Launch Runs' "generate scripts only". Checked on the PC: full build, a constraint change rerunning only implementation, bitstream alone, a source change and a missing checkpoint making synthesis go first, and Stop during implementation.
+**Done (wave 1):** everything below except Reset to Previous Step and Launch Runs' "generate scripts only". Checked on the PC: full build, implementation alone from the checkpoint, bitstream alone, a source change and a missing checkpoint making synthesis go first, and Stop during implementation. Since then, to match Vivado: a constraint edit also makes synthesis out of date, the default implementation runs phys_opt_design after placement, and Launch Runs starts at Vivado's default of 2 threads.
 
 ### Vivado
 

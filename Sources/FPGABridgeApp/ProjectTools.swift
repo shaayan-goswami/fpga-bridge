@@ -157,11 +157,10 @@ extension AppModel {
         }
     }
 
-    /// Which runs a change to a file in `set` makes out-of-date: a testbench affects none, and a constraint only
-    /// implementation (which reads the constraints afresh on top of the synthesized netlist).
+    /// Which runs a change to a file in `set` makes out-of-date: a testbench affects none; a design source or a
+    /// constraint both runs (constraints are used in synthesis by default, as in Vivado).
     private func runsAffected(by sets: [SourceSet?]) -> [RunKind] {
-        if sets.contains(.design) { return [.synthesis, .implementation] }
-        return sets.contains(.constraints) ? [.implementation] : []
+        sets.contains(.design) || sets.contains(.constraints) ? [.synthesis, .implementation] : []
     }
 
     /// Follows a file to its new name in open tabs and the selection; nil closes its tab.

@@ -329,10 +329,10 @@ final class AppModel: ObservableObject {
         return []
     }
 
-    /// Which runs an edit to a source file makes out-of-date. Implementation reads the constraints afresh on top of
-    /// the synthesized netlist, so a constraint edit leaves synthesis current.
+    /// Which runs an edit to a source file makes out-of-date: both, for a design source or a constraint file (as in
+    /// Vivado, where constraints are used in synthesis by default).
     static func runsAffected(byEditing path: String) -> [RunKind] {
-        path.lowercased().hasSuffix(".xdc") ? [.implementation] : [.synthesis, .implementation]
+        [.synthesis, .implementation]
     }
 
     func reloadProjectAfterChange(outOfDate kinds: [RunKind] = [.synthesis, .implementation]) {

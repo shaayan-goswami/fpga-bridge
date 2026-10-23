@@ -51,6 +51,7 @@ final class ProjectSettingsTests: XCTestCase {
             read_xdc {pins.xdc}
             opt_design
             place_design
+            phys_opt_design
             route_design
             fpgabridge_checkpoint impl_1 post_route
             report_timing_summary -file out/timing_summary.rpt
@@ -243,9 +244,16 @@ final class ProjectSettingsTests: XCTestCase {
                                "phys_opt_design -directive AggressiveExplore"], "phys_opt after place, and again after route")
     }
 
-    func testPhysOptIsOffUnlessAsked() {
-        XCTAssertFalse(script().contains { $0.hasPrefix("phys_opt") })
-        XCTAssertFalse(script { $0.implementation.physOptDirective = "Explore" }.contains { $0.hasPrefix("phys_opt") }, "a directive alone doesn't turn it on")
+    func testPhysOptAfterPlacementIsOnByDefaultAsInVivado() {
+        // Vivado 2025.2's "Vivado Implementation Defaults" enables phys_opt_design after placement (not after routing).
+        XCTAssertEqual(script().filter { $0.hasPrefix("phys_opt") }, ["phys_opt_design"])
+        XCTAssertFalse(script { $0.implementation.physOpt = false }.contains { $0.hasPrefix("phys_opt") }, "it can be turned off")
+        XCTAssertEqual(ProjectSettings.Implementation().matchingStrategy, "Vivado Implementation Defaults")
+        var runtime = ProjectSettings.Implementation()
+        runtime.apply(ProjectSettings.Implementation.strategies.first { $0.name == "Flow_RuntimeOptimized" }!)
+        XCTAssertFalse(runtime.physOpt, "Flow_RuntimeOptimized skips physical optimization")
+        let old = try? JSONDecoder().decode(ProjectSettings.Implementation.self, from: Data("{}".utf8))
+        XCTAssertEqual(old?.physOpt, true, "a project file that never set it gets Vivado's default")
     }
 
     func testBitstreamPropertiesGoBeforeWriteBitstream() {

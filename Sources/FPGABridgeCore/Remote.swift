@@ -356,8 +356,8 @@ extension Remote {
             return CheckpointProblem(run: run, reason: "there is no \(run.runName) checkpoint on \(config.host)")
         }
         if built.runs?[run.stepName] == keys.key(run) { return nil }
-        // The files the run depends on, then and now: synthesis doesn't depend on the constraints.
-        func input(_ path: String) -> Bool { path != Project.fileName && (run != .synthesis || !path.lowercased().hasSuffix(".xdc")) }
+        // The files the run depends on, then and now: every source and constraint (synthesis reads the constraints too).
+        func input(_ path: String) -> Bool { path != Project.fileName }
         let changed = Set(built.files.keys).union(staged.sent.keys).filter { input($0) && built.files[$0] != staged.sent[$0] }.sorted()
         let what = changed.isEmpty ? "the settings changed"
             : (changed.prefix(3).joined(separator: ", ") + (changed.count > 3 ? " and \(changed.count - 3) more" : "")) + " changed"

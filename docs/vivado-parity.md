@@ -61,7 +61,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Item | How | Status |
 | --- | --- | --- |
 | Settings… | Mac | Done for Project Settings (General, Simulation, Elaboration, Synthesis, Implementation, Bitstream: real options that change the build script and the simulator, checked on Vivado 2025.2). Tool settings Todo |
-| Run Synthesis / Run Implementation / Generate Bitstream | Remote | Done: each is its own run on the build machine, one step at a time with live status, starting from the previous run's checkpoint (checked on Vivado 2025.2: a constraint change reruns only implementation, 129 s instead of 273 s for a full build; Generate Bitstream after implementation runs only write_bitstream) |
+| Run Synthesis / Run Implementation / Generate Bitstream | Remote | Done: each is its own run on the build machine, one step at a time with live status, starting from the previous run's checkpoint. As in Vivado, editing a source or a constraint makes synthesis out of date (constraints are used in synthesis by default); implementation settings rerun only implementation, and Generate Bitstream after implementation runs only write_bitstream (checked on Vivado 2025.2). The default implementation runs phys_opt_design after placement and Launch Runs starts at 2 threads, both Vivado 2025.2's own defaults |
 | Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | Done for the number of jobs (`general.maxThreads`, 1–32); remote hosts, job submission and generate scripts only are greyed with the reason |
 | Reset Runs dialog (with "delete generated files") | Mac | Prototype (no dialog yet) |
 | Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |

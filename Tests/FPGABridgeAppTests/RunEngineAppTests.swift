@@ -157,7 +157,7 @@ final class RunEngineAppTests: XCTestCase {
         XCTAssertNil(model.designs[.impl])
     }
 
-    func testAConstraintEditMakesOnlyImplementationOutOfDate() async throws {
+    func testAConstraintEditMakesBothRunsOutOfDateAsInVivado() async throws {
         let model = makeModel(DemoBackend(speed: 0))
         let dir = try makeProject()
         try "set_property PACKAGE_PIN W5 [get_ports clk]\n".write(to: dir.appendingPathComponent("pins.xdc"), atomically: true, encoding: .utf8)
@@ -169,12 +169,12 @@ final class RunEngineAppTests: XCTestCase {
         let xdc = try XCTUnwrap(model.allSourcePaths.first { $0.hasSuffix(".xdc") })
         model.updateDraft("set_property PACKAGE_PIN W6 [get_ports clk]\n", for: xdc)
         XCTAssertTrue(model.saveFile(xdc))
-        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, false, "the synthesized netlist doesn't depend on the constraints")
+        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, true, "constraints are used in synthesis by default in Vivado")
         XCTAssertEqual(model.runs[.implementation]?.outOfDate, true)
 
-        // So implementation runs again, and synthesis doesn't.
+        // So Run Implementation runs synthesis first.
         XCTAssertEqual(RunPlanner.steps(for: .implementation, synthesisUpToDate: model.runs[.synthesis]?.isUpToDate == true,
-                                        implementationUpToDate: model.runs[.implementation]?.isUpToDate == true), [.implementation])
+                                        implementationUpToDate: model.runs[.implementation]?.isUpToDate == true), [.synthesis, .implementation])
     }
 
     func testDesignRunsShowsTheCommandVivadoIsOn() async throws {
@@ -292,7 +292,7 @@ final class RunEngineAppTests: XCTestCase {
 
         XCTAssertEqual(AppModel.staleRuns(build: out, project: project, root: dir, vivadoPath: vivado), [])
         try "# pins, moved\n".write(to: xdc, atomically: true, encoding: .utf8)
-        XCTAssertEqual(AppModel.staleRuns(build: out, project: project, root: dir, vivadoPath: vivado), [.implementation])
+        XCTAssertEqual(AppModel.staleRuns(build: out, project: project, root: dir, vivadoPath: vivado), [.synthesis, .implementation])
         XCTAssertEqual(AppModel.staleRuns(build: out, project: project, root: dir, vivadoPath: nil), [.synthesis, .implementation],
                        "without the Vivado path the keys can't be checked, so any change counts")
         let source = try XCTUnwrap(try project.resolveSources(in: dir).first)

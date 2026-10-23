@@ -17,9 +17,10 @@ final class RunKeysTests: XCTestCase {
         XCTAssertEqual(keys().synthesis.count, 16)
     }
 
-    func testAConstraintChangeLeavesSynthesisCurrent() {
+    func testAConstraintChangeChangesEveryKeyAsInVivado() {
+        // Constraints are used in synthesis by default in Vivado, so a constraint edit makes synthesis out of date too.
         let a = keys(), b = keys(constraints: ["pins.xdc": "dd"])
-        XCTAssertEqual(a.synthesis, b.synthesis)
+        XCTAssertNotEqual(a.synthesis, b.synthesis)
         XCTAssertNotEqual(a.implementation, b.implementation)
         XCTAssertNotEqual(a.bitstream, b.bitstream, "the bitstream follows implementation")
     }
@@ -53,7 +54,7 @@ final class RunKeysTests: XCTestCase {
         XCTAssertEqual(a.recorded(through: .bitstream), ["synth_1": a.synthesis, "impl_1": a.implementation, "write_bitstream": a.bitstream])
         XCTAssertEqual(a.current(in: a.recorded(through: .bitstream)), [.synthesis, .implementation, .bitstream])
         let moved = keys(constraints: ["pins.xdc": "dd"])
-        XCTAssertEqual(moved.current(in: a.recorded(through: .bitstream)), [.synthesis])
+        XCTAssertEqual(moved.current(in: a.recorded(through: .bitstream)), [], "a constraint change: nothing is current")
         XCTAssertEqual(a.current(in: ["impl_1": a.implementation]), [], "a step counts only with every step before it")
     }
 }

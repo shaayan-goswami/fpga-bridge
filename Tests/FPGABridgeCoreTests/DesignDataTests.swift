@@ -205,6 +205,7 @@ final class DesignDataTests: XCTestCase {
             fpgabridge_checkpoint synth_1 post_synth
             opt_design
             place_design
+            phys_opt_design
             route_design
             fpgabridge_checkpoint impl_1 post_route
             report_timing_summary -file out/timing_summary.rpt

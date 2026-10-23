@@ -92,7 +92,7 @@ final class ChipViewsAppTests: ExampleSandboxTestCase {
         XCTAssertTrue(text.contains("set_property -dict { PACKAGE_PIN V15 IOSTANDARD LVCMOS33 } [get_ports {led[0]}]"), text)
         XCTAssertTrue(text.contains("PACKAGE_PIN E19"), "the other LEDs are untouched")
         XCTAssertEqual(model.runs[.implementation]?.outOfDate, true, "as saving any constraint does")
-        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, false, "implementation reads the constraints on top of the synthesized netlist")
+        XCTAssertEqual(model.runs[.synthesis]?.outOfDate, true, "constraints are used in synthesis too, as in Vivado")
         XCTAssertEqual(model.plannedPorts(.synth).first { $0.name == "led[0]" }?.pin, "V15")
         XCTAssertTrue(model.tclLines.contains { $0.text == "set_property PACKAGE_PIN V15 [get_ports {led[0]}]" })
         XCTAssertNil(model.chipViews.notice)

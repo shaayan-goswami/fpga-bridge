@@ -325,18 +325,22 @@ class FakeRemoteTests: XCTestCase {
         XCTAssertEqual(manifest.changes(project: project, root: root), [])
     }
 
-    func testAConstraintChangeRerunsImplementationButNotSynthesis() throws {
+    func testAConstraintChangeMeansSynthesisFirstAsInVivado() throws {
+        // Constraints are used in synthesis by default in Vivado, so the synthesized checkpoint is stale too.
         let (project, root) = try makeProject()
         let remote = Remote(config: config)
         XCTAssertEqual(try remote.build(project: project, root: root), 0)
-        let synthesized = try XCTUnwrap(checkpointManifest("synth_1"))
-
         try "# pins, moved".write(to: root.appendingPathComponent("constraints/pins.xdc"), atomically: true, encoding: .utf8)
+        let before = calls.count
+
         let impl = try remote.run([.implementation], project: project, root: root, log: { _ in })
-        XCTAssertTrue(impl.succeeded, "the synthesized netlist doesn't depend on the constraints: \(impl)")
-        XCTAssertEqual(checkpointManifest("synth_1"), synthesized, "synthesis was not run again")
+        XCTAssertEqual(impl.needs?.run, .synthesis)
+        XCTAssertTrue(impl.needs?.reason.contains("constraints/pins.xdc changed since the synth_1 checkpoint") == true, impl.needs?.reason ?? "")
+        XCTAssertFalse(calls.dropFirst(before).contains { $0.contains("-tclargs") }, "Vivado must not run on a stale checkpoint")
+        let both = try remote.run([.synthesis, .implementation], project: project, root: root, log: { _ in })
+        XCTAssertTrue(both.succeeded, "\(both)")
         let tcl = try String(contentsOf: remoteFile(".fpga-bridge/demo/build.tcl"), encoding: .utf8)
-        XCTAssertTrue(tcl.contains("read_xdc {constraints/pins.xdc}"), "the new constraints are read on top of the checkpoint")
+        XCTAssertTrue(tcl.contains("read_xdc {constraints/pins.xdc}"))
     }
 
     func testASourceChangeMeansSynthesisFirstAndSaysWhy() throws {

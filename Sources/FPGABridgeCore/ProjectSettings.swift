@@ -211,8 +211,9 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
     public struct Implementation: Codable, Equatable, Sendable {
         public var optDirective = "Default"
         public var placeDirective = "Default"
-        /// Run `phys_opt_design` after placement.
-        public var physOpt = false
+        /// Run `phys_opt_design` after placement. On by default, as in Vivado 2025.2's "Vivado Implementation Defaults"
+        /// (checked on the build machine: `STEPS.PHYS_OPT_DESIGN.IS_ENABLED` is 1 for a new project's impl_1).
+        public var physOpt = true
         public var physOptDirective = "Default"
         /// Run `phys_opt_design` again after routing.
         public var postRoutePhysOpt = false
@@ -225,7 +226,7 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             optDirective = try c.value(.optDirective, "Default")
             placeDirective = try c.value(.placeDirective, "Default")
-            physOpt = try c.value(.physOpt, false)
+            physOpt = try c.value(.physOpt, true)
             physOptDirective = try c.value(.physOptDirective, "Default")
             postRoutePhysOpt = try c.value(.postRoutePhysOpt, false)
             routeDirective = try c.value(.routeDirective, "Default")
@@ -250,7 +251,7 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
         }
 
         public static let strategies: [Strategy] = [
-            Strategy(name: "Vivado Implementation Defaults", summary: "Every step on its default directive.") {
+            Strategy(name: "Vivado Implementation Defaults", summary: "Every step on its default directive, with physical optimization after placement.") {
                 $0 = Implementation()
             },
             Strategy(name: "Performance_Explore", summary: "Explore directives for every step, with physical optimization after placement.") {
@@ -261,6 +262,7 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
             Strategy(name: "Flow_RuntimeOptimized", summary: "The fastest compile: runtime-optimized directives, no physical optimization.") {
                 $0 = Implementation()
                 $0.optDirective = "RuntimeOptimized"; $0.placeDirective = "RuntimeOptimized"; $0.routeDirective = "RuntimeOptimized"
+                $0.physOpt = false
             },
         ]
 
