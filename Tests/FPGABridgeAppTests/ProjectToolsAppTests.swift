@@ -131,6 +131,23 @@ final class ProjectToolsAppTests: XCTestCase {
         XCTAssertTrue(paths(model.sourceTree).contains(counter))
     }
 
+    func testBlockDesignsStayInTheTreeWhenFilesAreDisabledOrRemoved() async throws {
+        let (model, dir) = try await openProject(runs: false)
+        let fixture = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FPGABridgeCoreTests/Fixtures/blockdesign_vivado2025/mb_system")
+        let bd = "demo.srcs/sources_1/bd/mb_system"
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("demo.srcs/sources_1/bd"), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: fixture, to: dir.appendingPathComponent(bd))
+        model.refreshHierarchy()
+        func hasBlockDesign() -> Bool { model.sourceTree.first { $0.id == "group.design" }?.children?.contains { $0.id == "bd:\(bd)/mb_system.bd" } == true }
+        XCTAssertTrue(hasBlockDesign())
+        model.setFileEnabled(counter, false)
+        XCTAssertTrue(hasBlockDesign())
+        model.removeFile(counter, deleteFromDisk: false)
+        XCTAssertTrue(hasBlockDesign())
+        XCTAssertFalse(model.allProjectFiles.contains { Project.isBlockDesign($0.path) }, "Find in Files searches HDL and constraints only")
+    }
+
     func testReplaceFile() async throws {
         let (model, dir) = try await openProject()
         let newer = tmp.appendingPathComponent("inputs/counter_v2.v")

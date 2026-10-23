@@ -435,7 +435,17 @@ struct SourceContextMenu: View {
     let node: SourceNode
 
     var body: some View {
-        if let path = node.path, !path.isEmpty {
+        if let path = node.path, Project.isBlockDesign(path) {
+            // A block design (or a block in one) from Track C's viewer: it is viewed, not edited, here.
+            Button("Open Block Design") { model.openBlockDesign(path) }
+            unavailable("Generate Output Products…", "Coming soon: generating a block design needs builds to run Vivado's IP Integrator.")
+            unavailable("Remove File from Project…", "Remove the block design's folder from the project's sources in the Finder.")
+            Divider()
+            Button("Refresh Hierarchy") { model.refreshHierarchy() }
+            Divider()
+            Button("Show in Finder") { model.showInFinder(path) }
+            Button("Copy Path") { model.copyPath(path) }
+        } else if let path = node.path, !path.isEmpty {
             let set = model.setOf(path)
             let enabled = model.isFileEnabled(path)
             Button("Source Node Properties…") { model.showProperties(of: node) }
