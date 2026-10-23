@@ -6,7 +6,8 @@ enum RunDefaults {
     static let jobs = "launchRunsJobs"
     static let skipLaunchDialog = "launchRunsDontShowAgain"
     static let skipCompletionDialog = "runCompletedDontShowAgain"
-    /// Vivado's own `general.maxThreads` default on Windows and Linux.
+    /// Launch Runs' starting number of jobs. Vivado 2025.2's own `general.maxThreads` default is 2 (checked on the
+    /// build machine); 8 is the most most of its steps use, and the build machine runs one job at a time.
     static let defaultJobs = 8
 }
 
