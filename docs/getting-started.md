@@ -48,10 +48,10 @@ results come back. The board plugs into the Mac.
    [latest release](https://github.com/shaayan-goswami/fpga-bridge/releases/latest).
 2. Double-click the zip to unzip it, and drag **FPGA Bridge** into your **Applications** folder.
 
-### 1.2 Allow it to open
+Later versions: the app checks GitHub once a day and shows a notice when a newer one is out. Download it the same way
+and replace the app (then repeat 1.2). Turn the check off in **FPGA Bridge > Settings… > General**.
 
-FPGA Bridge checks GitHub once a day and shows a notice when a newer version is out; download it the same way. (Turn the
-check off in **FPGA Bridge > Settings… > General**.)
+### 1.2 Allow it to open
 
 The app isn't notarized by Apple yet, so macOS blocks it the first time ("Apple could not verify…"). Open
 **Terminal** (in Applications > Utilities) and run:
