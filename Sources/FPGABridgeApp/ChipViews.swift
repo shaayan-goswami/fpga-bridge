@@ -129,9 +129,10 @@ final class ChipViews: ObservableObject {
 
     /// The backend that goes with the app's: Vivado through the same build machine, the saved copies without one.
     static func backend(for app: Backend) -> PartDataBackend {
+        let directory = DebugHooks.partDataDirectory ?? PartData.defaultCacheDirectory
         if app.isDemo { return DemoPartDataBackend() }
-        if let live = app as? LiveBackend { return LivePartDataBackend(config: live.config) }
-        return LocalPartDataBackend()
+        if let live = app as? LiveBackend { return LivePartDataBackend(config: live.config, cacheDirectory: directory) }
+        return LocalPartDataBackend(cacheDirectory: directory)
     }
 
     func data(for part: String) -> PartData? {

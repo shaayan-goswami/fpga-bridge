@@ -75,9 +75,9 @@ private struct DeviceWindow: View {
     private func toolbar(_ data: PartData, die: DieLayout, placement: [String: [String]]) -> some View {
         HStack(spacing: 10) {
             Group {
-                Button { viewport.zoom(by: 1.4, about: viewport.center) } label: { Image(systemName: "plus.magnifyingglass") }.help("Zoom In")
-                Button { viewport.zoom(by: 1 / 1.4, about: viewport.center) } label: { Image(systemName: "minus.magnifyingglass") }.help("Zoom Out")
-                Button { fit(die) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }.help("Zoom Fit")
+                Button { needsFit = false; viewport.zoom(by: 1.4, about: viewport.center) } label: { Image(systemName: "plus.magnifyingglass") }.help("Zoom In")
+                Button { needsFit = false; viewport.zoom(by: 1 / 1.4, about: viewport.center) } label: { Image(systemName: "minus.magnifyingglass") }.help("Zoom Out")
+                Button { needsFit = true; fit(die) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }.help("Zoom Fit")
                 Button { fitSelection(die, placement: placement) } label: { Image(systemName: "scope") }.help("Zoom to Selection")
                 Toggle(isOn: $showRegions) { Image(systemName: "square.grid.2x2") }
                     .toggleStyle(.button)
@@ -107,7 +107,6 @@ private struct DeviceWindow: View {
 
     private func fit(_ die: DieLayout) {
         viewport.fit(CGRect(origin: .zero, size: die.size).insetBy(dx: -10, dy: -10), maxScale: 6)
-        needsFit = viewport.size == .zero
     }
 
     private func selectedSites(_ placement: [String: [String]]) -> Set<String> {

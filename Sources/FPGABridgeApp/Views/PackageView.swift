@@ -82,9 +82,10 @@ private struct PackageWindow: View {
                     PackageSidebar(chip: chip, stage: stage, part: data, ports: ports, issues: issues)
                         .frame(width: 260)
                 }
-                .frame(minHeight: 240, idealHeight: 460)
+                .frame(minHeight: 280, idealHeight: 520, maxHeight: .infinity)
+                .layoutPriority(1)
                 IOPortsTable(chip: chip, stage: stage)
-                    .frame(minHeight: 120, idealHeight: 220)
+                    .frame(minHeight: 120, idealHeight: 200, maxHeight: 320)
             }
         }
         .background(Theme.surface)
@@ -95,9 +96,9 @@ private struct PackageWindow: View {
     private func toolbar(_ data: PartData, layout: PackageLayout) -> some View {
         HStack(spacing: 10) {
             Group {
-                Button { viewport.zoom(by: 1.4, about: viewport.center) } label: { Image(systemName: "plus.magnifyingglass") }.help("Zoom In")
-                Button { viewport.zoom(by: 1 / 1.4, about: viewport.center) } label: { Image(systemName: "minus.magnifyingglass") }.help("Zoom Out")
-                Button { fit(layout) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }.help("Zoom Fit")
+                Button { needsFit = false; viewport.zoom(by: 1.4, about: viewport.center) } label: { Image(systemName: "plus.magnifyingglass") }.help("Zoom In")
+                Button { needsFit = false; viewport.zoom(by: 1 / 1.4, about: viewport.center) } label: { Image(systemName: "minus.magnifyingglass") }.help("Zoom Out")
+                Button { needsFit = true; fit(layout) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }.help("Zoom Fit")
                 Toggle(isOn: $showNames) { Image(systemName: "character.textbox") }
                     .toggleStyle(.button)
                     .help("Show port names on their pins")
@@ -129,7 +130,6 @@ private struct PackageWindow: View {
 
     private func fit(_ layout: PackageLayout) {
         viewport.fit(CGRect(origin: .zero, size: layout.size).insetBy(dx: -10, dy: -10), maxScale: 3)
-        needsFit = viewport.size == .zero
     }
 
     // MARK: Canvas

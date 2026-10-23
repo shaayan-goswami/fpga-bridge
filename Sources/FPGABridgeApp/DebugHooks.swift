@@ -39,6 +39,8 @@ enum DebugHooks {
     static var wizardStartStep: Int? { env["FPGA_BRIDGE_WIZARD_STEP"].flatMap(Int.init) }
     static var settingsPage: String? { env["FPGA_BRIDGE_SETTINGS_PAGE"] }
     static var designSection: String? { env["FPGA_BRIDGE_DESIGN_SECTION"] }
+    /// Where part data is read and saved instead of Application Support (ChipViews.swift).
+    static var partDataDirectory: URL? { env["FPGA_BRIDGE_PART_DATA_DIR"].map { URL(fileURLWithPath: $0) } }
     static var selectObject: DesignObjectRef? {
         guard let spec = env["FPGA_BRIDGE_SELECT"], let colon = spec.firstIndex(of: ":"),
               let kind = DesignObjectKind(rawValue: String(spec[..<colon])) else { return nil }
@@ -59,6 +61,7 @@ enum DebugHooks {
     static let wizardStartStep: Int? = nil
     static let settingsPage: String? = nil
     static let designSection: String? = nil
+    static let partDataDirectory: URL? = nil
     static let selectObject: DesignObjectRef? = nil
     static let schematicView: (zoom: CGFloat, x: CGFloat, y: CGFloat)? = nil
     #endif
@@ -109,6 +112,16 @@ extension AppModel {
             }
             if let ref = DebugHooks.selectObject { select(ref) }
             applyTimingScenario(stage)
+        case "package-rtl", "package-synth", "package-impl", "device-synth", "device-impl":
+            let name = DebugHooks.scenario!
+            let stage = DesignStage(rawValue: String(name.split(separator: "-").last ?? "")) ?? .synth
+            if DebugHooks.openPath == nil {
+                openExampleProject()
+                run(.bitstream)
+            }
+            while designs[stage] == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
+            if name.hasPrefix("package") { openPackage(stage) } else { openDevice(stage) }
+            if let ref = DebugHooks.selectObject { select(ref) }
         case "waveform", "waveform-zoom":
             if DebugHooks.openPath == nil { openExampleProject() }
             runSimulation()
