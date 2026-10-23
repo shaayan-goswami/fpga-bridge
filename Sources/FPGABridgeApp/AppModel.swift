@@ -56,6 +56,16 @@ final class AppModel: ObservableObject {
     @Published private(set) var designs: [DesignStage: DesignSnapshot] = [:]
     /// A design view to open once the build that produces it has finished.
     private var pendingDesign: DesignStage?
+    /// The Vivado command each run is on or stopped at ("place_design"), read from its log, for Design Runs.
+    @Published private(set) var runCommand: [RunKind: String] = [:]
+    /// A run waiting for the Launch Runs dialog, and the one whose completion dialog is showing.
+    @Published var launchRequest: RunKind?
+    @Published var completionPrompt: RunCompletion?
+    /// Launch Runs' "Number of jobs", which becomes Vivado's thread limit on the build machine.
+    @Published var launchJobs: Int
+    /// Vivado's "Don't show this dialog again" for Launch Runs and for the run-completion dialog.
+    @Published var asksBeforeLaunching: Bool
+    @Published var showsCompletionDialog: Bool
 
     // Opened designs (see DesignSelection.swift)
     /// The design the Netlist and Properties windows show: the last one opened, as in Vivado.
@@ -99,6 +109,12 @@ final class AppModel: ObservableObject {
         self.hardware = HardwareManager(backend: hardware)
         self.simulation = SimulationManager(backend: simulation)
         self.persist = persist
+        // Tests and snapshots run without the dialogs unless they turn them on.
+        let defaults = UserDefaults.standard
+        launchJobs = persist ? (defaults.object(forKey: RunDefaults.jobs) as? Int).map { Project.FlowOptions.threadRange.clamped($0) } ?? RunDefaults.defaultJobs
+            : RunDefaults.defaultJobs
+        asksBeforeLaunching = persist ? !defaults.bool(forKey: RunDefaults.skipLaunchDialog) : false
+        showsCompletionDialog = persist ? !defaults.bool(forKey: RunDefaults.skipCompletionDialog) : false
         recentProjects = loadRecents()
         tclLines = [ConsoleLine(text: "# Tcl console. What you type runs in Vivado on the build machine; the app's own actions are shown as the Vivado command each stands for.", kind: .output)]
         self.hardware.console = { [weak self] text, kind in self?.tclLines.append(ConsoleLine(text: text, kind: kind)) }
@@ -313,6 +329,12 @@ final class AppModel: ObservableObject {
         return []
     }
 
+    /// Which runs an edit to a source file makes out-of-date. Implementation reads the constraints afresh on top of
+    /// the synthesized netlist, so a constraint edit leaves synthesis current.
+    static func runsAffected(byEditing path: String) -> [RunKind] {
+        path.lowercased().hasSuffix(".xdc") ? [.implementation] : [.synthesis, .implementation]
+    }
+
     func reloadProjectAfterChange(outOfDate kinds: [RunKind] = [.synthesis, .implementation]) {
         guard let projectURL else { return }
         do {
@@ -394,7 +416,7 @@ final class AppModel: ObservableObject {
         }
         fileCache[path] = text
         drafts[path] = nil
-        if !path.contains("/\(SourceSet.simulation.directoryName)/") { markOutOfDate() }
+        if !path.contains("/\(SourceSet.simulation.directoryName)/") { markOutOfDate(AppModel.runsAffected(byEditing: path)) }
         rebuildSourceTree()
         lastMessage = "Saved \((path as NSString).lastPathComponent)"
         return true
@@ -539,26 +561,36 @@ final class AppModel: ObservableObject {
     private func restorePreviousBuild(in directory: URL) {
         guard !backend.isDemo, let project else { return }
         let out = directory.appendingPathComponent(Remote.localOutputDir)
+        let vivadoPath = backend.vivadoPath
         Task { [weak self] in
-            let (files, designs, completed, stale) = await Task.detached { () -> ([ReportFile], [DesignStage: DesignSnapshot], Set<RunKind>, Bool) in
+            let (files, designs, completed, stale) = await Task.detached { () -> ([ReportFile], [DesignStage: DesignSnapshot], Set<RunKind>, Set<RunKind>) in
                 var found: [DesignStage: DesignSnapshot] = [:]
                 for stage in DesignStage.allCases {
                     if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { found[stage] = snapshot }
                 }
                 let files = LiveBackend.reports(in: out)
                 // The manifest says exactly what was built; an older build without one is judged by file dates.
-                let stale = BuildManifest.load(from: out).map { !$0.changes(project: project, root: directory).isEmpty }
-                    ?? AppModel.isStale(build: out, project: project, root: directory)
+                let stale = AppModel.staleRuns(build: out, project: project, root: directory, vivadoPath: vivadoPath)
+                    ?? (AppModel.isStale(build: out, project: project, root: directory) ? [.synthesis, .implementation] : [])
                 return (files, found, AppModel.completedSteps(reports: files.map(\.name), designs: Set(found.keys), out: out, top: project.top),
                         stale)
             }.value
             guard let self, self.projectURL == directory, !files.isEmpty || !designs.isEmpty else { return }
             self.loadedBuildStamp = AppModel.buildStamp(out)
             self.apply(RunOutcome(completed: completed, reports: files, designs: designs))
-            if stale {
-                for kind in [RunKind.synthesis, .implementation] where self.runs[kind]?.status == .complete { self.runs[kind]?.outOfDate = true }
-            }
+            for kind in stale where self.runs[kind]?.status == .complete { self.runs[kind]?.outOfDate = true }
         }
+    }
+
+    /// Which runs of the build in `out` are out of date now, from its manifest: by each run's key when the manifest
+    /// has them (a constraint change makes only impl_1 out of date), otherwise both runs if any file changed. Nil when
+    /// the build has no manifest.
+    nonisolated static func staleRuns(build out: URL, project: Project, root: URL, vivadoPath: String?) -> Set<RunKind>? {
+        guard let manifest = BuildManifest.load(from: out) else { return nil }
+        if let recorded = manifest.runs, let vivadoPath, let keys = try? RunKeys(project: project, root: root, vivadoPath: vivadoPath) {
+            return keys.outOfDate(recorded)
+        }
+        return manifest.changes(project: project, root: root).isEmpty ? [] : [.synthesis, .implementation]
     }
 
     /// A file saved while the build was running isn't in it, but finishing the build would otherwise mark the runs up
@@ -566,9 +598,16 @@ final class AppModel: ObservableObject {
     private func flagChangesMadeDuringTheBuild(log run: RunKind) async {
         guard let directory = projectURL, let project,
               let manifest = BuildManifest.load(from: directory.appendingPathComponent(Remote.localOutputDir)) else { return }
-        let changed = await Task.detached { manifest.changes(project: project, root: directory) }.value
+        let vivadoPath = backend.vivadoPath
+        let (changed, stale) = await Task.detached {
+            (manifest.changes(project: project, root: directory),
+             AppModel.staleRuns(build: directory.appendingPathComponent(Remote.localOutputDir), project: project, root: directory,
+                                vivadoPath: vivadoPath) ?? [])
+        }.value
         guard !changed.isEmpty, projectURL == directory else { return }
-        markOutOfDate()
+        // A change no run depends on (a testbench, simulation settings) leaves them current.
+        guard !stale.isEmpty else { return }
+        markOutOfDate(Array(stale))
         logs[run, default: []].append(ConsoleLine(
             text: "WARNING: [FPGA Bridge] Changed while the build was running, so not in this result: \(changed.joined(separator: ", ")). Run it again to include them.",
             kind: .warning))
@@ -620,8 +659,7 @@ final class AppModel: ObservableObject {
     func openDesign(_ stage: DesignStage) {
         if designs[stage] != nil { showDesign(stage); return }
         guard !isRunning else { return }
-        run(stage == .impl ? .implementation : .synthesis)
-        pendingDesign = stage
+        run(stage == .impl ? .implementation : .synthesis, opening: stage)
     }
 
     // MARK: Simulation
@@ -686,20 +724,61 @@ final class AppModel: ObservableObject {
         Task { await hardware.program(bitstream: bitstream, board: board, kind: kind) }
     }
 
-    /// Vivado's behavior: each step runs what it depends on if that is missing or out-of-date.
+    /// Whether the dialogs' "Don't show this dialog again" and Launch Runs' jobs are remembered (not in tests).
+    var persistsPreferences: Bool { persist }
+
     /// Whether Vivado's steps can run: false when no build machine is set up (the app is then an editor and simulator).
     var hasBuildMachine: Bool { !(backend is LocalBackend) }
 
-    func run(_ target: RunKind) {
+    /// Run Synthesis, Run Implementation, Generate Bitstream. As in Vivado, the Launch Runs dialog comes first unless
+    /// it was turned off, and each step runs what it depends on if that is missing or out-of-date.
+    /// `opening` is the design view to show when the run has produced it (a build the user starts by hand opens none).
+    func run(_ target: RunKind, opening design: DesignStage? = nil) {
         guard hasBuildMachine else {
             errorMessage = NoBuildMachine.message
             return
         }
-        pendingDesign = nil     // a build the user starts by hand doesn't open a design view when it ends
+        guard !isRunning else { return }
+        pendingDesign = design
+        if asksBeforeLaunching {
+            launchRequest = target
+        } else {
+            launch(target)
+        }
+    }
+
+    /// The Launch Runs dialog's OK.
+    func confirmLaunch(jobs: Int, dontAskAgain: Bool) {
+        guard let target = launchRequest else { return }
+        launchRequest = nil
+        launchJobs = Project.FlowOptions.threadRange.clamped(jobs)
+        if dontAskAgain { asksBeforeLaunching = false }
+        if persist {
+            UserDefaults.standard.set(launchJobs, forKey: RunDefaults.jobs)
+            UserDefaults.standard.set(!asksBeforeLaunching, forKey: RunDefaults.skipLaunchDialog)
+        }
+        launch(target)
+    }
+
+    func cancelLaunch() {
+        launchRequest = nil
+        pendingDesign = nil
+    }
+
+    /// Starts a run with what it depends on, without asking.
+    func launch(_ target: RunKind) {
         tclLines += blockDesignBuildNotes
         execute(RunPlanner.steps(for: target,
                                  synthesisUpToDate: runs[.synthesis]?.isUpToDate == true,
                                  implementationUpToDate: runs[.implementation]?.isUpToDate == true))
+    }
+
+    /// Design Runs' Launch Next Step: the first step of the flow that isn't done.
+    var nextStep: RunKind? {
+        guard hasProject else { return nil }
+        if runs[.synthesis]?.isUpToDate != true { return .synthesis }
+        if runs[.implementation]?.isUpToDate != true { return .implementation }
+        return bitstreamReady ? nil : .bitstream
     }
 
     func status(of item: FlowItem) -> RunState? {
@@ -733,7 +812,10 @@ final class AppModel: ObservableObject {
         logs = [:]
         reports = []
         designs = [:]
+        runCommand = [:]
         pendingDesign = nil
+        launchRequest = nil
+        completionPrompt = nil
         designSelection = []
         propertiesShowsDesign = false
         lint = .idle
@@ -755,26 +837,57 @@ final class AppModel: ObservableObject {
         stepStarted = nil
     }
 
+    /// Runs the planned steps one at a time, each its own run on the build machine. A step whose starting checkpoint
+    /// is missing or out of date there gets the run it needs put in front of it (once). When the last step finishes,
+    /// Vivado's completion dialog offers the next thing to do; when one fails, its failure dialog.
     private func execute(_ plan: [RunKind]) {
-        guard !isRunning, let project, let projectURL, !plan.isEmpty else { return }
+        guard !isRunning, let project, let projectURL, let target = plan.last else { return }
         isRunning = true
         consoleVisible = true
+        completionPrompt = nil
         runGeneration += 1
         let generation = runGeneration
+        let opensDesign = pendingDesign != nil
+        let options = Project.FlowOptions(maxThreads: launchJobs)
         runTask = Task { [weak self] in
             guard let self else { return }
-            for (index, step) in plan.enumerated() {
+            var queue = plan
+            var inserted: Set<RunKind> = []
+            var first = true
+            var end = StepEnd.succeeded
+            while let step = queue.first {
+                queue.removeFirst()
                 guard !Task.isCancelled, runGeneration == generation else { return }
-                // A live run completes every step at once, so later steps may already be done.
-                if index > 0, isDone(step) { continue }
-                let succeeded = await performStep(step, project: project, directory: projectURL, generation: generation)
-                if !succeeded { break }
+                // A step that a needed run made current again doesn't run twice.
+                if !first, isDone(step), !inserted.contains(step) { continue }
+                first = false
+                end = await performStep(step, project: project, directory: projectURL, options: options, generation: generation)
+                if case .needs(let need) = end {
+                    guard inserted.insert(need.run).inserted else {
+                        end = .failed(step)
+                        runs[step.run]?.status = .failed
+                        lastOutcome = .failed
+                        lastMessage = "\(step.stepName) failed. See Messages."
+                        logs[step.run, default: []].append(ConsoleLine(text: "ERROR: [FPGA Bridge] \(need.reason).", kind: .error))
+                        break
+                    }
+                    echoTcl("# \(need.reason): running \(need.run.runName) first")
+                    queue.insert(contentsOf: [need.run, step], at: 0)
+                    continue
+                }
+                if case .succeeded = end { continue }
+                break
             }
             guard runGeneration == generation else { return }
             activeStep = nil
             stepStarted = nil
             isRunning = false
             runTask = nil
+            switch end {
+            case .succeeded where showsCompletionDialog && !opensDesign: completionPrompt = .completed(target)
+            case .failed(let step) where showsCompletionDialog: completionPrompt = .failed(step)
+            default: break
+            }
         }
     }
 
@@ -782,20 +895,31 @@ final class AppModel: ObservableObject {
         step == .bitstream ? bitstreamReady && runs[.implementation]?.isUpToDate == true : runs[step]?.isUpToDate == true
     }
 
-    /// Returns false if the step failed, was cancelled, or belongs to a run that has since been abandoned.
-    private func performStep(_ step: RunKind, project: Project, directory: URL, generation: Int) async -> Bool {
+    /// How a step ended.
+    private enum StepEnd {
+        case succeeded, stopped
+        case failed(RunKind)
+        case needs(RunNeed)
+    }
+
+    private func performStep(_ step: RunKind, project: Project, directory: URL, options: Project.FlowOptions,
+                             generation: Int) async -> StepEnd {
         let run = step.run
+        let before = runs[run]
+        let beforeLog = logs[run]
         activeStep = step
         logRun = run
         consoleTab = .log
         let started = Date()
         stepStarted = started
 
+        let jobs = options.maxThreads.map { " -jobs \($0)" } ?? ""
         switch step {
-        case .synthesis: echoTcl("launch_runs synth_1 -jobs 4")
-        case .implementation: echoTcl("launch_runs impl_1 -jobs 4")
-        case .bitstream: echoTcl("launch_runs impl_1 -to_step write_bitstream -jobs 4")
+        case .synthesis: echoTcl("launch_runs synth_1\(jobs)")
+        case .implementation: echoTcl("launch_runs impl_1\(jobs)")
+        case .bitstream: echoTcl("launch_runs impl_1 -to_step write_bitstream\(jobs)")
         }
+        runCommand[run] = nil
         if step == .bitstream {
             runs[.implementation]?.status = .running
         } else {
@@ -808,7 +932,7 @@ final class AppModel: ObservableObject {
 
         // Captured strongly on purpose: the call is short-lived, and the run task keeps the model alive anyway.
         let model = self
-        let outcome = await backend.run(step, project: project, directory: directory) { chunk in
+        let outcome = await backend.run(step, project: project, directory: directory, options: options) { chunk in
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     // Output from a run that was abandoned must not land in the log of its replacement.
@@ -819,26 +943,32 @@ final class AppModel: ObservableObject {
         }
         // Chunks are delivered through the main queue; let the ones already queued land before finishing.
         await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in DispatchQueue.main.async { done.resume() } }
-        guard runGeneration == generation else { return false }
+        guard runGeneration == generation else { return .stopped }
         if var buffer = buffers[run] {
             logs[run, default: []].append(contentsOf: buffer.flush().map { ConsoleLine(text: $0, kind: ConsoleLine.classify($0)) })
             buffers[run] = buffer
         }
-        runs[run]?.elapsed += Date().timeIntervalSince(started)
 
+        if let need = outcome.needs {
+            // Nothing ran: the run is as it was, and the run it needs goes first.
+            runs[run] = before
+            logs[run] = beforeLog
+            return .needs(need)
+        }
+        runs[run]?.elapsed += Date().timeIntervalSince(started)
         if outcome.cancelled {
             // Cancelling write_bitstream leaves impl_1 as it was: complete, with no bitstream.
             runs[run]?.status = step == .bitstream ? .complete : .cancelled
             lastOutcome = .cancelled
-            lastMessage = step == .bitstream ? "write_bitstream cancelled" : "\(step.runName) cancelled"
-            return false
+            lastMessage = "\(step.stepName) cancelled"
+            return .stopped
         }
         if outcome.failed || outcome.completed.isEmpty {
             runs[run]?.status = .failed
             lastOutcome = .failed
-            lastMessage = "\(step == .bitstream ? "write_bitstream" : step.runName) failed. See Messages."
+            lastMessage = "\(step.stepName) failed. See Messages."
             consoleTab = .messages
-            return false
+            return .failed(step)
         }
 
         apply(outcome)
@@ -850,18 +980,28 @@ final class AppModel: ObservableObject {
         case .implementation: lastMessage = "impl_1 complete"
         case .bitstream: lastMessage = "Bitstream generated"
         }
-        return true
+        return .succeeded
     }
 
     private func apply(_ outcome: RunOutcome) {
         let synthJustRan = outcome.completed.contains(.synthesis)
+        // New synthesis results reset the implementation run, whose results came from the old netlist; new
+        // implementation results replace the old ones and the bitstream. (The build folder is merged the same way.)
+        if synthJustRan, !outcome.completed.contains(.implementation), runs[.implementation]?.status != .running {
+            runs[.implementation] = RunState()
+            logs[.implementation] = nil
+            runCommand[.implementation] = nil
+            bitstreamReady = false
+            designs[.impl] = nil
+            reports.removeAll { $0.run == .implementation }
+        }
+        if outcome.completed.contains(.implementation) {
+            reports.removeAll { $0.run == .implementation }
+            bitstreamReady = false
+        }
         for kind in [RunKind.synthesis, .implementation] where outcome.completed.contains(kind) {
             runs[kind]?.status = .complete
             runs[kind]?.outOfDate = false
-        }
-        // New synthesis results make an earlier implementation stale, as in Vivado.
-        if synthJustRan, !outcome.completed.contains(.implementation), runs[.implementation]?.status == .complete {
-            runs[.implementation]?.outOfDate = true
         }
         // write_bitstream is the last step of impl_1, so a bitstream means impl_1 is complete again.
         if outcome.completed.contains(.bitstream) {
@@ -893,6 +1033,10 @@ final class AppModel: ObservableObject {
         var buffer = buffers[run] ?? LineBuffer()
         let lines = buffer.append(chunk)
         buffers[run] = buffer
+        // Vivado prints "Command: place_design ..." as each command starts, which is what Design Runs shows.
+        if let command = lines.last(where: { $0.hasPrefix("Command: ") })?.dropFirst("Command: ".count).split(separator: " ").first {
+            runCommand[run] = String(command)
+        }
         logs[run, default: []].append(contentsOf: lines.map { ConsoleLine(text: $0, kind: ConsoleLine.classify($0)) })
     }
 

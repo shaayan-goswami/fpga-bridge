@@ -23,6 +23,7 @@ struct ContentView: View {
         .sheet(isPresented: $model.showAddSources) {
             AddSourcesSheet().environmentObject(model)
         }
+        .modifier(RunDialogs(model: model))
         .sheet(item: Binding(get: { hardware.sheetHost == "main" ? hardware.sheet : nil }, set: { hardware.sheet = $0 })) { kind in
             ProgramDeviceSheet(kind: kind).environmentObject(model).environmentObject(model.hardware)
         }
@@ -193,7 +194,7 @@ struct MainToolbar: ToolbarContent {
             Button { model.stop() } label: {
                 Label("Stop", systemImage: "stop.fill")
             }
-            .help(model.backend.canStop ? "Stop the running step" : "Stopping a live build from the app isn't supported yet")
+            .help(model.backend.canStop ? "Stop the running step" : "No build machine is set up, so nothing runs that could be stopped")
             .disabled(!model.canStop)
 
             Button { model.consoleVisible.toggle() } label: {

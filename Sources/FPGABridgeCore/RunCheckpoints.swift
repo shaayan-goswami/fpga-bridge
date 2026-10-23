@@ -32,6 +32,25 @@ public struct RunKeys: Equatable, Sendable {
         bitstream = key(["write_bitstream", implementation, json(settings.bitstream)])
     }
 
+    /// The keys of the project's files as they are on disk now.
+    public init(project: Project, root: URL, vivadoPath: String) throws {
+        let sources = try project.resolveSources(in: root)
+        let design = sources + (try project.resolveIncludeFiles(in: root)).filter { !sources.contains($0) }
+        self.init(project: project, design: BuildManifest.fingerprint(design, root: root),
+                  constraints: BuildManifest.fingerprint(try project.resolveConstraints(in: root), root: root), vivadoPath: vivadoPath)
+    }
+
+    /// The runs a build recorded with these keys that are out of date now. The bitstream is the last step of impl_1,
+    /// so a stale bitstream makes impl_1 out of date.
+    public func outOfDate(_ recorded: [String: String]) -> Set<RunKind> {
+        let current = current(in: recorded)
+        var stale: Set<RunKind> = []
+        if recorded[RunKind.synthesis.stepName] != nil, !current.contains(.synthesis) { stale.insert(.synthesis) }
+        if recorded[RunKind.implementation.stepName] != nil, !current.contains(.implementation) { stale.insert(.implementation) }
+        if recorded[RunKind.bitstream.stepName] != nil, !current.contains(.bitstream) { stale.insert(.implementation) }
+        return stale
+    }
+
     public func key(_ step: RunKind) -> String {
         switch step {
         case .synthesis: synthesis

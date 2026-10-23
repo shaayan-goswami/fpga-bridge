@@ -51,8 +51,10 @@ extension AppModel {
         let state = runs[run] ?? RunState()
         switch state.status {
         case .notStarted: return "Not started"
-        case .running: return "Running \(run == .synthesis ? "synth_design" : "implementation")…"
-        case .failed: return "\(run == .synthesis ? "synth_design" : "route_design") ERROR"
+        case .running:
+            if run == .implementation, activeStep == .bitstream { return "Running write_bitstream…" }
+            return "Running \(runCommand[run] ?? (run == .synthesis ? "synth_design" : "opt_design"))…"
+        case .failed: return "\(runCommand[run] ?? (run == .synthesis ? "synth_design" : "route_design")) ERROR"
         case .cancelled: return "Cancelled"
         case .complete:
             if state.outOfDate { return "Out-of-date" }

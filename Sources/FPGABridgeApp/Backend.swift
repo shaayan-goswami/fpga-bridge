@@ -2,13 +2,22 @@ import FPGABridgeCore
 import Foundation
 
 struct RunOutcome {
-    /// Steps that are now complete. A live run currently completes all of them at once.
+    /// Steps that are now complete.
     var completed: Set<RunKind> = []
     var failed = false
     var cancelled = false
     var reports: [ReportFile] = []
     /// What the build wrote about the design at each stage, for the design views.
     var designs: [DesignStage: DesignSnapshot] = [:]
+    /// Set, and nothing run, when the step starts from an earlier run's checkpoint that is missing or out of date on
+    /// the build machine: that run goes first.
+    var needs: RunNeed?
+}
+
+/// An earlier run a step needs first, and why.
+struct RunNeed: Equatable {
+    var run: RunKind
+    var reason: String
 }
 
 /// Where runs and Tcl commands go: a real build machine, or a simulation when none is configured.
@@ -20,6 +29,9 @@ protocol Backend: AnyObject, Sendable {
     var canStop: Bool { get }
     func checkConnection() async -> ConnectionState
     func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome
+    /// The same, with the Launch Runs options. Backends that have no use for them run the step as above.
+    func run(_ step: RunKind, project: Project, directory: URL, options: Project.FlowOptions,
+             log: @escaping @Sendable (String) -> Void) async -> RunOutcome
     func runTcl(_ command: String, project: Project?, log: @escaping @Sendable (String) -> Void) async
     /// Run Linter: Vivado's RTL linter on the project's sources.
     func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure>
@@ -32,6 +44,11 @@ struct LintFailure: Error, Equatable {
 }
 
 extension Backend {
+    func run(_ step: RunKind, project: Project, directory: URL, options: Project.FlowOptions,
+             log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
+        await run(step, project: project, directory: directory, log: log)
+    }
+
     func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure> {
         .failure(LintFailure(message: "This build machine can't run the linter."))
     }
@@ -150,8 +167,8 @@ final class LocalBackend: Backend, Sendable {
 final class LiveBackend: Backend, Sendable {
     let config: BridgeConfig
     let isDemo = false
-    /// Stopping a live build from the app needs a cancel hook in the core (today it is Ctrl-C in the CLI).
-    let canStop = false
+    /// Stop ends the SSH session and kills Vivado on the build machine by its job marker.
+    let canStop = true
 
     init(config: BridgeConfig) { self.config = config }
 
@@ -167,26 +184,41 @@ final class LiveBackend: Backend, Sendable {
         return .connected(config.host)
     }
 
-    /// The build script still runs synthesis, implementation and the bitstream in one go, so any step completes
-    /// all three. Separate runs with checkpoints are in the backlog.
     func run(_ step: RunKind, project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
+        await run(step, project: project, directory: directory, options: Project.FlowOptions(), log: log)
+    }
+
+    /// Runs one step on the build machine, starting from the checkpoint the run before it left there. Cancelling the
+    /// task (Stop) stops Vivado.
+    func run(_ step: RunKind, project: Project, directory: URL, options: Project.FlowOptions,
+             log: @escaping @Sendable (String) -> Void) async -> RunOutcome {
         let config = config
-        return await Task.detached {
-            do {
-                let status = try Remote(config: config).build(project: project, root: directory, log: log)
-                if status == Shell.interruptedStatus { return RunOutcome(cancelled: true) }
-                guard status == 0 else { return RunOutcome(failed: true) }
-                let out = directory.appendingPathComponent(Remote.localOutputDir)
-                var outcome = RunOutcome(completed: [.synthesis, .implementation, .bitstream], reports: LiveBackend.reports(in: out))
-                for stage in DesignStage.allCases {
-                    if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { outcome.designs[stage] = snapshot }
+        let job = RemoteJob()
+        return await withTaskCancellationHandler {
+            await Task.detached {
+                do {
+                    let result = try Remote(config: config).run([step], project: project, root: directory, options: options, job: job, log: log)
+                    if let needs = result.needs { return RunOutcome(needs: RunNeed(run: needs.run, reason: needs.reason)) }
+                    if result.status == Shell.interruptedStatus { return RunOutcome(cancelled: true) }
+                    guard result.status == 0 else { return RunOutcome(failed: true) }
+                    return LiveBackend.outcome(completed: Set(result.completed), in: directory.appendingPathComponent(Remote.localOutputDir))
+                } catch {
+                    log("ERROR: \(error.userMessage)\n")
+                    return RunOutcome(failed: true)
                 }
-                return outcome
-            } catch {
-                log("ERROR: \(error.userMessage)\n")
-                return RunOutcome(failed: true)
-            }
-        }.value
+            }.value
+        } onCancel: {
+            job.cancel()
+        }
+    }
+
+    /// What `build/` now holds after steps finished: every report and every stage's design data.
+    static func outcome(completed: Set<RunKind>, in out: URL) -> RunOutcome {
+        var outcome = RunOutcome(completed: completed, reports: reports(in: out))
+        for stage in DesignStage.allCases {
+            if let snapshot = try? DesignSnapshot.load(stage: stage, from: out) { outcome.designs[stage] = snapshot }
+        }
+        return outcome
     }
 
     func lint(project: Project, directory: URL, log: @escaping @Sendable (String) -> Void) async -> Result<LintReport, LintFailure> {

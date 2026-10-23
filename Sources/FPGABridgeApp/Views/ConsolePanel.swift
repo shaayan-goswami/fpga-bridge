@@ -357,11 +357,12 @@ struct DesignRunsView: View {
             Button { model.resetRuns() } label: { Image(systemName: "backward.end") }
                 .disabled(model.isRunning).help("Reset Runs")
             Button {} label: { Image(systemName: "backward") }.disabled(true)
-                .help("Reset to Previous Step: runs are one Vivado session here, so steps can't be undone one at a time yet")
+                .help("Reset to Previous Step: not built yet. Reset Runs clears every run; running a step again replaces its results.")
             Button { model.run(.bitstream) } label: { Image(systemName: "play.fill").foregroundStyle(Accent.remote) }
                 .disabled(model.isRunning).help("Launch Runs")
-            Button {} label: { Image(systemName: "forward") }.disabled(true)
-                .help("Launch Next Step: runs are one Vivado session here, so steps can't be run one at a time yet")
+            Button { if let next = model.nextStep { model.run(next) } } label: { Image(systemName: "forward") }
+                .disabled(model.isRunning || model.nextStep == nil)
+                .help(model.nextStep.map { "Launch Next Step: \($0.stepName)" } ?? "Launch Next Step: every step is complete")
             Button {} label: { Image(systemName: "plus") }.disabled(true).help("Create Runs: one synthesis and one implementation run for now")
             Toggle(isOn: $showPercent) { Image(systemName: "percent") }.toggleStyle(.button).help("Show Percentage")
             Spacer()
