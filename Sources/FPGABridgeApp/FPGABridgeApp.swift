@@ -19,6 +19,7 @@ struct FPGABridgeApp: App {
                 .environmentObject(model.hardware)
                 .environmentObject(model.simulation)
                 .environmentObject(model.waveform)
+                .environmentObject(model.timingWindow)
                 .frame(minWidth: 1100, minHeight: 700)
                 .modifier(AppearanceRoot())
                 // A build from the command line (or another Mac) while the app was in the background shows up on return.
@@ -200,6 +201,12 @@ struct AppCommands: Commands {
             Button(model.consoleVisible ? "Hide Console" : "Show Console") { model.consoleVisible.toggle() }
                 .keyboardShortcut("j")
                 .disabled(!model.hasProject)
+        }
+
+        // Timing: Vivado's Window ▸ Timing, for the open synthesized or implemented design.
+        CommandGroup(after: .toolbar) {
+            Button("Show Timing") { if let stage = model.timingStage { model.showTimingWindow(stage) } }
+                .disabled(model.timingStage == nil)
         }
     }
 

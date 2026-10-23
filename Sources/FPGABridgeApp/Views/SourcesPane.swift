@@ -186,7 +186,9 @@ private struct PropertiesPanel: View {
 
     var body: some View {
         if model.propertiesShowsDesign, let design = model.activeSnapshot {
-            if let ref = model.primarySelection {
+            if let path = model.shownTimingPath {
+                TimingPathProperties(design: design, path: path)
+            } else if let ref = model.primarySelection {
                 DesignPropertiesWindow(design: design, ref: ref).id(design.stage)
             } else {
                 VStack(spacing: 0) {

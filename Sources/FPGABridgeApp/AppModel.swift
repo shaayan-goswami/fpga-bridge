@@ -11,6 +11,7 @@ final class AppModel: ObservableObject {
     let hardware: HardwareManager
     let simulation: SimulationManager
     let waveform = WaveformModel()
+    let timingWindow = TimingWindowState()
     private let ipBackend: IPBackend
     private let persist: Bool
 

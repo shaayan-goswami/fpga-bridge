@@ -1,7 +1,8 @@
 import FPGABridgeCore
 import SwiftUI
 
-/// Vivado's bottom area: Tcl Console, Messages, Log, Reports and Design Runs.
+/// Vivado's bottom area: Tcl Console, Messages, Log, Reports and Design Runs, and Timing while a synthesized or
+/// implemented design is open.
 struct ConsolePanel: View {
     @EnvironmentObject private var model: AppModel
 
@@ -10,7 +11,7 @@ struct ConsolePanel: View {
             HStack(spacing: 10) {
                 GlassGroup(spacing: 4) {
                     HStack(spacing: 4) {
-                        ForEach(ConsoleTab.allCases) { tab in
+                        ForEach(ConsoleTab.allCases.filter { $0 != .timing || model.timingStage != nil || model.consoleTab == .timing }) { tab in
                             ConsoleTabButton(title: label(for: tab), selected: model.consoleTab == tab) {
                                 model.consoleTab = tab
                             }
@@ -49,6 +50,7 @@ struct ConsolePanel: View {
             case .log: LogView(lines: model.logs[model.logRun] ?? [])
             case .reports: ReportsListView()
             case .designRuns: DesignRunsView()
+            case .timing: TimingPanel()
             }
         }
     }

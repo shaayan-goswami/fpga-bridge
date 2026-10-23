@@ -26,6 +26,10 @@ extension AppModel {
         switch command {
         case .schematic:
             openSchematic(stage)
+        case .reportTimingSummary where stage != .rtl && hasTimingResults(stage):
+            // Vivado shows Report Timing Summary's result in its Timing window; the text is in the Reports menu.
+            echoTcl(DesignReportKind.timingSummary.tclCommand)
+            showTimingWindow(stage)
         default:
             guard let kind = command.report else { return }
             if let entry = report(for: command, stage: stage) {

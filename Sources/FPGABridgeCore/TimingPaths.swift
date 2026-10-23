@@ -140,7 +140,8 @@ public struct TimingPathGroup: Hashable, Identifiable, Sendable {
         }
     }
 
-    static func of(_ path: TimingPath) -> TimingPathGroup {
+    /// The group a path belongs to.
+    public static func of(_ path: TimingPath) -> TimingPathGroup {
         let category: TimingPathCategory
         if path.group.hasPrefix("**") || path.group != path.endClock {
             category = .otherGroups

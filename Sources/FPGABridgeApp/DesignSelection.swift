@@ -180,6 +180,11 @@ extension AppModel {
     /// Vivado's Schematic command (F4): a schematic of what is selected, or of the top level when nothing is.
     func schematicOfSelection() {
         guard let stage = activeDesign, let design = designs[stage] else { return }
+        // A timing path is selected (see TimingWindow.swift): draw just its cells.
+        if let path = shownTimingPath, !cellsForSchematic(of: path, in: design).isEmpty {
+            schematicOfTimingPath(path, in: stage)
+            return
+        }
         let cells = cellsForSchematic(of: designSelection, in: design)
         showSchematic(cells.isEmpty ? SchematicSpec() : SchematicSpec(only: cells), in: stage)
     }

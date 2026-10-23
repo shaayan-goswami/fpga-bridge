@@ -22,6 +22,7 @@ import SwiftUI
 ///   FPGA_BRIDGE_BD_PAGE=name       in the blockdesign scenario, show this page (Diagram, Address Editor)
 ///   FPGA_BRIDGE_BD_SELECT=kind:name in the blockdesign scenario, select this (cell:axi_uartlite_0, port:UART_0)
 ///   (FPGA_BRIDGE_EXPAND also opens these hierarchies in the blockdesign scenario.)
+///   FPGA_BRIDGE_TIMING_PATH=n     in a design scenario, open the Timing window on path n (0 = Design Timing Summary)
 ///   FPGA_BRIDGE_SNAPSHOT=file.png  save a PNG of the window and quit (plus _DELAY, _WINDOW_SIZE, _APPEARANCE)
 enum DebugHooks {
     #if DEBUG
@@ -107,6 +108,7 @@ extension AppModel {
                 open(.schematic(stage))
             }
             if let ref = DebugHooks.selectObject { select(ref) }
+            applyTimingScenario(stage)
         case "waveform", "waveform-zoom":
             if DebugHooks.openPath == nil { openExampleProject() }
             runSimulation()

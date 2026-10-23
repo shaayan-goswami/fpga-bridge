@@ -350,6 +350,10 @@ enum ConsoleTab: String, CaseIterable, Identifiable {
     case reports = "Reports"
     case designRuns = "Design Runs"
 
+    // MARK: Timing
+    /// Vivado's Timing window for the open synthesized or implemented design (see TimingViews.swift).
+    case timing = "Timing"
+
     var id: String { rawValue }
 }
 
