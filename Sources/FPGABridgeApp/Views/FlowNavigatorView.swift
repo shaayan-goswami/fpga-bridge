@@ -4,6 +4,7 @@ import SwiftUI
 /// Vivado's Flow Navigator: every item is a command (run something, open a dialog), not a page. An "Open ... Design"
 /// item opens up to the commands for that design, and its section turns bold while the design is open.
 struct FlowNavigatorView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var model: AppModel
     @State private var collapsed: Set<FlowSection> = []
     @State private var expanded: Set<FlowItem> = []
@@ -53,7 +54,7 @@ struct FlowNavigatorView: View {
                 } header: {
                     // Vivado shows an arrow on each section; the sidebar's own hide/show only appears on hover.
                     Button {
-                        withAnimation(.easeOut(duration: 0.15)) {
+                        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) {
                             if collapsed.contains(section) { collapsed.remove(section) } else { collapsed.insert(section) }
                         }
                     } label: {
@@ -93,7 +94,7 @@ struct FlowNavigatorView: View {
     }
 
     private func toggle(_ item: FlowItem) {
-        withAnimation(.easeOut(duration: 0.15)) {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) {
             if expanded.contains(item) { expanded.remove(item) } else { expanded.insert(item) }
         }
     }

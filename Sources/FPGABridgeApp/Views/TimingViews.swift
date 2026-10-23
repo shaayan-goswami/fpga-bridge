@@ -579,7 +579,7 @@ struct TimingPathProperties: View {
 
     private func reportText(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 10.5, design: .monospaced))
+            .font(.system(size: 11, design: .monospaced))
             .textSelection(.enabled)
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .topLeading)

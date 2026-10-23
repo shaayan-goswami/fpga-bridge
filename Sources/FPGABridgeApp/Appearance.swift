@@ -176,7 +176,7 @@ private struct GlassSurface<S: InsettableShape>: ViewModifier {
         } else if glass == .frosted {
             // Frosted inside the window, with a hairline edge, to match the frosted window behind it.
             content
-                .background(.regularMaterial, in: shape)
+                .background(Color.primary.opacity(0.07), in: shape)
                 .overlay(shape.strokeBorder(Color.primary.opacity(0.08)))
         } else if #available(macOS 26.0, *) {
             content.glassEffect(liquidGlass, in: shape)

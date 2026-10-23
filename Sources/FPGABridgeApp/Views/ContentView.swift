@@ -53,6 +53,7 @@ struct ContentView: View {
 struct MainWindowView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showSidebar = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sidebarWidth: CGFloat = 250
     @State private var sourcesWidth: CGFloat = 330
     @State private var consoleHeight: CGFloat = 240
@@ -69,6 +70,7 @@ struct MainWindowView: View {
                 HStack(spacing: 0) {
                     if showSidebar {
                         FlowNavigatorView().frame(width: sidebarWidth)
+                            .transition(.opacity)
                         PaneDivider(width: $sidebarWidth, range: 220...320, showsLine: false)
                     }
                     SourcesPane()
@@ -95,7 +97,7 @@ struct MainWindowView: View {
         .modifier(OwnToolbarTitle(subtitle: subtitle))
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                Button { showSidebar.toggle() } label: { Label("Flow Navigator", systemImage: "sidebar.leading") }
+                Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { showSidebar.toggle() } } label: { Label("Flow Navigator", systemImage: "sidebar.leading") }
                     .help(showSidebar ? "Hide the Flow Navigator" : "Show the Flow Navigator")
             }
             WindowTitle(title: model.project?.name ?? "FPGA Bridge", subtitle: subtitle,
@@ -301,14 +303,7 @@ struct StatusBar: View {
             Text(model.lastMessage)
             Spacer()
             if let project = model.project {
-                Text(project.part).monospaced()
-                Divider().frame(height: 12)
                 Text("Vivado \(project.vivadoVersion ?? model.backend.vivadoPath.flatMap(Project.version(in:)) ?? "—")")
-                Divider().frame(height: 12)
-            }
-            HStack(spacing: 5) {
-                Circle().fill(model.connection.color).frame(width: 6, height: 6)
-                Text(model.connection.label)
             }
         }
         .font(.caption)
