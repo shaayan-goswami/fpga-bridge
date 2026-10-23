@@ -38,7 +38,7 @@ extension AppModel {
 
     var synthesisStrategy: String {
         let settings = project?.settings ?? ProjectSettings()
-        return settings.synthesis == ProjectSettings().synthesis ? "Vivado Synthesis Defaults" : "Vivado Synthesis Defaults*"
+        return settings.synthesis.matchingStrategy ?? "Vivado Synthesis Defaults*"
     }
 
     var implementationStrategy: String {

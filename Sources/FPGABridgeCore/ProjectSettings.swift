@@ -125,10 +125,19 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
         /// Limits on block RAMs and DSP slices; nil leaves it to Vivado.
         public var maxBlockRAM: Int?
         public var maxDSP: Int?
+        /// Don't combine LUTs (`-no_lc`).
+        public var noLUTCombining = false
+        /// The shortest chain of registers made into a shift-register LUT (`-shreg_min_size`); nil is Vivado's 3.
+        public var shregMinSize: Int?
+        /// Merge control sets with fewer loads than this (`-control_set_opt_threshold`); nil is Vivado's "auto".
+        public var controlSetOptThreshold: Int?
         public var moreOptions = ""
         public init() {}
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
+            noLUTCombining = try c.value(.noLUTCombining, false)
+            shregMinSize = try c.decodeIfPresent(Int.self, forKey: .shregMinSize)
+            controlSetOptThreshold = try c.decodeIfPresent(Int.self, forKey: .controlSetOptThreshold)
             directive = try c.value(.directive, "Default")
             flattenHierarchy = try c.value(.flattenHierarchy, Flatten.rebuilt)
             fsmExtraction = try c.value(.fsmExtraction, FSM.auto)
@@ -139,10 +148,62 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
             maxDSP = try c.decodeIfPresent(Int.self, forKey: .maxDSP)
             moreOptions = try c.value(.moreOptions, "")
         }
-        private enum CodingKeys: String, CodingKey { case directive, flattenHierarchy, fsmExtraction, retiming, resourceSharing, keepEquivalentRegisters, maxBlockRAM, maxDSP, moreOptions }
+        private enum CodingKeys: String, CodingKey {
+            case directive, flattenHierarchy, fsmExtraction, retiming, resourceSharing, keepEquivalentRegisters, maxBlockRAM, maxDSP
+            case noLUTCombining, shregMinSize, controlSetOptThreshold, moreOptions
+        }
 
-        /// Directives accepted by `synth_design` in every Vivado version from 2017 on.
-        public static let directives = ["Default", "RuntimeOptimized", "AreaOptimized_high", "AreaOptimized_medium"]
+        /// The `synth_design` directives, as Vivado 2025.2 lists them for a synthesis run.
+        public static let directives = ["Default", "RuntimeOptimized", "AreaOptimized_high", "AreaOptimized_medium", "AlternateRoutability",
+                                        "AreaMapLargeShiftRegToBRAM", "AreaMultThresholdDSP", "FewerCarryChains", "PerformanceOptimized",
+                                        "LogicCompaction", "PowerOptimized_high", "PowerOptimized_medium"]
+
+        /// A named set of options, like Vivado's synthesis strategies. Each sets exactly what Vivado 2025.2's strategy
+        /// of that name sets on a synthesis run (read from the run's STEPS.SYNTH_DESIGN.ARGS properties).
+        public struct Strategy: Equatable, Sendable {
+            public let name: String
+            public let summary: String
+            let apply: @Sendable (inout Synthesis) -> Void
+            public static func == (a: Strategy, b: Strategy) -> Bool { a.name == b.name }
+        }
+
+        public static let strategies: [Strategy] = [
+            Strategy(name: "Vivado Synthesis Defaults", summary: "Every option at Vivado's default.") { $0 = Synthesis() },
+            Strategy(name: "Flow_AreaOptimized_high", summary: "The smallest design: area-optimized synthesis, with control sets merged wherever possible.") {
+                $0 = Synthesis(); $0.directive = "AreaOptimized_high"; $0.controlSetOptThreshold = 1
+            },
+            Strategy(name: "Flow_AreaOptimized_medium", summary: "Smaller, with less effect on timing than AreaOptimized_high.") {
+                $0 = Synthesis(); $0.directive = "AreaOptimized_medium"; $0.controlSetOptThreshold = 1
+            },
+            Strategy(name: "Flow_AreaMultThresholdDSP", summary: "More multipliers in DSP slices instead of LUTs.") {
+                $0 = Synthesis(); $0.directive = "AreaMultThresholdDSP"
+            },
+            Strategy(name: "Flow_AlternateRoutability", summary: "A netlist that is easier to route: no LUT combining, longer shift registers in LUTs.") {
+                $0 = Synthesis(); $0.directive = "AlternateRoutability"; $0.noLUTCombining = true; $0.shregMinSize = 10
+            },
+            Strategy(name: "Flow_PerfOptimized_high", summary: "The fastest design: one-hot state machines, no LUT combining or resource sharing.") {
+                $0 = Synthesis(); $0.directive = "PerformanceOptimized"; $0.fsmExtraction = .oneHot; $0.keepEquivalentRegisters = true
+                $0.resourceSharing = .off; $0.noLUTCombining = true; $0.shregMinSize = 5
+            },
+            Strategy(name: "Flow_PerfThresholdCarry", summary: "Fewer carry chains, for designs whose timing is limited by them.") {
+                $0 = Synthesis(); $0.directive = "FewerCarryChains"; $0.keepEquivalentRegisters = true
+                $0.resourceSharing = .off; $0.noLUTCombining = true
+            },
+            Strategy(name: "Flow_RuntimeOptimized", summary: "The fastest compile: no flattening and no state machine extraction.") {
+                $0 = Synthesis(); $0.directive = "RuntimeOptimized"; $0.flattenHierarchy = .none; $0.fsmExtraction = .off
+            },
+        ]
+
+        /// The strategy these options add up to, if they match one exactly (extra options count as a difference).
+        public var matchingStrategy: String? {
+            Synthesis.strategies.first { strategy in
+                var fresh = Synthesis()
+                strategy.apply(&fresh)
+                return fresh == self
+            }?.name
+        }
+
+        public mutating func apply(_ strategy: Strategy) { strategy.apply(&self) }
     }
 
     // MARK: Implementation
@@ -331,6 +392,10 @@ public struct ProjectSettings: Codable, Equatable, Sendable {
         guard Synthesis.directives.contains(synthesis.directive) else { throw fail("unknown synthesis directive '\(synthesis.directive)'") }
         for (name, value) in [("block RAM", synthesis.maxBlockRAM), ("DSP", synthesis.maxDSP)] {
             if let value, !(0...100_000).contains(value) { throw fail("the maximum \(name) count must be 0 or more") }
+        }
+        if let size = synthesis.shregMinSize, !(1...1_000).contains(size) { throw fail("the shift register minimum size must be 1 to 1000") }
+        if let threshold = synthesis.controlSetOptThreshold, !(0...1_000_000).contains(threshold) {
+            throw fail("the control set threshold must be 0 or more")
         }
         guard ProjectSettings.isPlainOptions(synthesis.moreOptions) else { throw fail("synthesis options may only contain letters, digits and - _ = . + , : /") }
 

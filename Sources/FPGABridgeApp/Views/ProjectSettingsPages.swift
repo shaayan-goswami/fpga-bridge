@@ -216,6 +216,18 @@ struct SynthesisSettingsPage: View {
     var body: some View {
         Form {
             Section {
+                Picker("Strategy:", selection: strategy) {
+                    ForEach(ProjectSettings.Synthesis.strategies, id: \.name) { Text($0.name).tag($0.name as String?) }
+                    if settings.synthesis.matchingStrategy == nil { Text("Custom").tag(nil as String?) }
+                }
+                if let name = settings.synthesis.matchingStrategy,
+                   let summary = ProjectSettings.Synthesis.strategies.first(where: { $0.name == name })?.summary {
+                    Text(summary).font(.caption).foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Strategy")
+            }
+            Section {
                 Picker("Directive:", selection: $settings.synthesis.directive) {
                     ForEach(ProjectSettings.Synthesis.directives, id: \.self) { Text($0).tag($0) }
                 }
@@ -237,11 +249,15 @@ struct SynthesisSettingsPage: View {
                 Toggle("Keep equivalent registers", isOn: $settings.synthesis.keepEquivalentRegisters)
                 OptionalNumber(title: "Limit block RAMs", value: $settings.synthesis.maxBlockRAM, range: 0...10_000, initial: 0)
                 OptionalNumber(title: "Limit DSP slices", value: $settings.synthesis.maxDSP, range: 0...10_000, initial: 0)
+                Toggle("No LUT combining (-no_lc)", isOn: $settings.synthesis.noLUTCombining)
+                OptionalNumber(title: "Shift register minimum size (-shreg_min_size)", value: $settings.synthesis.shregMinSize, range: 1...1_000, initial: 3)
+                OptionalNumber(title: "Control set threshold (-control_set_opt_threshold)", value: $settings.synthesis.controlSetOptThreshold,
+                               range: 0...1_000_000, initial: 1)
             } header: {
                 Text("Options")
             }
             Section {
-                TextField("More options:", text: $settings.synthesis.moreOptions, prompt: Text("-no_lc -shreg_min_size 5"))
+                TextField("More options:", text: $settings.synthesis.moreOptions, prompt: Text("-gated_clock_conversion on"))
                     .font(.body.monospaced())
                     .foregroundStyle(ProjectSettings.isValidOptionText(settings.synthesis.moreOptions) ? Color.primary : Accent.error)
             } footer: {
@@ -253,6 +269,16 @@ struct SynthesisSettingsPage: View {
             TclPreview(lines: context.script(["synth_design"]))
         }
         .formStyle(.grouped)
+    }
+
+    /// Choosing a strategy replaces the options; editing one by hand makes it "Custom".
+    private var strategy: Binding<String?> {
+        Binding(get: { settings.synthesis.matchingStrategy },
+                set: { name in
+                    if let name, let chosen = ProjectSettings.Synthesis.strategies.first(where: { $0.name == name }) {
+                        settings.synthesis.apply(chosen)
+                    }
+                })
     }
 }
 

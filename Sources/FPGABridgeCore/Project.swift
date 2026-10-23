@@ -394,6 +394,9 @@ extension ProjectSettings.Synthesis {
         if keepEquivalentRegisters { f.append("-keep_equivalent_registers") }
         if let maxBlockRAM { f += ["-max_bram", String(maxBlockRAM)] }
         if let maxDSP { f += ["-max_dsp", String(maxDSP)] }
+        if noLUTCombining { f.append("-no_lc") }
+        if let shregMinSize { f += ["-shreg_min_size", String(shregMinSize)] }
+        if let controlSetOptThreshold { f += ["-control_set_opt_threshold", String(controlSetOptThreshold)] }
         for define in language.defines { f += ["-verilog_define", define] }
         for generic in language.generics { f += ["-generic", generic] }
         // A Tcl list, each folder braced so one with a space stays one folder.

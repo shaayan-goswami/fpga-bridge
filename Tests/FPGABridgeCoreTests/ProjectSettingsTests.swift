@@ -142,6 +142,48 @@ final class ProjectSettingsTests: XCTestCase {
             .contains("synth_design -top top -part xc7a35tcpg236-1 -no_lc -shreg_min_size 5"))
     }
 
+    /// The options of each synthesis strategy, as Vivado 2025.2 defines them, and the synth_design line each makes.
+    /// Every line was run on Vivado 2025.2 (xc7a35t) and synthesized without an error.
+    static let strategyLines: [String: String] = [
+        "Vivado Synthesis Defaults": "",
+        "Flow_AreaOptimized_high": " -directive AreaOptimized_high -control_set_opt_threshold 1",
+        "Flow_AreaOptimized_medium": " -directive AreaOptimized_medium -control_set_opt_threshold 1",
+        "Flow_AreaMultThresholdDSP": " -directive AreaMultThresholdDSP",
+        "Flow_AlternateRoutability": " -directive AlternateRoutability -no_lc -shreg_min_size 10",
+        "Flow_PerfOptimized_high": " -directive PerformanceOptimized -fsm_extraction one_hot -resource_sharing off -keep_equivalent_registers -no_lc -shreg_min_size 5",
+        "Flow_PerfThresholdCarry": " -directive FewerCarryChains -resource_sharing off -keep_equivalent_registers -no_lc",
+        "Flow_RuntimeOptimized": " -directive RuntimeOptimized -flatten_hierarchy none -fsm_extraction off",
+    ]
+
+    func testSynthesisStrategiesAreVivadosOptionSets() throws {
+        XCTAssertEqual(ProjectSettings.Synthesis.strategies.map(\.name), ["Vivado Synthesis Defaults", "Flow_AreaOptimized_high",
+            "Flow_AreaOptimized_medium", "Flow_AreaMultThresholdDSP", "Flow_AlternateRoutability", "Flow_PerfOptimized_high",
+            "Flow_PerfThresholdCarry", "Flow_RuntimeOptimized"], "Vivado 2025.2's list, in its order")
+        for strategy in ProjectSettings.Synthesis.strategies {
+            let line = script { $0.synthesis.apply(strategy) }.first { $0.hasPrefix("synth_design -top") }
+            XCTAssertEqual(line, "synth_design -top top -part xc7a35tcpg236-1" + (Self.strategyLines[strategy.name] ?? "?"), strategy.name)
+            var settings = ProjectSettings()
+            settings.synthesis.apply(strategy)
+            XCTAssertEqual(settings.synthesis.matchingStrategy, strategy.name)
+            XCTAssertNoThrow(try settings.validate(), strategy.name)
+        }
+        var custom = ProjectSettings.Synthesis()
+        custom.apply(ProjectSettings.Synthesis.strategies[5])
+        custom.shregMinSize = 6
+        XCTAssertNil(custom.matchingStrategy, "edited by hand: Custom")
+        XCTAssertEqual(ProjectSettings.Synthesis().matchingStrategy, "Vivado Synthesis Defaults")
+    }
+
+    func testTheNewSynthesisOptionsAreOptionalInTheProjectFile() throws {
+        let old = try JSONDecoder().decode(ProjectSettings.Synthesis.self, from: Data(#"{"directive":"RuntimeOptimized"}"#.utf8))
+        XCTAssertFalse(old.noLUTCombining)
+        XCTAssertNil(old.shregMinSize)
+        XCTAssertNil(old.controlSetOptThreshold)
+        var bad = ProjectSettings()
+        bad.synthesis.shregMinSize = 0
+        XCTAssertThrowsError(try bad.validate())
+    }
+
     func testLanguageOptionsReachSynthesis() {
         let line = script {
             $0.language.defines = ["FAST", "LEVEL=3"]
