@@ -8,7 +8,7 @@ struct FPGABridge: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fpga-bridge",
         abstract: "Run Vivado on a remote Windows or Linux machine from your Mac, over Tailscale and SSH.",
-        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Lint.self, Script.self, IPCommand.self, PartCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
+        subcommands: [Init.self, Doctor.self, Tcl.self, New.self, Build.self, Fetch.self, Lint.self, Script.self, IPCommand.self, PartCommand.self, Sim.self, Flash.self, Boards.self, Report.self, Unlock.self]
     )
 }
 
@@ -122,23 +122,94 @@ struct New: ParsableCommand {
 
 struct Build: ParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Copy the project to the build machine, run Vivado, and fetch the results into build/.")
+        abstract: "Copy the project to the build machine, run Vivado, and fetch the results into build/.",
+        discussion: """
+            Runs synthesis, implementation and the bitstream in one Vivado session. Each run leaves its checkpoint on the \
+            build machine, which the app's separate runs start from.
+
+            Exit status: 0 when the bitstream was built; Vivado's own status (usually 1) when a step failed, which is \
+            named; 2 with --strict when the design doesn't meet timing; 130 when cancelled with Ctrl-C.
+            """)
+
+    @Flag(help: "Exit with status 2 when the design doesn't meet timing (or no timing report came back).") var strict = false
+    @Flag(help: "When another build holds the build machine, wait for it to finish instead of failing.") var wait = false
 
     func run() throws {
         let config = try BridgeConfig.load()
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let project = try Project.load(from: root)
-        let status = try Remote(config: config).build(project: project, root: root)
-        if status != 0 { throw ExitCode(status) }
+        let result = try Build.runWaiting(wait) { try Remote(config: config).run(RunKind.flow, project: project, root: root) }
+        if result.status == Shell.interruptedStatus { throw ExitCode(result.status) }
+        guard result.status == 0 else {
+            let step = result.failed ?? .synthesis
+            printError("\n\(step == .bitstream ? "Bitstream generation" : step.title) failed (\(step.stepName)): Vivado stopped with an error. Its messages are above.")
+            throw ExitCode(result.status)
+        }
         print("")
         let out = root.appendingPathComponent(Remote.localOutputDir)
-        print(BuildSummary.load(from: out).render())
+        let summary = BuildSummary.load(from: out)
+        print(summary.render())
         if let manifest = BuildManifest.load(from: out) {
             let changes = manifest.changes(project: project, root: root)
             print("Sources    \(manifest.sourceID)" + (manifest.git.map { "   git \($0.commit.prefix(8))\($0.uncommittedChanges ? " + uncommitted changes" : "")" } ?? ""))
             if !changes.isEmpty {
                 print("Warning: changed while building, so not in this bitstream: \(changes.joined(separator: ", ")). Build again to include them.")
             }
+        }
+        if strict, summary.timing?.constraintsMet != true {
+            printError(summary.timing == nil ? "No timing report came back (--strict)." : "Timing is not met (--strict).")
+            throw ExitCode(2)
+        }
+    }
+
+    /// Runs `body`, and with `wait`, retries every 20 seconds while another build holds the build machine.
+    static func runWaiting<T>(_ wait: Bool, _ body: () throws -> T) throws -> T {
+        var announced = false
+        while true {
+            do {
+                return try body()
+            } catch RemoteError.busy(let owner) where wait {
+                if !announced {
+                    print("The build machine is busy (\(owner ?? "an unknown build")). Waiting for it to finish... (Ctrl-C gives up)")
+                    announced = true
+                }
+                Thread.sleep(forTimeInterval: 20)
+            }
+        }
+    }
+}
+
+func printError(_ text: String) { FileHandle.standardError.write(Data((text + "\n").utf8)) }
+
+struct Fetch: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Collect the results of the last build on the build machine, after its connection was lost.",
+        discussion: """
+            Vivado keeps running when the connection to it drops. Once it has finished, this merges the results into \
+            build/ as the build would have. If it didn't finish, the end of Vivado's log on the build machine is shown.
+            """)
+
+    @Flag(help: "When a build still holds the build machine, wait for it to finish.") var wait = false
+
+    func run() throws {
+        let config = try BridgeConfig.load()
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let project = try Project.load(from: root)
+        let result: Remote.FetchResult
+        do {
+            result = try Build.runWaiting(wait) { try Remote(config: config).fetch(project: project, root: root) }
+        } catch RemoteError.busy(let owner) {
+            printError("A build is still running on \(config.host) (\(owner ?? "unknown")). Try again when it has finished, or use --wait.")
+            throw ExitCode.failure
+        }
+        switch result {
+        case .fetched:
+            print("")
+            print(BuildSummary.load(from: root.appendingPathComponent(Remote.localOutputDir)).render())
+        case .notFinished(let log):
+            printError("The last build of \(project.name) on \(config.host) didn't finish: it failed or was stopped.")
+            if let log { printError("The end of its log:\n\(log)") }
+            throw ExitCode.failure
         }
     }
 }

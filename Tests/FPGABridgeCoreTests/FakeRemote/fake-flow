@@ -43,6 +43,8 @@ while IFS= read -r line; do
       cp "$REPORTS/utilization.rpt" out/ ;;
     "write_bitstream "*)
       echo "fake bitstream" > "${line##* }" ;;
+    "fpgabridge_done "*)
+      echo "${line#fpgabridge_done }" > done.txt ;;
   esac
 done < build.tcl
 echo "fake-vivado: done"

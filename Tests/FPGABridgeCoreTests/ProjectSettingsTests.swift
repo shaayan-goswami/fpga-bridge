@@ -37,6 +37,11 @@ final class ProjectSettingsTests: XCTestCase {
                 file rename -force $dir/$name.dcp.tmp $dir/$name.dcp
                 file copy -force runs/$run.json $dir/manifest.json
             }
+            proc fpgabridge_done {args} {
+                set f [open done.txt w]
+                puts $f $args
+                close $f
+            }
             fpgabridge_begin synth_1 impl_1
             read_verilog {src/top.v}
             read_xdc {pins.xdc}
@@ -51,6 +56,7 @@ final class ProjectSettingsTests: XCTestCase {
             report_timing_summary -file out/timing_summary.rpt
             report_utilization -file out/utilization.rpt
             write_bitstream -force out/top.bit
+            fpgabridge_done synth_1 impl_1 write_bitstream
 
             """)
     }
@@ -95,6 +101,7 @@ final class ProjectSettingsTests: XCTestCase {
             fpgabridge_checkpoint impl_1 post_route
             report_timing_summary -file out/timing_summary.rpt
             report_utilization -file out/utilization.rpt
+            fpgabridge_done impl_1
 
             """)
         XCTAssertFalse(script.contains("read_verilog"), "the netlist comes from the checkpoint")
@@ -105,9 +112,9 @@ final class ProjectSettingsTests: XCTestCase {
         s.bitstream.compress = true
         let p = Project(name: "p", top: "top", part: "x", sources: ["src"], constraints: [], settings: s)
         let lines = p.flowScript(steps: [.bitstream], sources: ["src/top.v"], constraints: ["a.xdc"]).split(separator: "\n").map(String.init)
-        XCTAssertEqual(Array(lines.suffix(3)), ["open_checkpoint ../p.runs/impl_1/post_route.dcp",
+        XCTAssertEqual(Array(lines.suffix(4)), ["open_checkpoint ../p.runs/impl_1/post_route.dcp",
                                                 "set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]",
-                                                "write_bitstream -force out/top.bit"])
+                                                "write_bitstream -force out/top.bit", "fpgabridge_done write_bitstream"])
         XCTAssertFalse(lines.contains { $0.hasPrefix("fpgabridge_begin") || $0.hasPrefix("fpgabridge_dump") || $0.hasPrefix("read_") },
                        "the bitstream step neither clears a run nor reads anything")
     }
@@ -115,7 +122,8 @@ final class ProjectSettingsTests: XCTestCase {
     func testSynthesisAloneStopsAfterItsCheckpointAndReports() {
         let p = Project(name: "p", top: "top", part: "x", sources: ["src"], constraints: [])
         let lines = p.flowScript(steps: [.synthesis], sources: ["src/top.v"], constraints: ["a.xdc"]).split(separator: "\n").map(String.init)
-        XCTAssertEqual(Array(lines.suffix(3)), ["fpgabridge_checkpoint synth_1 post_synth", "read_xdc {a.xdc}", "fpgabridge_dump synth"])
+        XCTAssertEqual(Array(lines.suffix(4)), ["fpgabridge_checkpoint synth_1 post_synth", "read_xdc {a.xdc}", "fpgabridge_dump synth",
+                                                "fpgabridge_done synth_1"])
     }
 
     func testThreadsAndThePinnedVersionAreChecked() {
@@ -249,7 +257,7 @@ final class ProjectSettingsTests: XCTestCase {
             $0.bitstream.unusedPin = .pullnone
         }
         let write = lines.firstIndex { $0.hasPrefix("write_bitstream") }!
-        XCTAssertEqual(lines[(write - 4)...], [
+        XCTAssertEqual(lines[(write - 4)...write], [
             "set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]",
             "set_property BITSTREAM.CONFIG.CONFIGRATE 33 [current_design]",
             "set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]",
@@ -458,6 +466,7 @@ final class ProjectSettingsTests: XCTestCase {
             set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
             set_property BITSTREAM.CONFIG.UNUSEDPIN Pullnone [current_design]
             write_bitstream -force -bin_file out/probe.bit
+            fpgabridge_done synth_1 impl_1 write_bitstream
 
             """)
     }

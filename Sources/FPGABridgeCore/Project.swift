@@ -279,6 +279,7 @@ public struct Project: Codable, Equatable, Sendable {
             lines += settings.bitstream.properties.map { "set_property \($0.0) \($0.1) [current_design]" }
             lines.append(Project.line("write_bitstream -force", settings.bitstream.flags) + " out/\(top).bit")
         }
+        lines.append("fpgabridge_done " + steps.map(\.stepName).joined(separator: " "))
         return lines.joined(separator: "\n") + "\n"
     }
 
@@ -299,6 +300,7 @@ public struct Project: Codable, Equatable, Sendable {
     /// The staged copy of a run's manifest, which `fpgabridge_checkpoint` keeps next to the checkpoint.
     public static func stagedManifest(_ step: RunKind) -> String { "runs/\(step.runName).json" }
 
+    /// `fpgabridge_done` marks the job finished, naming its steps, for `fpga-bridge fetch` after a lost connection.
     /// `fpgabridge_begin` clears run folders before a run starts, so a run that is stopped or fails never leaves an
     /// older checkpoint that looks current. `fpgabridge_checkpoint` writes a run's checkpoint under a temporary name
     /// and renames it (a Vivado stopped halfway through writing leaves no broken checkpoint), then puts the run's
@@ -318,6 +320,11 @@ public struct Project: Codable, Equatable, Sendable {
             write_checkpoint -force $dir/$name.dcp.tmp
             file rename -force $dir/$name.dcp.tmp $dir/$name.dcp
             file copy -force runs/$run.json $dir/manifest.json
+        }
+        proc fpgabridge_done {args} {
+            set f [open done.txt w]
+            puts $f $args
+            close $f
         }
         """
     }

@@ -8,6 +8,8 @@
 set -u
 HOME_="${FAKE_HOME:?FAKE_HOME not set}"
 
+[ "${1:-}" = "-version" ] && { echo "vivado v2023.2 (64-bit)"; exit 0; }
+
 source_file=""; marker=""
 while [ $# -gt 0 ]; do
   case "$1" in

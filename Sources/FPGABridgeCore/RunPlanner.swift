@@ -37,6 +37,12 @@ public enum RunKind: Hashable, CaseIterable, Sendable {
         }
     }
 
+    /// The step with this `stepName`.
+    public init?(stepName: String) {
+        guard let step = RunKind.flow.first(where: { $0.stepName == stepName }) else { return nil }
+        self = step
+    }
+
     /// The steps in flow order.
     public static let flow: [RunKind] = [.synthesis, .implementation, .bitstream]
 }

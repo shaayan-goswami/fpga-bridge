@@ -212,21 +212,22 @@ class FakeRemoteTests: XCTestCase {
         let (project, root) = try makeProject()
         _ = try Remote(config: config).build(project: project, root: root)
 
-        XCTAssertEqual(calls.map { String($0.prefix(3)) }, ["ssh", "ssh", "scp", "ssh", "scp", "ssh"], "\(calls)")
+        XCTAssertEqual(calls.map { String($0.prefix(3)) }, ["ssh", "ssh", "scp", "ssh", "ssh", "scp", "ssh"], "\(calls)")
         // Indexing below would crash the whole test run if the sequence is wrong, hiding every other failure.
-        guard calls.count == 6 else { return }
+        guard calls.count == 7 else { return }
         XCTAssertTrue(calls[0].contains("mkdir \(commands.lockDir)"), "lock is taken first")
         XCTAssertTrue(calls[1].contains(commands.removeDirectory(commands.path(".fpga-bridge", "demo"))), "stale remote job dir must be cleared")
         XCTAssertTrue(calls[2].contains("-r") && calls[2].contains("me@buildbox:.fpga-bridge/"), "directory upload needs -r")
-        XCTAssertTrue(calls[3].contains(" -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-"))
+        XCTAssertTrue(calls[3].contains(" -mode batch -nojournal -log vivado.log -source build.tcl -tclargs fpgabridge-"))
         XCTAssertTrue(calls[3].contains(Self.vivadoPath), "the configured Vivado path is used")
         if Self.os == .windows {
             XCTAssertTrue(calls[3].contains(#"call "\#(Self.vivadoPath)" -mode batch"#), "the Vivado path has spaces and must stay quoted")
         } else {
             XCTAssertTrue(calls[3].hasPrefix("ssh") && calls[3].contains("bash -lc"), "Linux lines go through bash -lc")
         }
-        XCTAssertTrue(calls[4].contains("-r") && calls[4].contains("me@buildbox:.fpga-bridge/demo/out"))
-        XCTAssertTrue(calls[5].contains(commands.removeDirectory(commands.lockDir)), "lock is released last")
+        XCTAssertTrue(calls[4].contains("owner.txt"), "the lock is marked in use once Vivado is done")
+        XCTAssertTrue(calls[5].contains("-r") && calls[5].contains("me@buildbox:.fpga-bridge/demo/out"))
+        XCTAssertTrue(calls[6].contains(commands.removeDirectory(commands.lockDir)), "lock is released last")
     }
 
     func testBuildFailureReturnsExitStatusAndFetchesNothing() throws {
@@ -279,7 +280,7 @@ class FakeRemoteTests: XCTestCase {
         let keyed = BridgeConfig(host: "buildbox", user: "me", vivadoPath: Self.vivadoPath, sshKeyPath: "/keys/id_test")
         let (project, root) = try makeProject()
         _ = try Remote(config: keyed).build(project: project, root: root)
-        XCTAssertEqual(calls.count, 6)
+        XCTAssertEqual(calls.count, 7)
         XCTAssertTrue(calls.allSatisfy { $0.contains("-i /keys/id_test") }, "\(calls)")
     }
 
@@ -404,6 +405,80 @@ class FakeRemoteTests: XCTestCase {
         let synth = try XCTUnwrap(checkpointManifest("synth_1")), impl = try XCTUnwrap(checkpointManifest("impl_1"))
         XCTAssertEqual(impl.runs?["synth_1"], synth.runs?["synth_1"], "impl_1's record names the netlist it started from")
         XCTAssertNil(synth.runs?["impl_1"])
+    }
+
+    // MARK: Locks left behind, and fetching after a lost connection
+
+    /// Makes the lock look as if it was taken `minutes` ago and never touched since.
+    func ageLock(minutes: Double) throws {
+        let date = Date().addingTimeInterval(-minutes * 60)
+        for path in [".fpga-bridge/lock/owner.txt", ".fpga-bridge/lock"] where FileManager.default.fileExists(atPath: remoteFile(path).path) {
+            try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: remoteFile(path).path)
+        }
+    }
+
+    func testALockLeftByACrashedBuildIsTakenOverAndSaysSo() throws {
+        try holdLock(owner: "me@laptop building demo since 2026-10-18T10:00:00Z")
+        try ageLock(minutes: 4 * 24 * 60)
+        let (project, root) = try makeProject()
+        let box = LogBox()
+        XCTAssertEqual(try Remote(config: config).run(RunKind.flow, project: project, root: root) { box.append($0) }.status, 0)
+        XCTAssertTrue(box.value.contains("left behind by \"me@laptop building demo since 2026-10-18T10:00:00Z\""), box.value)
+        XCTAssertFalse(lockExists, "and released at the end, as usual")
+    }
+
+    func testARecentLockIsLeftAlone() throws {
+        try holdLock(owner: "alice@laptop building other since 2026-10-15T10:00:00Z")
+        try ageLock(minutes: 3)
+        let (project, root) = try makeProject()
+        XCTAssertThrowsError(try Remote(config: config).build(project: project, root: root)) { error in
+            XCTAssertEqual(error as? RemoteError, .busy(owner: "alice@laptop building other since 2026-10-15T10:00:00Z"))
+        }
+        XCTAssertTrue(lockExists)
+    }
+
+    func testFetchCollectsABuildThatFinishedWithoutUs() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        XCTAssertEqual(try remote.build(project: project, root: root), 0)
+        // The connection was lost before the results came back: nothing local, and the lock left behind.
+        try FileManager.default.removeItem(at: root.appendingPathComponent("build"))
+        try holdLock(owner: "me@laptop building demo since 2026-10-18T10:00:00Z")
+        try ageLock(minutes: 30)
+
+        let result = try remote.fetch(project: project, root: root, log: { _ in })
+        XCTAssertEqual(result, .fetched(RunKind.flow))
+        for file in ["top.bit", "timing_summary.rpt", "synth_utilization.rpt"] { XCTAssertTrue(buildFile(file, in: root), file) }
+        let manifest = try XCTUnwrap(BuildManifest.load(from: root.appendingPathComponent("build")))
+        XCTAssertEqual(manifest.runs?.count, 3)
+        XCTAssertEqual(manifest.changes(project: project, root: root), [])
+        XCTAssertFalse(lockExists)
+    }
+
+    func testFetchOfAnUnfinishedBuildShowsTheEndOfItsLog() throws {
+        setenv("FAKE_VIVADO_MODE", "fail", 1)
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        XCTAssertEqual(try remote.build(project: project, root: root), 1)
+        try "line 1\r\nERROR: [Synth 8-439] module 'missing_module' not declared\r\n".write(
+            to: remoteFile(".fpga-bridge/demo/vivado.log"), atomically: true, encoding: .utf8)
+
+        guard case .notFinished(let log) = try remote.fetch(project: project, root: root, log: { _ in }) else { return XCTFail("fetched") }
+        XCTAssertTrue(log?.contains("ERROR: [Synth 8-439]") == true, log ?? "")
+        XCTAssertFalse(buildFile("top.bit", in: root))
+    }
+
+    func testVivadoIsAskedForItsVersion() throws {
+        XCTAssertEqual(try Remote(config: config).vivadoVersion(), "2023.2")
+        let checks = Doctor.run(config: config, tailscale: tailscale())
+        XCTAssertEqual(checks.last?.detail, "\(Self.vivadoPath) (Vivado 2023.2)")
+    }
+
+    func testTheFinishedJobIsMarkedDone() throws {
+        let (project, root) = try makeProject()
+        _ = try Remote(config: config).run([.synthesis], project: project, root: root, log: { _ in })
+        XCTAssertEqual(try String(contentsOf: remoteFile(".fpga-bridge/demo/done.txt"), encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines), "synth_1")
     }
 
     // MARK: Stop (the app's Stop button)
@@ -580,7 +655,7 @@ class FakeRemoteTests: XCTestCase {
         let (project, root) = try makeProject()
         XCTAssertThrowsError(try Remote(config: config).build(project: project, root: root)) { error in
             XCTAssertEqual(error as? RemoteError, .connectionLost(jobDir: commands.path(".fpga-bridge", "demo")))
-            XCTAssertTrue("\(error)".contains("fpga-bridge unlock"))
+            XCTAssertTrue("\(error)".contains("fpga-bridge fetch"))
         }
         XCTAssertFalse(calls.filter { $0.hasPrefix("scp") }.count > 1, "no fetch after a lost connection")
     }

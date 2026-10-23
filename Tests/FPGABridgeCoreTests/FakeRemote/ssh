@@ -64,6 +64,28 @@ if [ "$cmd" = 'type .fpga-bridge\lock\owner.txt' ]; then
   echo "The system cannot find the file specified." >&2; exit 1
 fi
 
+# Mark the lock as in use, as a build does when Vivado finishes.
+re='^echo ([A-Za-z0-9@._: -]*[A-Za-z])> \.fpga-bridge\\lock\\owner\.txt$'
+if [[ "$cmd" =~ $re ]]; then
+  [ -d "$HOME_/.fpga-bridge/lock" ] || { echo "The system cannot find the path specified." >&2; exit 1; }
+  echo "${BASH_REMATCH[1]}" > "$HOME_/.fpga-bridge/lock/owner.txt"; exit 0
+fi
+
+# Is the lock free, held, or left behind? Held while a job runs (.running) or within 10 minutes of being touched.
+if [ "$cmd" = "powershell -NoProfile -NonInteractive -Command \"if (-not (Test-Path .fpga-bridge\\lock)) { 'free' } elseif (Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 'fpgabridge-[0-9a-f]{8}' -and \$_.ProcessId -ne \$PID }) { 'held' } elseif (((Get-Date) - (Get-Item .fpga-bridge\\lock\\owner.txt, .fpga-bridge\\lock -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1).LastWriteTime).TotalMinutes -lt 10) { 'held' } else { 'stale' }\"" ]; then
+  if [ ! -d "$HOME_/.fpga-bridge/lock" ]; then echo free
+  elif [ -e "$HOME_/.running" ] || [ -n "$(find "$HOME_/.fpga-bridge/lock" -maxdepth 1 -mmin -10)" ]; then echo held
+  else echo stale; fi
+  exit 0
+fi
+
+# vivado -version, as Vivado 2025.2 answers it.
+re='^call "([^"]+)" -version$'
+if [[ "$cmd" =~ $re ]]; then
+  [ "${BASH_REMATCH[1]}" = "${FAKE_VIVADO_PATH:-}" ] || { echo "The system cannot find the path specified." >&2; exit 1; }
+  printf 'vivado v2023.2 (64-bit)\r\nTool Version Limit: 2023.10\r\n'; exit 0
+fi
+
 if [ "$cmd" = 'rmdir /s /q .fpga-bridge\lock' ]; then
   rm -rf "$HOME_/.fpga-bridge/lock"; exit 0
 fi
@@ -79,7 +101,7 @@ if [[ "$cmd" =~ $re ]]; then
 fi
 
 # A full build: cd into the job directory and run Vivado on build.tcl.
-re='^cd \.fpga-bridge\\([A-Za-z0-9_-]+) && call "([^"]+)" -mode batch -nojournal -nolog -source build\.tcl -tclargs fpgabridge-([a-f0-9]{8})$'
+re='^cd \.fpga-bridge\\([A-Za-z0-9_-]+) && call "([^"]+)" -mode batch -nojournal -log vivado\.log -source build\.tcl -tclargs fpgabridge-([a-f0-9]{8})$'
 if [[ "$cmd" =~ $re ]]; then
   name="${BASH_REMATCH[1]}"; viv="${BASH_REMATCH[2]}"
   dir="$HOME_/.fpga-bridge/$name"
@@ -95,8 +117,8 @@ if [[ "$cmd" =~ $re ]]; then
   exec "${FAKE_FLOW:?FAKE_FLOW not set}"
 fi
 
-# A checkpoint's manifest: print it, or fail as `type` does when it isn't there.
-re='^type (\.fpga-bridge\\[A-Za-z0-9_-]+\.runs\\(synth|impl)_1\\manifest\.json)$'
+# A file under .fpga-bridge (a checkpoint's manifest, a job's done.txt): print it, or fail as `type` does.
+re='^type (\.fpga-bridge\\[A-Za-z0-9_.\\-]+)$'
 if [[ "$cmd" =~ $re ]]; then
   cat "$HOME_/${BASH_REMATCH[1]//\\//}" 2>/dev/null && exit 0
   echo "The system cannot find the path specified." >&2; exit 1

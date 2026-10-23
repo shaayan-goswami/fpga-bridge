@@ -84,6 +84,17 @@ jobs:
           $readManifest = @'
           type .fpga-bridge\demo.runs\synth_1\manifest.json
           '@
+          $refresh = @'
+          echo ci@runner building demo since 2026-10-15T12:00:00Z> .fpga-bridge\lock\owner.txt
+          '@
+          $lockState = @'
+          powershell -NoProfile -NonInteractive -Command "if (-not (Test-Path .fpga-bridge\lock)) { 'free' } elseif (Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'fpgabridge-[0-9a-f]{8}' -and $_.ProcessId -ne $PID }) { 'held' } elseif (((Get-Date) - (Get-Item .fpga-bridge\lock\owner.txt, .fpga-bridge\lock -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1).LastWriteTime).TotalMinutes -lt 10) { 'held' } else { 'stale' }"
+          '@
+          # Prints what a line writes to stdout.
+          function Get-CmdOutput([string]$line) {
+            Set-Content -Path "$dir\line.cmd" -Value @('@echo off', $line) -Encoding ascii
+            return (& cmd.exe /c "$dir\line.cmd" | Out-String).Trim()
+          }
 
           # The first acquire works from a clean profile and records the owner.
           if ((Invoke-Cmd $acquire) -ne 0) { throw 'first acquire failed' }
@@ -126,6 +137,23 @@ jobs:
           Set-Content -Path "$dir\line.cmd" -Value @('@echo off', $readManifest) -Encoding ascii
           $printed = (& cmd.exe /c "$dir\line.cmd" | Out-String).Trim()
           if ($printed -ne '{"project":"demo"}') { throw "manifest read back wrong: [$printed]" }
+
+          # A lock is free, held while fresh or while a marked job runs, and stale once old with no job running.
+          Remove-Item .fpga-bridge\lock -Recurse -Force -ErrorAction SilentlyContinue
+          if ((Get-CmdOutput $lockState) -ne 'free') { throw 'no lock should read as free' }
+          if ((Invoke-Cmd $acquire) -ne 0) { throw 'acquire for the stale-lock check failed' }
+          if ((Get-CmdOutput $lockState) -ne 'held') { throw 'a fresh lock should read as held' }
+          $old = (Get-Date).AddDays(-4)
+          (Get-Item .fpga-bridge\lock\owner.txt).LastWriteTime = $old
+          (Get-Item .fpga-bridge\lock).LastWriteTime = $old
+          if ((Get-CmdOutput $lockState) -ne 'stale') { throw 'a four-day-old lock with no job should read as stale' }
+          $job = Start-Process -FilePath cmd.exe -ArgumentList '/c', 'ping -n 60 127.0.0.1 >nul & rem fpgabridge-a1b2c3d4' -PassThru
+          Start-Sleep -Seconds 2
+          if ((Get-CmdOutput $lockState) -ne 'held') { throw 'a lock with a marked job running should read as held' }
+          Stop-Process -Id $job.Id -Force
+          if ((Invoke-Cmd $refresh) -ne 0) { throw 'refreshing the lock failed' }
+          if ((Get-CmdOutput $lockState) -ne 'held') { throw 'a refreshed lock should read as held' }
+          if ((Invoke-Cmd $unlock) -ne 0) { throw 'unlock after the stale-lock check failed' }
           Write-Host 'cmd.exe command lines behave as expected'
 
       - name: Cancel kills the marked process tree and nothing else
@@ -224,10 +252,16 @@ jobs:
           bash -lc '[ -x '\''/tmp/fpga-bridge-ci/vivado'\'' ] && echo found || echo missing'
           EOF
           read -r -d '' BUILD <<'EOF' || true
-          bash -lc 'cd .fpga-bridge/demo && '\''/tmp/fpga-bridge-ci/vivado'\'' -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-a1b2c3d4'
+          bash -lc 'cd .fpga-bridge/demo && '\''/tmp/fpga-bridge-ci/vivado'\'' -mode batch -nojournal -log vivado.log -source build.tcl -tclargs fpgabridge-a1b2c3d4'
           EOF
           read -r -d '' READ_MANIFEST <<'EOF' || true
           bash -lc 'cat .fpga-bridge/demo.runs/synth_1/manifest.json'
+          EOF
+          read -r -d '' REFRESH <<'EOF' || true
+          bash -lc 'echo '\''ci@runner building demo since 2026-10-15T12:00:00Z'\'' > .fpga-bridge/lock/owner.txt'
+          EOF
+          read -r -d '' LOCK_STATE <<'EOF' || true
+          bash -lc 'if [ ! -d .fpga-bridge/lock ]; then echo free; elif pgrep -f "fpgabridge-[0-9a-f]{8}" >/dev/null; then echo held; elif [ -n "$(find .fpga-bridge/lock -maxdepth 1 -mmin -10)" ]; then echo held; else echo stale; fi'
           EOF
           read -r -d '' CANCEL <<'EOF' || true
           bash -lc 'pkill -9 -f '\''[f]pgabridge-a1b2c3d4'\'''
@@ -245,6 +279,21 @@ jobs:
           remote "$ACQUIRE"
           remote "$UNLOCK"
           [ ! -e .fpga-bridge/lock ]
+          remote "$UNLOCK"
+
+          # A lock is free, held while fresh or while a marked job runs, and stale once old with no job running.
+          [ "$(remote "$LOCK_STATE")" = "free" ]
+          remote "$ACQUIRE"
+          [ "$(remote "$LOCK_STATE")" = "held" ]
+          touch -d '4 days ago' .fpga-bridge/lock/owner.txt .fpga-bridge/lock
+          [ "$(remote "$LOCK_STATE")" = "stale" ]
+          bash -c "exec -a 'fake-vivado -tclargs fpgabridge-a1b2c3d4' sleep 60" &
+          job=$!
+          sleep 1
+          [ "$(remote "$LOCK_STATE")" = "held" ]
+          kill "$job"
+          remote "$REFRESH"
+          [ "$(remote "$LOCK_STATE")" = "held" ]
           remote "$UNLOCK"
 
           # Prep clears a stale job directory.

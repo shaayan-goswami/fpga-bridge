@@ -147,13 +147,15 @@ extension Remote {
         for step in steps where step.checkpoint != nil {
             try manifest(through: step).save(as: staged.dir.appendingPathComponent(Project.stagedManifest(step)))
         }
+        // What `fetch` puts next to the results if this connection is lost before it can.
+        try manifest(through: last).save(as: runs.appendingPathComponent(BuildManifest.fileName))
         try project.flowScript(steps: steps, sources: staged.sources, constraints: staged.constraints, options: options)
             .write(to: staged.dir.appendingPathComponent("build.tcl"), atomically: true, encoding: .utf8)
 
         if job?.isCancelled == true { return StepResult(status: Shell.interruptedStatus) }
         // Take the lock before touching anything remote. The release is registered only after acquiring, so a
         // failed acquire never releases someone else's lock.
-        try acquireLock(project: project.name)
+        try acquireLock(project: project.name, log: log)
         defer { releaseLock() }
 
         if let earlier = first.startsFrom, let problem = try checkpointProblem(earlier, project: project, keys: keys, staged: staged) {
@@ -162,6 +164,8 @@ extension Remote {
         let status = try runJob(staged, job: job, log: log, captured: captured)
         if status == Shell.interruptedStatus { return StepResult(status: status) }
         guard status == 0 else { return StepResult(status: status, failed: failedStep(steps, project: project, keys: keys, staged: staged)) }
+        // Vivado is done, so no job marker runs while the results are fetched: show the lock is still in use.
+        _ = try? exec(commands.refreshLock(owner: Remote.ownerLine(project: project.name)))
 
         // Fetch next to the staged copy first, so a failed download leaves `build/` as it was.
         let incoming = staged.base.appendingPathComponent("out")
@@ -204,7 +208,10 @@ extension Remote {
         guard !sources.isEmpty else {
             throw ProjectError.invalid("no design source files found. Add at least one .v, .sv or .vhd file")
         }
-        if let warning = project.versionWarning(vivadoPath: config.vivadoPath) { log("Warning: \(warning)\n") }
+        // When the install path doesn't say, the script asks Vivado itself (see `Project.versionCheck`).
+        if Project.version(in: config.vivadoPath) != nil, let warning = project.versionWarning(vivadoPath: config.vivadoPath) {
+            log("Warning: \(warning)\n")
+        }
 
         let base = FileManager.default.temporaryDirectory.appendingPathComponent("fpga-bridge-\(UUID().uuidString.prefix(8))")
         let dir = base.appendingPathComponent(jobName)
@@ -260,6 +267,72 @@ extension Remote {
         // ssh itself exits 255 when the connection fails; Vivado's own failures use other statuses.
         if status == 255 { throw RemoteError.connectionLost(jobDir: remoteProject) }
         return status
+    }
+
+    // MARK: After a lost connection
+
+    /// What `fetch` found on the build machine.
+    public enum FetchResult: Equatable, Sendable {
+        /// The job finished there; its results are now in `build/`.
+        case fetched([RunKind])
+        /// It didn't finish (it failed, was stopped, or is still running), with the end of Vivado's log when there
+        /// is one.
+        case notFinished(log: String?)
+    }
+
+    /// Collects the results of the project's last job on the build machine, for a build whose connection was lost
+    /// while Vivado carried on. Takes the lock (one left by the lost build is taken over once no Vivado runs under
+    /// it), then merges the results into `build/` as the build would have.
+    public func fetch(project: Project, root: URL, log captured: (@Sendable (String) -> Void)? = nil) throws -> FetchResult {
+        let log: @Sendable (String) -> Void = captured ?? { print($0, terminator: "") }
+        try acquireLock(project: project.name, log: log)
+        defer { releaseLock() }
+        let jobDir = commands.path(Remote.remoteDir, project.name)
+        let done = try exec(commands.readFile(commands.path(jobDir, "done.txt")))
+        if done.status == 255 { throw RemoteError.ssh(done.stderr) }
+        let steps = done.succeeded ? done.stdout.split(whereSeparator: { $0 == " " || $0.isNewline }).compactMap { RunKind(stepName: String($0)) } : []
+
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent("fpga-bridge-fetch-\(UUID().uuidString.prefix(8))")
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let remoteJob = "\(target):\(Remote.remoteDir)/\(project.name)"
+        guard let first = steps.first else {
+            let file = temp.appendingPathComponent("vivado.log")
+            let down = try Shell.run("scp", ["-o", "BatchMode=yes"] + sshOptions + ["\(remoteJob)/vivado.log", file.path], timeout: 60)
+            let text = down.succeeded ? (try? String(contentsOf: file, encoding: .utf8)) : nil
+            return .notFinished(log: text.map { Remote.tail($0, lines: 40) })
+        }
+        let incoming = temp.appendingPathComponent("out")
+        let down = try Shell.run("scp", ["-r", "-o", "BatchMode=yes"] + sshOptions + ["\(remoteJob)/out", incoming.path], timeout: 300)
+        guard down.succeeded else { throw RemoteError.ssh(down.stderr) }
+        let manifestFile = temp.appendingPathComponent(BuildManifest.fileName)
+        let record = try Shell.run("scp", ["-o", "BatchMode=yes"] + sshOptions + ["\(remoteJob)/runs/\(BuildManifest.fileName)", manifestFile.path], timeout: 60)
+        let local = root.appendingPathComponent(Remote.localOutputDir)
+        try BuildFolder.merge(incoming, into: local, startingWith: first)
+        if record.succeeded, let text = try? String(contentsOf: manifestFile, encoding: .utf8), var manifest = BuildManifest.parse(text) {
+            manifest.vivadoVersion = BuildManifest.vivadoVersion(out: local, vivadoPath: config.vivadoPath)
+            try manifest.save(to: local)
+        }
+        log("Results of \(steps.map(\.stepName).joined(separator: ", ")) in \(Remote.localOutputDir)/\n")
+        return .fetched(steps)
+    }
+
+    /// The last lines of a log, split the way Vivado's CR LF output needs.
+    static func tail(_ text: String, lines count: Int) -> String {
+        text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).suffix(count).joined(separator: "\n")
+    }
+
+    /// What `vivado -version` says the configured install is ("2025.2"), or nil when it doesn't run.
+    public func vivadoVersion() throws -> String? {
+        let result = try exec(commands.vivadoVersion(config.vivadoPath), timeout: 120)
+        if result.status == 255 { throw RemoteError.ssh(result.stderr) }
+        return Remote.parseVersion(result.stdout)
+    }
+
+    /// The version in `vivado -version` output: its first line is "vivado v2025.2 (64-bit)".
+    static func parseVersion(_ output: String) -> String? {
+        guard let range = output.range(of: #"(?i)vivado v(\d{4}\.\d+)"#, options: .regularExpression) else { return nil }
+        return String(output[range].dropFirst("vivado v".count))
     }
 
     // MARK: Checkpoints
@@ -318,6 +391,21 @@ extension Remote {
     }
 
     static var readOwnerCommand: String { "type \(lockOwnerFile)" }
+    static func refreshLockCommand(owner: String) -> String { "echo \(owner)> \(lockOwnerFile)" }
+
+    /// How long a lock with no Vivado running under it may sit untouched before it counts as left behind. Longer
+    /// than anything a build does around Vivado (copying, the checkpoint check, fetching), during which no job
+    /// marker is running.
+    public static let staleLockMinutes = 10
+
+    /// See `RemoteCommands.lockState`. The marker pattern is a regular expression, whose own text doesn't match it,
+    /// so PowerShell and the cmd.exe that started it don't count as a running job.
+    static var lockStateCommand: String {
+        "powershell -NoProfile -NonInteractive -Command \"if (-not (Test-Path \(lockDir))) { 'free' }"
+            + " elseif (Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'fpgabridge-[0-9a-f]{8}' -and $_.ProcessId -ne $PID }) { 'held' }"
+            + " elseif (((Get-Date) - (Get-Item \(lockOwnerFile), \(lockDir) -ErrorAction SilentlyContinue | Sort-Object LastWriteTime"
+            + " | Select-Object -Last 1).LastWriteTime).TotalMinutes -lt \(staleLockMinutes)) { 'held' } else { 'stale' }\""
+    }
     /// Prints a file, failing if it doesn't exist.
     static func readFileCommand(_ file: String) -> String { "type \(file)" }
     static var releaseLockCommand: String { "rmdir /s /q \(lockDir)" }
@@ -332,9 +420,10 @@ extension Remote {
 
     static func jobMarker(_ token: String) -> String { "fpgabridge-\(token)" }
 
-    /// `-tclargs` puts the marker on Vivado's command line without affecting the script.
+    /// `-tclargs` puts the marker on Vivado's command line without affecting the script. Vivado's log is kept in the
+    /// job folder (`vivado.log`), so a build that lost its connection can be followed up with `fpga-bridge fetch`.
     static func buildCommand(vivadoPath: String, jobDir: String, token: String) -> String {
-        "cd \(jobDir) && call \"\(vivadoPath)\" -mode batch -nojournal -nolog -source build.tcl -tclargs \(jobMarker(token))"
+        "cd \(jobDir) && call \"\(vivadoPath)\" -mode batch -nojournal -log vivado.log -source build.tcl -tclargs \(jobMarker(token))"
     }
 
     /// Kills every process whose command line carries the job marker, with its children (vivado.bat starts the
@@ -366,12 +455,21 @@ extension Remote {
         })
     }
 
-    func acquireLock(project: String) throws {
+    /// Takes the build lock. A lock left behind by a build that crashed or lost its connection (no Vivado running
+    /// under it, untouched for `staleLockMinutes`) is taken over, saying so in the log.
+    func acquireLock(project: String, log: ((String) -> Void)? = nil) throws {
         let owner = Remote.ownerLine(project: project)
         let result = try exec(commands.acquireLock(owner: owner))
         if result.succeeded { return }
         // 255 means SSH itself failed (bad key, host down), not that the lock exists.
         if result.status == 255 { throw RemoteError.ssh(result.stderr) }
+        if let state = try? exec(commands.lockState), state.succeeded, state.stdout.contains("stale") {
+            let holder = (try? exec(commands.readOwner)).flatMap { $0.succeeded ? $0.stdout.trimmingCharacters(in: .whitespacesAndNewlines) : nil }
+            log?("The build lock on \(config.host) was left behind by \(holder.map { "\"\($0)\"" } ?? "a build that is gone"): no Vivado "
+                 + "is running there and it hasn't been used for \(Remote.staleLockMinutes) minutes. Taking it over.\n")
+            _ = try? exec(commands.unlock)
+            if try exec(commands.acquireLock(owner: owner)).succeeded { return }
+        }
         guard let holder = try? exec(commands.readOwner), holder.succeeded else {
             // The lock directory exists but has no owner file (just created, or left by hand).
             throw RemoteError.busy(owner: nil)
@@ -412,8 +510,9 @@ public enum RemoteError: DescribedError, Equatable {
             let who = owner.map { "\($0)" } ?? "an unknown build"
             return "The build machine is busy: \(who). Wait for it to finish, or run `fpga-bridge unlock` if that build is gone."
         case .connectionLost(let jobDir):
-            return "Lost the connection to the build machine. Vivado may still be running there (job directory: \(jobDir)) "
-                + "and the build lock may still be held; run `fpga-bridge unlock` once it is finished or stopped."
+            return "Lost the connection to the build machine. Vivado may still be running there (job directory: \(jobDir), "
+                + "its log in vivado.log). Run `fpga-bridge fetch` to collect the results once it has finished; the build lock "
+                + "is released by itself \(Remote.staleLockMinutes) minutes after Vivado stops."
         }
     }
 }

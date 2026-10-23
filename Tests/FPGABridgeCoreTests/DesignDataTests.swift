@@ -210,6 +210,7 @@ final class DesignDataTests: XCTestCase {
             report_timing_summary -file out/timing_summary.rpt
             report_utilization -file out/utilization.rpt
             write_bitstream -force out/top.bit
+            fpgabridge_done synth_1 impl_1 write_bitstream
 
             """)
         XCTAssertFalse(settings.isDefault)

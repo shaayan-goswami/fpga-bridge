@@ -71,7 +71,11 @@ public enum Doctor {
             let os = remote.config.buildOS
             let r = try remote.exec(remote.commands.vivadoExists(path))
             if r.stdout.contains("found") {
-                return Check(name: "Vivado", level: .ok, detail: path)
+                // The install path only suggests a version; ask Vivado itself.
+                guard let version = try remote.vivadoVersion() else {
+                    return Check(name: "Vivado", level: .warn, detail: "\(path) is there, but `vivado -version` didn't say which version it is.")
+                }
+                return Check(name: "Vivado", level: .ok, detail: "\(path) (Vivado \(version))")
             }
             let script = os == .windows ? "windows\\setup.ps1" : "linux/setup.sh"
             return Check(name: "Vivado", level: .fail,

@@ -83,6 +83,27 @@ struct RemoteCommands: Sendable {
         }
     }
 
+    /// Writes the owner file again, which marks the lock as in use: done when Vivado finishes, so a lock that
+    /// nobody has touched for a while (and that no Vivado is running under) can be told apart from one in use.
+    func refreshLock(owner: String) -> String {
+        switch os {
+        case .windows: return Remote.refreshLockCommand(owner: owner)
+        case .linux: return wrap("echo '\(owner)' > \(lockOwnerFile)")
+        }
+    }
+
+    /// Prints `free` when there is no lock, `stale` when one is there but no fpga-bridge Vivado is running and the
+    /// lock hasn't been touched for `Remote.staleLockMinutes` (left by a build that crashed or lost its
+    /// connection), otherwise `held`. Any job marker counts, written as a pattern that doesn't match its own text.
+    var lockState: String {
+        switch os {
+        case .windows: return Remote.lockStateCommand
+        case .linux:
+            return wrap("if [ ! -d \(lockDir) ]; then echo free; elif pgrep -f \"fpgabridge-[0-9a-f]{8}\" >/dev/null; then echo held; "
+                        + "elif [ -n \"$(find \(lockDir) -maxdepth 1 -mmin -\(Remote.staleLockMinutes))\" ]; then echo held; else echo stale; fi")
+        }
+    }
+
     var readOwner: String { os == .windows ? Remote.readOwnerCommand : wrap("cat \(lockOwnerFile)") }
     var releaseLock: String { os == .windows ? Remote.releaseLockCommand : wrap("rm -rf \(lockDir)") }
     var unlock: String { os == .windows ? Remote.unlockCommand : wrap("rm -rf \(lockDir)") }
@@ -94,6 +115,14 @@ struct RemoteCommands: Sendable {
         switch os {
         case .windows: return "if exist \"\(vivadoPath)\" (echo found) else (echo missing)"
         case .linux: return wrap("[ -x \(quote(vivadoPath)) ] && echo found || echo missing")
+        }
+    }
+
+    /// Prints what `vivado -version` says ("vivado v2025.2 (64-bit)" first).
+    func vivadoVersion(_ vivadoPath: String) -> String {
+        switch os {
+        case .windows: return "call \"\(vivadoPath)\" -version"
+        case .linux: return wrap("\(quote(vivadoPath)) -version")
         }
     }
 
@@ -110,7 +139,7 @@ struct RemoteCommands: Sendable {
         switch os {
         case .windows: return Remote.buildCommand(vivadoPath: vivadoPath, jobDir: jobDir, token: token)
         case .linux:
-            return wrap("cd \(jobDir) && \(quote(vivadoPath)) -mode batch -nojournal -nolog -source build.tcl"
+            return wrap("cd \(jobDir) && \(quote(vivadoPath)) -mode batch -nojournal -log vivado.log -source build.tcl"
                         + " -tclargs \(Remote.jobMarker(token))")
         }
     }

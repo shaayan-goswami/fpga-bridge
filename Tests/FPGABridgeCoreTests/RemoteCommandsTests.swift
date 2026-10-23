@@ -136,7 +136,7 @@ final class RemoteCommandsTests: XCTestCase {
         XCTAssertEqual(result.status, 0, result.stderr)
         let recorded = try String(contentsOf: home.appendingPathComponent(".fpga-bridge/demo/args.txt"), encoding: .utf8)
         XCTAssertTrue(recorded.contains(".fpga-bridge/demo"), "ran inside the job directory: \(recorded)")
-        XCTAssertTrue(recorded.contains("-mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-a1b2c3d4"), recorded)
+        XCTAssertTrue(recorded.contains("-mode batch -nojournal -log vivado.log -source build.tcl -tclargs fpgabridge-a1b2c3d4"), recorded)
     }
 
     func testCancelKillsTheMarkedProcessAndNothingElse() throws {

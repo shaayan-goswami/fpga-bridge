@@ -58,6 +58,20 @@ final class RunKeysTests: XCTestCase {
     }
 }
 
+final class VivadoVersionTests: XCTestCase {
+    /// What `vivado -version` printed on the build machine (Vivado 2025.2 on Windows, CR LF line ends).
+    func testTheVersionIsReadFromVivadosOwnAnswer() throws {
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "vivado_version_2025_2", withExtension: "txt", subdirectory: "Fixtures"))
+        XCTAssertEqual(Remote.parseVersion(try String(contentsOf: url, encoding: .utf8)), "2025.2")
+        XCTAssertEqual(Remote.parseVersion("Vivado v2023.2 (64-bit)\n"), "2023.2")
+        XCTAssertNil(Remote.parseVersion("'vivado' is not recognized as an internal or external command"))
+    }
+
+    func testTheTailOfALogSplitsCRLF() {
+        XCTAssertEqual(Remote.tail("a\r\nb\r\nc", lines: 2), "b\nc")
+    }
+}
+
 final class BuildFolderTests: XCTestCase {
     var tmp: URL!
     override func setUpWithError() throws {

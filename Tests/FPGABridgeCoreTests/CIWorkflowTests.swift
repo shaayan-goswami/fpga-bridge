@@ -21,6 +21,8 @@ final class CIWorkflowTests: XCTestCase {
             "unlock": Remote.unlockCommand,
             "cancel": Remote.cancelCommand(token: "a1b2c3d4"),
             "read a checkpoint's manifest": RemoteCommands(.windows).readFile(#".fpga-bridge\demo.runs\synth_1\manifest.json"#),
+            "refresh the lock": RemoteCommands(.windows).refreshLock(owner: "ci@runner building demo since 2026-10-15T12:00:00Z"),
+            "lock state": RemoteCommands(.windows).lockState,
         ]
         for (name, command) in commands {
             XCTAssertTrue(text.contains(command), "ci.yml no longer contains the \(name) command line:\n\(command)")
@@ -50,6 +52,8 @@ final class CIWorkflowTests: XCTestCase {
             "build": linux.build(vivadoPath: vivado, jobDir: ".fpga-bridge/demo", token: "a1b2c3d4"),
             "cancel": linux.cancel(token: "a1b2c3d4"),
             "read a checkpoint's manifest": linux.readFile(".fpga-bridge/demo.runs/synth_1/manifest.json"),
+            "refresh the lock": linux.refreshLock(owner: "ci@runner building demo since 2026-10-15T12:00:00Z"),
+            "lock state": linux.lockState,
         ]
         for (name, command) in commands {
             XCTAssertTrue(text.contains(command), "ci.yml no longer contains the Linux \(name) command line:\n\(command)")
