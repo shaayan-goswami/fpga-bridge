@@ -1,0 +1,76 @@
+name: Release
+
+# Pushing a version tag (git tag v0.3.0 && git push origin v0.3.0) builds "FPGA Bridge.app" with scripts/make-app.sh,
+# zips it as FPGA-Bridge.zip and attaches it to the GitHub release for that tag. A release that doesn't exist yet is
+# created as a draft, so the notes can be written before it is published; an existing one gets the zip replaced.
+# The app's in-app update check reads the latest *published* release, so nobody is told about a draft.
+#
+# The app is ad-hoc signed only (no Developer ID yet), so users still clear the quarantine flag as the guide says.
+# Signing and notarization come with the Apple Developer account (docs/implementation-plan.md, section 5).
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  app:
+    name: Build and attach FPGA-Bridge.zip
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # make-app.sh reads the version from the newest tag and the build number from the commit count.
+          fetch-depth: 0
+
+      - name: Use the newest Xcode
+        # The app icon is an Icon Composer (.icon) document, which only Xcode 26's actool compiles.
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$xcode" ]; then sudo xcode-select -s "$xcode"; fi
+          xcodebuild -version
+          major=$(xcodebuild -version | awk '/^Xcode/ { split($2, v, "."); print v[1] }')
+          if [ "${major:-0}" -lt 26 ]; then
+            echo "::error::Xcode 26 or later is needed to compile the .icon app icon; this runner has Xcode $major"
+            exit 1
+          fi
+          swift --version
+
+      - name: Build the app
+        run: scripts/make-app.sh
+
+      - name: Check the version matches the tag
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "dist/FPGA Bridge.app/Contents/Info.plist")
+          echo "Tag $tag, app version $version"
+          if [ "$version" != "${tag#v}" ]; then
+            echo "::error::The app says $version but the tag is $tag"
+            exit 1
+          fi
+
+      - name: Zip
+        run: |
+          ditto -c -k --norsrc --keepParent "dist/FPGA Bridge.app" FPGA-Bridge.zip
+          ls -l FPGA-Bridge.zip
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" FPGA-Bridge.zip --clobber
+            echo "Replaced FPGA-Bridge.zip on the existing release $tag"
+          else
+            gh release create "$tag" FPGA-Bridge.zip --draft --verify-tag \
+              --title "FPGA Bridge ${tag#v}" \
+              --notes "Draft created by the release workflow. Write the release notes, then publish."
+            echo "Created a draft release for $tag"
+          fi

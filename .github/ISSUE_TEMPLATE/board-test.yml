@@ -1,0 +1,85 @@
+name: Board test report
+description: Tried FPGA Bridge with your board? Say what worked and what didn't, so the board list stays honest.
+title: "Board test: <board name>"
+labels: ["board test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing. Reports for boards that worked are just as useful as ones that didn't.
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board
+      description: Pick "Other" for a board that isn't in `fpga-bridge boards` yet, and name it below.
+      options:
+        - Basys 3
+        - Arty A7-35
+        - Arty A7-100
+        - Nexys A7-100T
+        - Cmod A7-15T
+        - Cmod A7-35T
+        - Arty S7-25
+        - Arty S7-50
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: other-board
+    attributes:
+      label: Other board
+      description: Its name and part number (e.g. xc7a35tcpg236-1), if you picked Other.
+  - type: input
+    id: vivado
+    attributes:
+      label: Vivado version
+      description: On the build machine, e.g. 2025.2.
+      placeholder: "2025.2"
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: FPGA Bridge version and macOS version
+      description: FPGA Bridge > About FPGA Bridge, and Apple menu > About This Mac.
+      placeholder: "FPGA Bridge 0.2.1 on macOS 26.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: build-os
+    attributes:
+      label: Build machine
+      options:
+        - Windows
+        - Linux
+        - None (editing and simulation only)
+    validations:
+      required: true
+  - type: checkboxes
+    id: worked
+    attributes:
+      label: What worked
+      description: Tick each step that worked. Leave a step unticked if it failed or you didn't try it, and say which below.
+      options:
+        - label: Creating or opening a project
+        - label: Run Simulation (Icarus Verilog on the Mac)
+        - label: Run Synthesis
+        - label: Run Implementation
+        - label: Generate Bitstream
+        - label: Opening the synthesized or implemented design (netlist, schematic, reports)
+        - label: Programming the board from the Hardware Manager (openFPGALoader)
+        - label: Writing the configuration memory (flash), so the design survives a power cycle
+        - label: The design ran on the board as expected
+  - type: textarea
+    id: details
+    attributes:
+      label: What didn't work, or anything else
+      description: Which steps failed or weren't tried, error messages, screenshots.
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`fpga-bridge doctor` output"
+      description: Run `fpga-bridge doctor` in Terminal and paste everything it prints. Your host name and user name appear in it; edit them out if you like.
+      render: text
+    validations:
+      required: true

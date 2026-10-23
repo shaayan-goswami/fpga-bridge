@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Getting started guide
+    url: https://github.com/shaayan-goswami/fpga-bridge/blob/main/docs/getting-started.md
+    about: Setting up the Mac, the build PC and the board, step by step, with troubleshooting.

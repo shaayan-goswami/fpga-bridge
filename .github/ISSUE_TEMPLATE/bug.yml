@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in FPGA Bridge doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the example project
+        2. Choose Flow > Run Simulation
+        3. ...
+  - type: input
+    id: versions
+    attributes:
+      label: FPGA Bridge version and macOS version
+      description: FPGA Bridge > About FPGA Bridge, and Apple menu > About This Mac.
+      placeholder: "FPGA Bridge 0.2.1 on macOS 26.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - The Mac app
+        - The fpga-bridge command-line tool
+        - The build machine setup (windows/setup.ps1 or linux/setup.sh)
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Board, Vivado version and build machine
+      description: Whichever apply, e.g. "Basys 3, Vivado 2025.2 on Windows 11", or "no build machine".
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`fpga-bridge doctor` output"
+      description: For anything involving the build machine or the board, run `fpga-bridge doctor` in Terminal and paste what it prints. Edit out host and user names if you like.
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: Log or messages
+      description: The relevant lines from the Tcl Console, Messages or Log tab, or from the terminal.
+      render: text
