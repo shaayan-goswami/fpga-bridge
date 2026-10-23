@@ -197,6 +197,15 @@ struct AppCommands: Commands {
             }
         }
 
+        // Vivado's Window menu entries for the chip views (ChipViews.swift).
+        CommandGroup(before: .windowList) {
+            Button("Package") { model.openPackage() }
+                .disabled(model.activeSnapshot == nil)
+            Button("Device") { model.openDevice() }
+                .disabled(model.activeDesign.map { !AppModel.hasDeviceView($0) } ?? true || model.activeSnapshot == nil)
+            Divider()
+        }
+
         CommandGroup(after: .toolbar) {
             Button(model.consoleVisible ? "Hide Console" : "Show Console") { model.consoleVisible.toggle() }
                 .keyboardShortcut("j")
