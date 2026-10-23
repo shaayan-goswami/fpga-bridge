@@ -289,6 +289,12 @@ enum WorkspaceTab: Hashable, Identifiable {
     /// IP Integrator's window for a block design (a project-relative `.bd`).
     case blockDesign(String)
 
+    // MARK: Chip views (see ChipViews.swift)
+    /// The Package window of an open design: the pins, banks and where the ports go.
+    case package(DesignStage)
+    /// The Device window of an open design: the die and where cells are placed.
+    case device(DesignStage)
+
     var id: Self { self }
     var isCloseable: Bool { self != .summary }
 }

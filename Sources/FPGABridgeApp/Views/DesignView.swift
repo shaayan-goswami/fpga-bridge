@@ -22,7 +22,7 @@ struct DesignView: View {
                 header(design)
                 Divider()
                 switch section {
-                case .ports: PortsSection(design: design)
+                case .ports: IOPortsTable(chip: model.chipViews, stage: stage)
                 case .utilization: UtilizationSection(design: design)
                 case .reports: StageReports(stage: stage)
                 }
@@ -53,6 +53,12 @@ struct DesignView: View {
             Pill(text: "\(design.ports.count) ports", color: .secondary)
             Button { model.openSchematic(stage) } label: { Label("Schematic", systemImage: "point.3.connected.trianglepath.dotted") }
                 .help("Open the design's schematic")
+            Button { model.openPackage(stage) } label: { Label("Package", systemImage: "circle.grid.3x3") }
+                .help("Open the Package window: pins, banks and I/O planning")
+            if AppModel.hasDeviceView(stage) {
+                Button { model.openDevice(stage) } label: { Label("Device", systemImage: "cpu") }
+                    .help("Open the Device window: the die and where cells are placed")
+            }
             Picker("", selection: $section) {
                 ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
             }
@@ -102,60 +108,6 @@ private struct TreeLead: View {
                 Color.clear.frame(width: 12, height: 1)
             }
             Image(systemName: row.node.isTop ? "cpu" : "square.on.square").foregroundStyle(Accent.source)
-        }
-    }
-}
-
-// MARK: I/O Ports
-
-private struct PortsSection: View {
-    let design: DesignSnapshot
-    @State private var search = ""
-    @State private var sort = Sort.name
-
-    enum Sort: String, CaseIterable, Identifiable {
-        case name = "Name", pin = "Pin", standard = "I/O Standard"
-        var id: String { rawValue }
-    }
-
-    private var shown: [DesignPort] {
-        let filtered = design.ports.filter {
-            search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) || $0.packagePin.localizedCaseInsensitiveContains(search)
-        }
-        switch sort {
-        case .name: return filtered.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        case .pin: return filtered.sorted { ($0.packagePin, $0.name) < ($1.packagePin, $1.name) }
-        case .standard: return filtered.sorted { ($0.ioStandard, $0.name) < ($1.ioStandard, $1.name) }
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Filter by port or pin", text: $search).textFieldStyle(.plain)
-                Picker("Sort by", selection: $sort) {
-                    ForEach(Sort.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .fixedSize()
-                let unplaced = design.ports.filter { !$0.isPlaced }.count
-                if unplaced > 0 { Pill(text: "\(unplaced) without a pin", color: Accent.warning, symbol: "exclamationmark.triangle.fill") }
-                Text("\(shown.count) of \(design.ports.count)").font(.caption).foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 34)
-            Divider()
-            Table(shown) {
-                TableColumn("Name") { Text($0.name).font(.callout.monospaced()).textSelection(.enabled) }
-                TableColumn("Direction") { Text($0.direction) }.width(min: 70, ideal: 80, max: 100)
-                TableColumn("Pin") { port in
-                    Text(port.isPlaced ? port.packagePin : "—").font(.callout.monospaced()).foregroundStyle(port.isPlaced ? Color.primary : Accent.warning)
-                }.width(min: 60, ideal: 70, max: 90)
-                TableColumn("I/O Standard") { Text($0.ioStandard) }.width(min: 90, ideal: 110, max: 140)
-                TableColumn("Slew") { Text($0.slew) }.width(min: 60, ideal: 70, max: 90)
-                TableColumn("Drive") { Text($0.drive) }.width(min: 50, ideal: 60, max: 80)
-                TableColumn("Pull") { Text($0.pullType) }.width(min: 60, ideal: 80, max: 100)
-            }
         }
     }
 }

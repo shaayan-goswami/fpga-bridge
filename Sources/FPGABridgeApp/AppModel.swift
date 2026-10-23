@@ -12,6 +12,8 @@ final class AppModel: ObservableObject {
     let simulation: SimulationManager
     let waveform = WaveformModel()
     let timingWindow = TimingWindowState()
+    /// The Package and Device windows' part data and I/O planning (ChipViews.swift).
+    lazy var chipViews = ChipViews(backend: ChipViews.backend(for: backend))
     private let ipBackend: IPBackend
     private let persist: Bool
 
@@ -944,6 +946,7 @@ final class AppModel: ObservableObject {
         if case .file(let path) = tab { lastFile = path }
         if case .design(let stage) = tab { reloadBuildIfChanged(); designOpened(stage) }
         if case .schematic(let stage) = tab { reloadBuildIfChanged(); designOpened(stage) }
+        if let stage = tab.chipStage { reloadBuildIfChanged(); designOpened(stage) }
     }
 
     // MARK: Language templates
@@ -994,6 +997,7 @@ final class AppModel: ObservableObject {
                 openTabs.remove(at: schematic)
                 if selectedTab == .schematic(stage) { selectedTab = openTabs.last ?? .summary }
             }
+            closeChipTabs(of: stage)
             designClosed(stage)
         }
     }
@@ -1012,6 +1016,7 @@ final class AppModel: ObservableObject {
         case .hardware: "Hardware Manager"
         case .design(let stage): stage.title
         case .schematic: "Schematic"
+        case .package, .device: chipTitle(tab)
         case .linter: "Linter"
         case .ipCatalog: "IP Catalog"
         case .templates: "Language Templates"
@@ -1029,6 +1034,7 @@ final class AppModel: ObservableObject {
         case .hardware: "cable.connector.horizontal"
         case .design(let stage): stage == .rtl ? "square.stack.3d.up" : "rectangle.on.rectangle"
         case .schematic: "point.3.connected.trianglepath.dotted"
+        case .package, .device: chipSymbol(tab)
         case .linter: "checklist"
         case .ipCatalog: "puzzlepiece.extension"
         case .templates: "doc.text.magnifyingglass"
