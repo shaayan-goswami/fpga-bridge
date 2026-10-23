@@ -314,10 +314,10 @@ the constraints editors are greyed out.
 
 ### Steps (each a separate release)
 
-1. Part data job and cache; the package view, read-only.
-2. Pin planning with rule checks and XDC writing.
+1. Part data job and cache; the package view, read-only. **Done** (xc7a35t: 446 KB in 53 s; xc7a100t: 818 KB in 79 s).
+2. Pin planning with rule checks and XDC writing. **Done.**
 3. The Timing Constraints wizard.
-4. The device view with placement.
+4. The device view with placement. **Done**; routing and floorplanning next.
 
 Tests: the XDC writer keeps every unrelated line; rule checks on known bad assignments; the Basys 3's package view
 compared with Vivado's.

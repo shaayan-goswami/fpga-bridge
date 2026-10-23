@@ -62,6 +62,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Netlist window, Properties and Schematic**: browse cells, nets and pins, see every Vivado property, and draw any level as a schematic (Vivado's symbols, modules opened in place, Schematic of selection with F4, Go To Source)
 - [x] **Run Linter**: Vivado's RTL linter, with each finding linked to its source line
 - [x] **Timing window**: the design's timing summary and its worst setup and hold paths, saved at build time; selecting a path highlights it in the schematic. `fpga-bridge report` lists the worst failing paths
+- [x] **Package and Device views, I/O planning**: the chip's pins and banks with your ports on them, drag a port to a pin (written into your XDC, with Vivado's rule checks), and the die with where each cell was placed. `fpga-bridge part` fetches a chip's data once; it is cached on the Mac
 - [x] **Block designs (viewing)**: open a block design made in Vivado's IP Integrator and see its diagram, each block's settings and the Address Editor, offline
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
@@ -71,7 +72,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 **Not built yet** (greyed out or missing; see the backlog for the full list)
 - [ ] Separate synthesis and implementation runs with checkpoints, Launch Runs, run strategies, and stopping a live build from the app
 - [ ] The report option dialogs (each report is run once, with Vivado's defaults, at build time)
-- [ ] The device view and pin planning by dragging, and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
+- [ ] Routing in the Device view, floorplanning (pblocks), and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
 - [ ] Save As, Archive, Write Tcl, Find and Replace in Files, Sources context menus
 - [ ] VHDL and post-synthesis simulation, waveform markers and saved layouts
 - [ ] Creating, editing, validating and generating block designs, and building projects that contain one
