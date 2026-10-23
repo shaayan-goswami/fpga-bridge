@@ -115,6 +115,22 @@ final class ProjectToolsAppTests: XCTestCase {
         XCTAssertTrue(outOfDate(model))
     }
 
+    func testRemovingWithoutDeletingKeepsTheFileButTakesItOutOfTheProject() async throws {
+        let (model, dir) = try await openProject()
+        model.removeFile(counter, deleteFromDisk: false)
+        XCTAssertNil(model.errorMessage)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: dir.appendingPathComponent(counter).path))
+        XCTAssertEqual(model.project?.excluded, [counter])
+        XCTAssertFalse(paths(model.sourceTree).contains(counter), "excluded files aren't in the Sources window")
+        XCTAssertFalse(model.allProjectFiles.map(\.path).contains(counter), "nor searched by Find in Files")
+        XCTAssertTrue(outOfDate(model))
+        XCTAssertEqual(model.tclLines.last?.text, "remove_files {\(counter)}")
+
+        model.addSources([tmp.appendingPathComponent("inputs/counter.v")], to: .design)
+        XCTAssertNil(model.project?.excluded, "adding it again brings it back")
+        XCTAssertTrue(paths(model.sourceTree).contains(counter))
+    }
+
     func testReplaceFile() async throws {
         let (model, dir) = try await openProject()
         let newer = tmp.appendingPathComponent("inputs/counter_v2.v")

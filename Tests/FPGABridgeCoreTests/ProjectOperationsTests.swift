@@ -36,6 +36,7 @@ final class ProjectOperationsTests: XCTestCase {
         let dir = try makeProject()
         var project = try Project.load(from: dir)
         project.disabled = ["demo.srcs/sources_1/imports/counter.v"]
+        project.excluded = ["demo.srcs/sources_1/imports/old.v"]
         var settings = ProjectSettings(); settings.language.includeDirectories = ["demo.srcs/sources_1/imports"]
         project.settings = settings
         try project.save(to: dir)
@@ -52,6 +53,7 @@ final class ProjectOperationsTests: XCTestCase {
         XCTAssertEqual(saved.sources, ["demo2.srcs/sources_1"])
         XCTAssertEqual(saved.simulationSources, ["demo2.srcs/sim_1"])
         XCTAssertEqual(saved.disabled, ["demo2.srcs/sources_1/imports/counter.v"])
+        XCTAssertEqual(saved.excluded, ["demo2.srcs/sources_1/imports/old.v"])
         XCTAssertEqual(saved.settings?.language.includeDirectories, ["demo2.srcs/sources_1/imports"])
         XCTAssertTrue(exists(copy, "demo2.srcs/sim_1/imports/tb top.v"))
         XCTAssertFalse(exists(copy, "demo.srcs"))
@@ -119,20 +121,59 @@ final class ProjectOperationsTests: XCTestCase {
 
     // MARK: Remove
 
-    func testRemovingAFileInASourceFolderDeletesIt() throws {
+    func testRemovingAFileInASourceFolderKeepsItOnDiskByDefault() throws {
         let dir = try makeProject()
         let path = "demo.srcs/sources_1/imports/counter.v"
-        let project = try Project.load(from: dir)
-        XCTAssertFalse(ProjectOperations.canKeepOnDiskWhenRemoved(path, in: project))
-        XCTAssertThrowsError(try ProjectOperations.remove(path, from: dir, deleteFromDisk: false, delete: deleteNow)) {
-            XCTAssertEqual($0 as? ProjectOperationError, .mustDelete(path))
-        }
         try ProjectOperations.setEnabled(path, false, in: dir)
-        try ProjectOperations.remove(path, from: dir, deleteFromDisk: true, delete: deleteNow)
+        try ProjectOperations.remove(path, from: dir, deleteFromDisk: false, delete: deleteNow)
+        XCTAssertTrue(exists(dir, path), "still on disk")
+        let after = try Project.load(from: dir)
+        XCTAssertEqual(after.excluded, [path])
+        XCTAssertNil(after.disabled, "no stale entry is left in the disabled list")
+        XCTAssertEqual(try after.resolveSources(in: dir), ["demo.srcs/sources_1/imports/top.v"])
+        XCTAssertEqual(try after.resolveSources(in: dir, includingDisabled: true), ["demo.srcs/sources_1/imports/top.v"],
+                       "excluded files are left out even when disabled ones are asked for")
+        XCTAssertNil(ProjectOperations.set(of: path, in: after, root: dir))
+
+        // Add Sources of the same file takes it off the list.
+        try ProjectCreator.add([try input("counter.v", "module counter(input clk); endmodule\n")], to: .design, projectDirectory: dir)
+        let readded = try Project.load(from: dir)
+        XCTAssertNil(readded.excluded)
+        XCTAssertEqual(try readded.resolveSources(in: dir).count, 2)
+    }
+
+    func testRemovingWithDeleteSendsTheFileToTheTrashAndRemembersNothing() throws {
+        let dir = try makeProject()
+        let path = "demo.srcs/sources_1/imports/counter.v"
+        let trash = tmp.appendingPathComponent("Trash")
+        try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        try ProjectOperations.remove(path, from: dir, deleteFromDisk: true, delete: { url in
+            try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
+        })
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: trash.path), ["counter.v"])
         XCTAssertFalse(exists(dir, path))
         let after = try Project.load(from: dir)
+        XCTAssertNil(after.excluded)
         XCTAssertEqual(try after.resolveSources(in: dir, includingDisabled: true), ["demo.srcs/sources_1/imports/top.v"])
-        XCTAssertNil(after.disabled, "no stale entry is left in the disabled list")
+    }
+
+    func testCreatingAFileAtAnExcludedPathBringsItBack() throws {
+        let dir = try makeProject()
+        let created = try ProjectCreator.createFile(NewFile(set: .design, name: "extra.v"), language: "Verilog", projectName: "demo", directory: dir)
+        try ProjectOperations.remove(created, from: dir, deleteFromDisk: true, delete: deleteNow)
+        try ProjectOperations.remove("demo.srcs/sources_1/imports/counter.v", from: dir, deleteFromDisk: false, delete: deleteNow)
+        var project = try Project.load(from: dir)
+        project.excluded = (project.excluded ?? []) + [created]
+        try project.save(to: dir)
+        _ = try ProjectCreator.createFile(NewFile(set: .design, name: "extra.v"), language: "Verilog", projectName: "demo", directory: dir)
+        XCTAssertEqual(try Project.load(from: dir).excluded, ["demo.srcs/sources_1/imports/counter.v"])
+    }
+
+    func testOldProjectFilesWithoutTheListLoadAndAnEmptyListIsNotWritten() throws {
+        let dir = try makeProject()
+        let text = try String(contentsOf: dir.appendingPathComponent(Project.fileName), encoding: .utf8)
+        XCTAssertFalse(text.contains("excluded"))
+        XCTAssertNil(try Project.load(from: dir).excluded)
     }
 
     func testRemovingAFileListedByNameCanKeepItOnDisk() throws {
@@ -142,10 +183,11 @@ final class ProjectOperationsTests: XCTestCase {
         var project = try Project.load(from: dir)
         project.sources.append("extra/helper.v")
         try project.save(to: dir)
-        XCTAssertTrue(ProjectOperations.canKeepOnDiskWhenRemoved("extra/helper.v", in: project))
         try ProjectOperations.remove("extra/helper.v", from: dir, deleteFromDisk: false, delete: deleteNow)
         XCTAssertTrue(exists(dir, "extra/helper.v"))
-        XCTAssertEqual(try Project.load(from: dir).sources, ["demo.srcs/sources_1"])
+        let after = try Project.load(from: dir)
+        XCTAssertEqual(after.sources, ["demo.srcs/sources_1"])
+        XCTAssertNil(after.excluded, "dropping the entry is enough")
     }
 
     func testRemovingTheTopsFilePicksANewTop() throws {

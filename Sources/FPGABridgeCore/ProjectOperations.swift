@@ -60,6 +60,7 @@ public enum ProjectOperations {
         copy.constraints = copy.constraints.map(rename)
         copy.simulationSources = copy.simulationSources?.map(rename)
         copy.disabled = copy.disabled?.map(rename)
+        copy.excluded = copy.excluded?.map(rename)
         if var settings = copy.settings {
             settings.language.includeDirectories = settings.language.includeDirectories.map(rename)
             copy.settings = settings
@@ -140,29 +141,43 @@ public enum ProjectOperations {
     }
 
     private static func renameDisabled(_ old: String, to new: String?, in project: inout Project) {
+        if let new { unexclude([new], in: &project) }
         guard var list = project.disabled, list.contains(old) else { return }
         list.removeAll { $0 == old }
         if let new { list.append(new) }
         project.disabled = list.isEmpty ? nil : list.sorted()
     }
 
+    /// A file put (back) at a path is part of the project again, even if a file there was once removed.
+    static func unexclude(_ paths: [String], in project: inout Project) {
+        guard var list = project.excluded else { return }
+        list.removeAll { paths.contains($0) }
+        project.excluded = list.isEmpty ? nil : list
+    }
+
+    /// Takes newly added files off the excluded list (Add Sources, Create File). Does nothing without a project file.
+    public static func unexclude(_ paths: [String], in directory: URL) throws {
+        guard var project = try? Project.load(from: directory), project.excluded?.contains(where: paths.contains) == true else { return }
+        unexclude(paths, in: &project)
+        try project.save(to: directory)
+    }
+
     // MARK: Remove File from Project
 
-    /// Whether Remove can leave the file on disk: only a file listed by name, since a file in a listed folder is in
-    /// the project as long as it is there.
-    public static func canKeepOnDiskWhenRemoved(_ path: String, in project: Project) -> Bool { isListedByName(path, in: project) }
-
-    /// Takes a file out of the project. A file listed by name loses its entry (and is deleted only if asked); a file
-    /// in a source folder has to leave the folder, so it is deleted (moved to the Trash by the app).
+    /// Takes a file out of the project, as Vivado's Remove Sources does. The file stays on disk unless
+    /// `deleteFromDisk` ("Also delete the project local file/directory from disk"). A file listed by name loses its
+    /// entry; a file in a listed source folder, kept on disk, goes on the project's `excluded` list.
     public static func remove(_ path: String, from directory: URL, deleteFromDisk: Bool, delete: Delete = moveToTrash) throws {
         var project = try Project.load(from: directory)
         guard let set = set(of: path, in: project, root: directory) else { throw ProjectOperationError.notInProject(path) }
-        let byName = entries(of: set, in: project).contains(path)
-        guard byName || deleteFromDisk else { throw ProjectOperationError.mustDelete(path) }
-        if byName {
+        if entries(of: set, in: project).contains(path) {
             let remaining = entries(of: set, in: project).filter { $0 != path }
             guard set != .design || !remaining.isEmpty else { throw ProjectOperationError.lastDesignEntry }
             setEntries(remaining, of: set, in: &project)
+        }
+        // Still brought in through a folder: remember it as removed, unless it is about to be deleted.
+        if !deleteFromDisk, Self.set(of: path, in: project, root: directory) != nil {
+            project.excluded = ((project.excluded ?? []) + [path]).sorted()
         }
         renameDisabled(path, to: nil, in: &project)
         if deleteFromDisk { try delete(directory.appendingPathComponent(path)) }
@@ -324,7 +339,6 @@ public enum ProjectOperations {
 
 public enum ProjectOperationError: DescribedError, Equatable {
     case notInProject(String)
-    case mustDelete(String)
     case lastDesignEntry
     case cannotMove(String, SourceSet)
     case notAModule(String)
@@ -335,8 +349,6 @@ public enum ProjectOperationError: DescribedError, Equatable {
     public var description: String {
         switch self {
         case .notInProject(let path): return "\(path) isn't part of this project."
-        case .mustDelete(let path):
-            return "\(path) is in one of the project's source folders, so it is part of the project for as long as it is there. Remove it with \"Also delete the file from disk\" (it goes to the Trash)."
         case .lastDesignEntry: return "A project needs at least one design source entry."
         case .cannotMove(let path, let set): return "\(path) can't be moved to \(set.title). Only HDL files move between design and simulation sources."
         case .notAModule(let name): return "\(name) can't be a top: constraints have no modules."

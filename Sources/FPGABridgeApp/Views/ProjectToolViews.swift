@@ -222,17 +222,15 @@ private struct RemoveFileSheet: View {
     @State private var delete = false
 
     var body: some View {
-        let canKeep = model.project.map { ProjectOperations.canKeepOnDiskWhenRemoved(path, in: $0) } ?? false
         ToolDialog(title: "Remove Sources", subtitle: "Are you sure you want to remove this file from the project?", action: "OK") {
-            model.removeFile(path, deleteFromDisk: delete || !canKeep)
+            model.removeFile(path, deleteFromDisk: delete)
             dismiss()
         } content: {
             VStack(alignment: .leading, spacing: 10) {
                 Label(path, systemImage: "doc.text").font(.callout.monospaced()).lineLimit(2).truncationMode(.middle)
-                Toggle("Also delete the project local file from disk", isOn: canKeep ? $delete : .constant(true))
-                    .disabled(!canKeep)
-                Text(canKeep ? "Deleted files go to the Trash."
-                             : "The file is in one of the project's source folders, so it is part of the project for as long as it is there. Removing it moves it to the Trash, where it can be put back from the Finder. To keep it but leave it out of builds, use Disable File instead.")
+                Toggle("Also delete the project local file/directory from disk", isOn: $delete)
+                Text(delete ? "The file goes to the Trash, where it can be put back from the Finder."
+                            : "The file stays on disk but is no longer part of the project. Adding it again with Add Sources brings it back. To keep it in the project but out of builds, use Disable File instead.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

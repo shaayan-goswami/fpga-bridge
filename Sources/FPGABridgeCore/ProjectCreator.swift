@@ -187,6 +187,8 @@ public enum ProjectCreator {
             throw ProjectCreatorError.unsupportedFile(file.lastPathComponent, set)
         }
         let copied = try copy(files, into: set, projectName: project.name, directory: projectDirectory)
+        // Adding a file that was removed (but kept on disk) brings it back.
+        try ProjectOperations.unexclude(copied, in: projectDirectory)
 
         // Adding a design source can change which module is the top.
         if set == .design, let top = try? detectTop(in: projectDirectory, projectName: project.name),
@@ -258,6 +260,7 @@ public enum ProjectCreator {
         }
         do { try text.write(to: url, atomically: true, encoding: .utf8) }
         catch { throw ProjectCreatorError.copyFailed(error.localizedDescription) }
+        try ProjectOperations.unexclude([relative], in: directory)
         return relative
     }
 
