@@ -431,12 +431,16 @@ struct Unlock: ParsableCommand {
 }
 
 struct Report: ParsableCommand {
-    static let configuration = CommandConfiguration(abstract: "Show the timing and utilization summary from the last build.")
+    static let configuration = CommandConfiguration(
+        abstract: "Show the timing and utilization summary from the last build, with the worst failing paths when timing isn't met.")
+
+    @Option(help: "How many failing setup and hold paths to list when timing isn't met.")
+    var paths = BuildSummary.failingPathsShown
 
     func run() throws {
         let dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(Remote.localOutputDir)
         let summary = BuildSummary.load(from: dir)
-        print(summary.render())
+        print(summary.render(maxPaths: paths))
         if summary.timing == nil && summary.utilization == nil { throw ExitCode.failure }
     }
 }

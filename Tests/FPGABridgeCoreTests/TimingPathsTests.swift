@@ -304,3 +304,56 @@ final class TimingPathsTests: XCTestCase {
         XCTAssertEqual(sections.checks.count, 12)
     }
 }
+
+/// `fpga-bridge report` (and the summary after `build`) lists the worst failing paths when timing isn't met.
+final class FailingPathsSummaryTests: XCTestCase {
+    func buildFolder(_ name: String) throws -> URL {
+        try XCTUnwrap(Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"))
+    }
+
+    func testTheWorstFailingPathsFollowTheTimingLine() throws {
+        let summary = BuildSummary.load(from: try buildFolder("timing_fail_vivado2025"))
+        XCTAssertEqual(summary.timingPaths?.paths.count, 200)
+        let lines = summary.render().split(separator: "\n").map(String.init)
+        XCTAssertTrue(lines[0].hasPrefix("Timing     NOT MET"), lines[0])
+        XCTAssertTrue(lines[0].contains("89 of 101 endpoints failing"), lines[0])
+        XCTAssertEqual(lines[1], "Failing setup paths, worst first (10 of 89):")
+        XCTAssertEqual(lines[2], "   -2.044 ns  u_tick/count_reg[21]/C -> u_tick/count_reg[10]/R  (sys_clk, 2 logic levels, data path 3.158 ns, requirement 1.600 ns)")
+        XCTAssertEqual(lines.filter { $0.hasPrefix("  ") && $0.contains(" -> ") }.count, 10)
+        XCTAssertFalse(lines.contains { $0.hasPrefix("Failing hold") }, "hold is met")
+    }
+
+    func testHowManyPathsIsAnOption() throws {
+        let summary = BuildSummary.load(from: try buildFolder("timing_fail_vivado2025"))
+        let text = summary.render(maxPaths: 3)
+        XCTAssertTrue(text.contains("(3 of 89)"), text)
+        XCTAssertEqual(text.components(separatedBy: " -> ").count - 1, 3)
+        XCTAssertFalse(summary.render(maxPaths: 0).contains(" -> "))
+    }
+
+    func testAPassingBuildListsNoPaths() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let fixtures = try buildFolder("design_vivado2025")
+        for name in ["impl_timing_paths.tsv", "impl_timing_elements.tsv"] {
+            try FileManager.default.copyItem(at: fixtures.appendingPathComponent(name), to: dir.appendingPathComponent(name))
+        }
+        let timing = try XCTUnwrap(Bundle.module.url(forResource: "timing_vivado2025", withExtension: "rpt", subdirectory: "Fixtures"))
+        try FileManager.default.copyItem(at: timing, to: dir.appendingPathComponent(BuildSummary.timingReport))
+        let text = BuildSummary.load(from: dir).render()
+        XCTAssertTrue(text.hasPrefix("Timing     MET"), text)
+        XCTAssertFalse(text.contains("Failing"), text)
+    }
+
+    func testABuildThatDidntSaveThePathsSaysSo() throws {
+        let failing = """
+            WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints
+            -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------
+             -1.000       -3.000                      3                   10        0.100        0.000                      0                   10
+            Timing constraints are not met.
+            """
+        let summary = BuildSummary(timing: try TimingSummary.parse(failing), utilization: nil, notes: [])
+        XCTAssertTrue(summary.render().contains("weren't saved by this build"))
+    }
+}
