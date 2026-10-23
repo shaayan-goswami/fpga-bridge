@@ -157,9 +157,11 @@ extension AppModel {
         }
     }
 
-    /// Which runs a change to a file in `set` makes out-of-date: a testbench doesn't affect synthesis.
+    /// Which runs a change to a file in `set` makes out-of-date: a testbench affects none, and a constraint only
+    /// implementation (which reads the constraints afresh on top of the synthesized netlist).
     private func runsAffected(by sets: [SourceSet?]) -> [RunKind] {
-        sets.contains { $0 == .design || $0 == .constraints } ? [.synthesis, .implementation] : []
+        if sets.contains(.design) { return [.synthesis, .implementation] }
+        return sets.contains(.constraints) ? [.implementation] : []
     }
 
     /// Follows a file to its new name in open tabs and the selection; nil closes its tab.
