@@ -124,6 +124,7 @@ extension AppModel {
             if name.hasPrefix("package") { openPackage(stage) } else { openDevice(stage) }
             if let ref = DebugHooks.selectObject { select(ref) }
         case "waveform", "waveform-zoom":
+        case "waveform", "waveform-zoom", "waveform-markers":
             if DebugHooks.openPath == nil { openExampleProject() }
             runSimulation()
             while !(simulation.isRunning || { if case .done = simulation.state { return true } else { return false } }()) {
@@ -132,6 +133,15 @@ extension AppModel {
             while simulation.isRunning || waveform.isLoading || waveform.waveform == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
             if let id = waveform.waveform?.signals.firstIndex(where: { $0.name == "clk" }) { waveform.selected = id }
             waveform.setCursor(tick: waveform.endTime * 0.4)
+            if DebugHooks.scenario == "waveform-markers" {
+                // Two markers 40% apart, both picked, and a divider above the selected signal.
+                waveform.setCursor(tick: waveform.endTime * 0.3)
+                if let a = waveform.addMarker() { waveform.selectMarker(a.id) }
+                waveform.setCursor(tick: waveform.endTime * 0.7)
+                if let b = waveform.addMarker() { waveform.selectMarker(b.id) }
+                waveform.setCursor(tick: waveform.endTime * 0.55)
+                waveform.addDivider(named: "Clocks")
+            }
             if DebugHooks.scenario == "waveform-zoom" {
                 waveform.zoom(by: 9, anchor: 0.4)
                 waveform.setCursor(tick: waveform.viewStart + waveform.span * 0.5)

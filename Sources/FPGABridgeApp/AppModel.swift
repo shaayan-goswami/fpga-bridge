@@ -652,14 +652,14 @@ final class AppModel: ObservableObject {
         Task {
             let outcome = await simulation.run(project: project, directory: projectURL)
             // Like Vivado, show the waveform when a simulation finishes.
-            if outcome?.result == .finished, let file = outcome?.waveform { await showWaveform(file) }
+            if outcome?.result == .finished, let file = outcome?.waveform { await showWaveform(file, testbench: outcome?.top) }
         }
     }
 
-    /// Loads a waveform file into the Waveform tab and shows it.
-    func showWaveform(_ url: URL) async {
+    /// Loads a waveform file into the Waveform tab and shows it, with the testbench's saved layout if there is one.
+    func showWaveform(_ url: URL, testbench: String? = nil) async {
         open(.waveform)
-        await waveform.load(url)
+        await waveform.load(url, layout: testbench.map { WaveLayout.url(testbench: $0, nextTo: url) })
     }
 
     // MARK: Hardware

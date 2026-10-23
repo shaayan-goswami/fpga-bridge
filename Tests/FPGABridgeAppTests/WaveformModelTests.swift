@@ -187,7 +187,7 @@ final class WaveformModelTests: ExampleSandboxTestCase {
 
     func testMajorTicksAreEvenlySpacedAndInsideTheWindow() throws {
         let waveform = try Waveform.parse(vcd)
-        let painter = WaveformPainter(waveform: waveform, shown: [], start: 1_234, end: 6_789, cursor: nil, selected: nil,
+        let painter = WaveformPainter(waveform: waveform, rows: [], start: 1_234, end: 6_789, cursor: nil, selected: nil,
                                       rowHeight: 30, radix: { _ in .hex })
         let ticks = painter.majorTicks(width: 1000)
         XCTAssertGreaterThan(ticks.count, 3)

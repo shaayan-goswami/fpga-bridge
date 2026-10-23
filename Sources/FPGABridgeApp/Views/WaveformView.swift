@@ -6,6 +6,7 @@ struct WaveformView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var wave: WaveformModel
     @State private var showPicker = false
+    @State private var renaming: WaveRename?
 
     static let rowHeight: CGFloat = 30
     static let namesWidth: CGFloat = 250
@@ -22,10 +23,43 @@ struct WaveformView: View {
             } else if wave.waveform == nil {
                 message("waveform.path.ecg", "No waveform yet", "Run Simulation, and its waveform appears here.")
             } else {
+                if let note = wave.layoutNote {
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle").foregroundStyle(.secondary)
+                        Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(2).textSelection(.enabled)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    Divider()
+                }
                 viewer
+                Divider()
+                statusLine
             }
         }
         .background(Theme.surface)
+        .waveRenameAlert($renaming, wave: wave)
+    }
+
+    /// The cursor's time, the time from the nearest marker, and between two picked markers.
+    private var statusLine: some View {
+        HStack(spacing: 14) {
+            let parts = wave.measurements
+            if parts.isEmpty {
+                Text("Click to place the cursor. Add Marker (M) marks it; click two markers in the ruler to measure between them.")
+            } else {
+                ForEach(parts, id: \.self) { Text($0).monospacedDigit() }
+            }
+            Spacer()
+            if wave.layoutURL != nil {
+                Text("Layout saved for this testbench").help(wave.layoutURL?.path ?? "")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 14)
+        .frame(height: 24)
     }
 
     private func message(_ symbol: String, _ title: String, _ detail: String) -> some View {
@@ -64,6 +98,24 @@ struct WaveformView: View {
                 Button { wave.fit() } label: { Image(systemName: "arrow.left.and.right") }
                     .help("Zoom to fit the whole run")
                 Divider().frame(height: 16)
+                Button { wave.addMarker() } label: { Image(systemName: "flag") }
+                    .help("Add Marker at the cursor (M)")
+                Button { renaming = WaveRename(target: .divider(wave.addDivider()), name: "Divider") } label: {
+                    Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                }
+                .help("Add a divider above the selected signal")
+                Menu {
+                    Button("Save Waveform Configuration As…") { saveConfiguration() }
+                    Button("Open Waveform Configuration…") { openConfiguration() }
+                    Divider()
+                    Button("Delete All Markers") { wave.deleteAllMarkers() }.disabled(wave.markers.isEmpty)
+                    Button("Reset to Default Layout") { wave.resetLayout() }
+                } label: {
+                    Label("Layout", systemImage: "rectangle.3.group")
+                }
+                .fixedSize()
+                .help("The signals, dividers, radixes, zoom and markers are saved for this testbench and come back on its next run")
+                Divider().frame(height: 16)
                 Menu {
                     Picker("Radix", selection: $wave.defaultRadix) {
                         ForEach(WaveRadix.allCases, id: \.self) { Text($0.rawValue).tag($0) }
@@ -98,13 +150,13 @@ struct WaveformView: View {
                         .padding(.leading, 12)
                         .frame(width: Self.namesWidth, alignment: .leading)
                     Divider()
-                    Ruler(width: traceWidth)
+                    Ruler(width: traceWidth, renaming: $renaming)
                 }
                 .frame(height: Self.rulerHeight)
                 Divider()
                 ScrollView(.vertical) {
                     HStack(alignment: .top, spacing: 0) {
-                        NamesColumn()
+                        NamesColumn(renaming: $renaming)
                             .frame(width: Self.namesWidth)
                         Divider()
                         Traces(width: traceWidth)
@@ -114,18 +166,69 @@ struct WaveformView: View {
             }
         }
     }
+
+    private func saveConfiguration() {
+        let panel = NSSavePanel()
+        panel.title = "Save Waveform Configuration"
+        panel.nameFieldStringValue = wave.layoutURL?.lastPathComponent ?? "waveform.wcfg.json"
+        panel.directoryURL = wave.layoutURL?.deletingLastPathComponent() ?? wave.source?.deletingLastPathComponent()
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do { try wave.saveLayout(to: url) } catch { model.errorMessage = "Couldn't save the configuration: \(error.userMessage)" }
+    }
+
+    private func openConfiguration() {
+        let panel = NSOpenPanel()
+        panel.title = "Open Waveform Configuration"
+        panel.directoryURL = wave.layoutURL?.deletingLastPathComponent() ?? wave.source?.deletingLastPathComponent()
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do { try wave.openLayout(url) } catch { model.errorMessage = "Couldn't open the configuration: \(error.userMessage)" }
+    }
+}
+
+/// A marker or divider being renamed.
+struct WaveRename: Identifiable {
+    enum Target: Hashable { case marker(UUID), divider(UUID) }
+    var target: Target
+    var name: String
+    var id: Target { target }
+}
+
+private extension View {
+    func waveRenameAlert(_ renaming: Binding<WaveRename?>, wave: WaveformModel) -> some View {
+        alert(renaming.wrappedValue.map { if case .marker = $0.target { "Rename Marker" } else { "Rename Divider" } } ?? "",
+              isPresented: Binding(get: { renaming.wrappedValue != nil }, set: { if !$0 { renaming.wrappedValue = nil } })) {
+            TextField("Name", text: Binding(get: { renaming.wrappedValue?.name ?? "" }, set: { renaming.wrappedValue?.name = $0 }))
+            Button("OK") {
+                if let rename = renaming.wrappedValue {
+                    switch rename.target {
+                    case .marker(let id): wave.renameMarker(id, to: rename.name)
+                    case .divider(let id): wave.renameDivider(id, to: rename.name)
+                    }
+                }
+                renaming.wrappedValue = nil
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { renaming.wrappedValue = nil }
+        }
+    }
 }
 
 // MARK: Names
 
 private struct NamesColumn: View {
     @EnvironmentObject private var wave: WaveformModel
+    @Binding var renaming: WaveRename?
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(wave.shown, id: \.self) { id in
-                if let signal = wave.waveform?.signals[id] {
-                    NameRow(signal: signal)
+            ForEach(wave.rows) { row in
+                switch row {
+                case .signal(let id):
+                    if let signal = wave.waveform?.signals[id] {
+                        NameRow(signal: signal, renaming: $renaming)
+                    }
+                case .divider(let id):
+                    DividerNameRow(id: id, renaming: $renaming)
                 }
             }
             if wave.shown.isEmpty {
@@ -138,9 +241,37 @@ private struct NamesColumn: View {
     }
 }
 
+/// A divider's name, in bold across the names column.
+private struct DividerNameRow: View {
+    @EnvironmentObject private var wave: WaveformModel
+    let id: UUID
+    @Binding var renaming: WaveRename?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "minus").font(.caption).foregroundStyle(.secondary).frame(width: 16)
+            Text(wave.dividerName(id)).font(.callout.weight(.semibold)).lineLimit(1)
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .frame(height: WaveformView.rowHeight)
+        .background(Color.primary.opacity(0.05))
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { renaming = WaveRename(target: .divider(id), name: wave.dividerName(id)) }
+        .contextMenu {
+            Button("Rename Divider…") { renaming = WaveRename(target: .divider(id), name: wave.dividerName(id)) }
+            Button("Move Up") { wave.move(.divider(id), by: -1) }
+            Button("Move Down") { wave.move(.divider(id), by: 1) }
+            Divider()
+            Button("Remove Divider") { wave.removeDivider(id) }
+        }
+    }
+}
+
 private struct NameRow: View {
     @EnvironmentObject private var wave: WaveformModel
     let signal: WaveSignal
+    @Binding var renaming: WaveRename?
 
     var body: some View {
         HStack(spacing: 6) {
@@ -172,6 +303,13 @@ private struct NameRow: View {
                     }
                 }
             }
+            Button("Move Up") { wave.move(.signal(signal.id), by: -1) }
+            Button("Move Down") { wave.move(.signal(signal.id), by: 1) }
+            Button("Insert Divider Above") {
+                wave.selected = signal.id
+                renaming = WaveRename(target: .divider(wave.addDivider()), name: "Divider")
+            }
+            Divider()
             Button("Remove from Waveform") { wave.hide(signal.id) }
         }
         .help(signal.path)
@@ -185,37 +323,90 @@ private struct Traces: View {
     let width: CGFloat
 
     var body: some View {
-        let rows = max(wave.shown.count, 1)
+        let rows = max(wave.rows.count, 1)
         ZStack {
             Canvas { context, size in
                 guard let waveform = wave.waveform else { return }
-                WaveformPainter(waveform: waveform, shown: wave.shown, start: wave.viewStart, end: wave.viewEnd,
+                WaveformPainter(waveform: waveform, rows: wave.rows, start: wave.viewStart, end: wave.viewEnd,
                                 cursor: wave.cursor, selected: wave.selected, rowHeight: WaveformView.rowHeight,
-                                radix: { wave.radix(for: $0) })
+                                radix: { wave.radix(for: $0) }, markers: wave.markers)
                     .drawTraces(&context, size: size)
             }
             WaveformInteraction(
                 onCursor: { wave.setCursor(tick: wave.viewStart + Double($0 / width) * wave.span) },
                 onPan: { wave.pan(byTicks: Double($0 / width) * wave.span) },
-                onZoom: { factor, x in wave.zoom(by: Double(factor), anchor: Double(min(max(x / width, 0), 1))) })
+                onZoom: { factor, x in wave.zoom(by: Double(factor), anchor: Double(min(max(x / width, 0), 1))) },
+                onKey: { key in
+                    guard key == "m" else { return false }
+                    wave.addMarker()
+                    return true
+                })
         }
         .frame(width: width, height: CGFloat(rows) * WaveformView.rowHeight)
     }
 }
 
+/// The time axis, with the cursor and the markers. Dragging a marker moves it; clicking one picks it (two picked
+/// markers show the time between them); clicking elsewhere moves the cursor.
 private struct Ruler: View {
     @EnvironmentObject private var wave: WaveformModel
     let width: CGFloat
+    @Binding var renaming: WaveRename?
+    @State private var dragging: UUID?
+    @State private var moved = false
 
     var body: some View {
         Canvas { context, size in
             guard let waveform = wave.waveform else { return }
-            WaveformPainter(waveform: waveform, shown: [], start: wave.viewStart, end: wave.viewEnd,
-                            cursor: wave.cursor, selected: nil, rowHeight: WaveformView.rowHeight, radix: { _ in .hex })
+            WaveformPainter(waveform: waveform, rows: [], start: wave.viewStart, end: wave.viewEnd,
+                            cursor: wave.cursor, selected: nil, rowHeight: WaveformView.rowHeight, radix: { _ in .hex },
+                            markers: wave.markers, selectedMarkers: wave.selectedMarkers)
                 .drawRuler(&context, size: size)
         }
         .frame(width: width, height: WaveformView.rulerHeight)
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { drag in
+                    if dragging == nil, !moved {
+                        dragging = wave.marker(near: tick(drag.startLocation.x), within: ticks(6))?.id
+                        if dragging == nil { moved = true }    // not on a marker: the gesture moves the cursor
+                    }
+                    if let dragging {
+                        if abs(drag.translation.width) > 2 { wave.moveMarker(dragging, toTick: tick(drag.location.x)) }
+                    } else {
+                        wave.setCursor(tick: tick(drag.location.x))
+                    }
+                }
+                .onEnded { drag in
+                    if let dragging, abs(drag.translation.width) <= 2 { wave.selectMarker(dragging) }
+                    dragging = nil
+                    moved = false
+                }
+        )
+        .contextMenu {
+            if wave.markers.isEmpty {
+                Button("Add Marker") { wave.addMarker() }
+            } else {
+                Button("Add Marker") { wave.addMarker() }
+                Divider()
+                ForEach(wave.markers) { marker in
+                    Menu("\(marker.name) at \(wave.label(forTick: Double(marker.time)))") {
+                        Button("Rename…") { renaming = WaveRename(target: .marker(marker.id), name: marker.name) }
+                        Button("Move to Cursor") { if let c = wave.cursor { wave.moveMarker(marker.id, toTick: Double(c)) } }
+                            .disabled(wave.cursor == nil)
+                        Button("Delete") { wave.deleteMarker(marker.id) }
+                    }
+                }
+                Divider()
+                Button("Delete All Markers") { wave.deleteAllMarkers() }
+            }
+        }
+        .help("Drag a marker to move it, click two markers to measure between them. Right-click to rename or delete.")
     }
+
+    private func tick(_ x: CGFloat) -> Double { wave.viewStart + Double(x / width) * wave.span }
+    private func ticks(_ points: CGFloat) -> Double { Double(points / width) * wave.span }
 }
 
 // MARK: Painting
@@ -223,13 +414,15 @@ private struct Ruler: View {
 /// Draws traces and the time ruler. A plain value so it can be tested and so a redraw reads nothing it wasn't given.
 struct WaveformPainter {
     let waveform: Waveform
-    let shown: [Int]
+    let rows: [WaveRow]
     let start: Double
     let end: Double
     let cursor: UInt64?
     let selected: Int?
     let rowHeight: CGFloat
     let radix: (Int) -> WaveRadix
+    var markers: [WaveMarker] = []
+    var selectedMarkers: [UUID] = []
 
     private var span: Double { max(end - start, 1e-9) }
 
@@ -280,6 +473,18 @@ struct WaveformPainter {
             let text = context.resolve(Text(waveform.formatTime(tick)).font(.system(size: 10)).foregroundStyle(.secondary))
             context.draw(text, at: CGPoint(x: px + 3, y: 8), anchor: .leading)
         }
+        for marker in markers {
+            let px = x(Double(marker.time), size.width)
+            guard px >= -40 && px <= size.width + 40 else { continue }
+            let picked = selectedMarkers.contains(marker.id)
+            let color = picked ? Accent.warning : Color.secondary
+            var flag = Path()
+            flag.move(to: CGPoint(x: px, y: size.height))
+            flag.addLine(to: CGPoint(x: px, y: size.height - 10))
+            context.stroke(flag, with: .color(color), lineWidth: picked ? 2 : 1)
+            let label = context.resolve(Text(marker.name).font(.system(size: 9, weight: .semibold)).foregroundStyle(color))
+            context.draw(label, at: CGPoint(x: px + 3, y: size.height - 6), anchor: .leading)
+        }
         if let cursor {
             let px = x(Double(cursor), size.width)
             if px >= 0 && px <= size.width {
@@ -304,8 +509,18 @@ struct WaveformPainter {
         }
         context.stroke(grid, with: .color(.primary.opacity(0.07)), lineWidth: 1)
 
-        for (row, id) in shown.enumerated() {
+        for (row, item) in rows.enumerated() {
             let top = CGFloat(row) * rowHeight
+            guard case .signal(let id) = item else {
+                if case .divider = item {
+                    context.fill(Path(CGRect(x: 0, y: top, width: size.width, height: rowHeight)), with: .color(.primary.opacity(0.05)))
+                    var line = Path()
+                    line.move(to: CGPoint(x: 0, y: top + rowHeight / 2))
+                    line.addLine(to: CGPoint(x: size.width, y: top + rowHeight / 2))
+                    context.stroke(line, with: .color(.secondary.opacity(0.4)), lineWidth: 1)
+                }
+                continue
+            }
             if selected == id {
                 context.fill(Path(CGRect(x: 0, y: top, width: size.width, height: rowHeight)), with: .color(.primary.opacity(0.07)))
             }
@@ -320,6 +535,15 @@ struct WaveformPainter {
             } else {
                 drawBit(&context, signal: signal, top: top, width: size.width)
             }
+        }
+
+        for marker in markers {
+            let px = x(Double(marker.time), size.width)
+            guard px >= 0 && px <= size.width else { continue }
+            var line = Path()
+            line.move(to: CGPoint(x: px, y: 0))
+            line.addLine(to: CGPoint(x: px, y: size.height))
+            context.stroke(line, with: .color(.secondary.opacity(0.8)), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
         }
 
         if let cursor {
