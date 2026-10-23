@@ -237,27 +237,16 @@ private struct DesignTimingSummaryPage: View {
     let paths: TimingPathSet
 
     var body: some View {
-        ScrollView([.vertical, .horizontal]) {
+        ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 36) {
-                    column("Setup", [
-                        ("Worst Negative Slack (WNS):", ns(summary.wns), worst(.setup)),
-                        ("Total Negative Slack (TNS):", ns(summary.tns), nil),
-                        ("Number of Failing Endpoints:", count(summary.tnsFailingEndpoints), nil),
-                        ("Total Number of Endpoints:", count(summary.tnsTotalEndpoints), nil),
-                    ], failing: (summary.wns ?? 0) < 0)
-                    column("Hold", [
-                        ("Worst Hold Slack (WHS):", ns(summary.whs), worst(.hold)),
-                        ("Total Hold Slack (THS):", ns(summary.ths), nil),
-                        ("Number of Failing Endpoints:", count(summary.thsFailingEndpoints), nil),
-                        ("Total Number of Endpoints:", count(summary.thsTotalEndpoints), nil),
-                    ], failing: (summary.whs ?? 0) < 0)
-                    column("Pulse Width", [
-                        ("Worst Pulse Width Slack (WPWS):", ns(summary.wpws), nil),
-                        ("Total Pulse Width Negative Slack (TPWS):", ns(summary.tpws), nil),
-                        ("Number of Failing Endpoints:", count(summary.tpwsFailingEndpoints), nil),
-                        ("Total Number of Endpoints:", count(summary.tpwsTotalEndpoints), nil),
-                    ], failing: (summary.wpws ?? 0) < 0)
+                // Side by side as in Vivado when the pane is wide enough, else Pulse Width under the other two.
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 32) { setup; hold; pulseWidth }
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(alignment: .top, spacing: 32) { setup; hold }
+                        pulseWidth
+                    }
+                    VStack(alignment: .leading, spacing: 14) { setup; hold; pulseWidth }
                 }
                 Group {
                     if !summary.isTimed {
@@ -275,6 +264,33 @@ private struct DesignTimingSummaryPage: View {
         }
     }
 
+    private var setup: some View {
+        column("Setup", [
+            ("Worst Negative Slack (WNS):", ns(summary.wns), worst(.setup)),
+            ("Total Negative Slack (TNS):", ns(summary.tns), nil),
+            ("Number of Failing Endpoints:", count(summary.tnsFailingEndpoints), nil),
+            ("Total Number of Endpoints:", count(summary.tnsTotalEndpoints), nil),
+        ], failing: (summary.wns ?? 0) < 0)
+    }
+
+    private var hold: some View {
+        column("Hold", [
+            ("Worst Hold Slack (WHS):", ns(summary.whs), worst(.hold)),
+            ("Total Hold Slack (THS):", ns(summary.ths), nil),
+            ("Number of Failing Endpoints:", count(summary.thsFailingEndpoints), nil),
+            ("Total Number of Endpoints:", count(summary.thsTotalEndpoints), nil),
+        ], failing: (summary.whs ?? 0) < 0)
+    }
+
+    private var pulseWidth: some View {
+        column("Pulse Width", [
+            ("Worst Pulse Width Slack (WPWS):", ns(summary.wpws), nil),
+            ("Total Pulse Width Negative Slack (TPWS):", ns(summary.tpws), nil),
+            ("Number of Failing Endpoints:", count(summary.tpwsFailingEndpoints), nil),
+            ("Total Number of Endpoints:", count(summary.tpwsTotalEndpoints), nil),
+        ], failing: (summary.wpws ?? 0) < 0)
+    }
+
     private func column(_ title: String, _ rows: [(String, String, TimingPath?)], failing: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.callout.weight(.semibold))
@@ -288,7 +304,7 @@ private struct DesignTimingSummaryPage: View {
                                 .foregroundStyle(failing ? Accent.error : Accent.active)
                                 .help("Show the worst path")
                         } else {
-                            Text(value).foregroundStyle(failing && label.contains("Failing") && value != "0" ? Accent.error : .primary)
+                            Text(value).foregroundStyle(failing && (label.hasPrefix("Worst") || label.contains("Failing") && value != "0") ? Accent.error : .primary)
                         }
                     }
                     .font(.callout)
