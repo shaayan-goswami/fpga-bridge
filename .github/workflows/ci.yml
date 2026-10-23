@@ -81,6 +81,9 @@ jobs:
           $unlock = @'
           (if exist .fpga-bridge\lock rmdir /s /q .fpga-bridge\lock)
           '@
+          $readManifest = @'
+          type .fpga-bridge\demo.runs\synth_1\manifest.json
+          '@
 
           # The first acquire works from a clean profile and records the owner.
           if ((Invoke-Cmd $acquire) -ne 0) { throw 'first acquire failed' }
@@ -115,6 +118,14 @@ jobs:
           if ((Invoke-Cmd $unlock) -ne 0) { throw 'unlock failed' }
           if (Test-Path .fpga-bridge\lock) { throw 'lock survived unlock' }
           if ((Invoke-Cmd $unlock) -ne 0) { throw 'unlock with no lock should succeed' }
+
+          # Reading a checkpoint's manifest fails when there is none, and prints it when there is.
+          if ((Invoke-Cmd $readManifest) -eq 0) { throw 'reading a missing manifest should fail' }
+          New-Item -ItemType Directory -Force .fpga-bridge\demo.runs\synth_1 | Out-Null
+          Set-Content .fpga-bridge\demo.runs\synth_1\manifest.json '{"project":"demo"}'
+          Set-Content -Path "$dir\line.cmd" -Value @('@echo off', $readManifest) -Encoding ascii
+          $printed = (& cmd.exe /c "$dir\line.cmd" | Out-String).Trim()
+          if ($printed -ne '{"project":"demo"}') { throw "manifest read back wrong: [$printed]" }
           Write-Host 'cmd.exe command lines behave as expected'
 
       - name: Cancel kills the marked process tree and nothing else
@@ -215,6 +226,9 @@ jobs:
           read -r -d '' BUILD <<'EOF' || true
           bash -lc 'cd .fpga-bridge/demo && '\''/tmp/fpga-bridge-ci/vivado'\'' -mode batch -nojournal -nolog -source build.tcl -tclargs fpgabridge-a1b2c3d4'
           EOF
+          read -r -d '' READ_MANIFEST <<'EOF' || true
+          bash -lc 'cat .fpga-bridge/demo.runs/synth_1/manifest.json'
+          EOF
           read -r -d '' CANCEL <<'EOF' || true
           bash -lc 'pkill -9 -f '\''[f]pgabridge-a1b2c3d4'\'''
           EOF
@@ -237,6 +251,12 @@ jobs:
           mkdir -p .fpga-bridge/demo/out
           remote "$PREP"
           [ ! -e .fpga-bridge/demo ]
+
+          # A checkpoint's manifest is printed, and reading one that isn't there fails.
+          if remote "$READ_MANIFEST" 2>/dev/null; then echo "a missing manifest was read"; exit 1; fi
+          mkdir -p .fpga-bridge/demo.runs/synth_1
+          echo '{"project":"demo"}' > .fpga-bridge/demo.runs/synth_1/manifest.json
+          [ "$(remote "$READ_MANIFEST")" = '{"project":"demo"}' ]
 
           # A Vivado launcher is found only when it is executable.
           [ "$(remote "$EXISTS")" = "missing" ]

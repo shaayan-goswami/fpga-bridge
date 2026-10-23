@@ -14,6 +14,31 @@ public enum RunKind: Hashable, CaseIterable, Sendable {
         case .bitstream: "Bitstream"
         }
     }
+
+    /// The step's name in Vivado's terms: the run, or `write_bitstream` for the bitstream step of impl_1.
+    public var stepName: String { self == .bitstream ? "write_bitstream" : runName }
+
+    /// The checkpoint the step leaves in its run folder on the build machine, for the next step to start from.
+    /// The bitstream step leaves none.
+    public var checkpoint: String? {
+        switch self {
+        case .synthesis: "post_synth"
+        case .implementation: "post_route"
+        case .bitstream: nil
+        }
+    }
+
+    /// The step whose checkpoint this one opens when it runs on its own.
+    public var startsFrom: RunKind? {
+        switch self {
+        case .synthesis: nil
+        case .implementation: .synthesis
+        case .bitstream: .implementation
+        }
+    }
+
+    /// The steps in flow order.
+    public static let flow: [RunKind] = [.synthesis, .implementation, .bitstream]
 }
 
 /// Vivado's rules for what a run command has to do first.

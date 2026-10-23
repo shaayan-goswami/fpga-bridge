@@ -1,0 +1,48 @@
+#!/bin/bash
+# Fake Vivado running a generated build.tcl, shared by the Windows stub (`ssh`) and the Linux launcher
+# (`vivado-linux`). It runs in the job folder and follows the script's flow commands the way Vivado would: clears run
+# folders, opens checkpoints (which must exist), writes checkpoints with their manifests, and writes the reports and
+# bitstream each step leaves in out/.
+#
+# Environment: FAKE_HOME, FAKE_REPORT_DIR, and FAKE_VIVADO_MODE "fail-impl" (synthesis works, implementation fails).
+set -u
+HOME_="${FAKE_HOME:?FAKE_HOME not set}"
+REPORTS="${FAKE_REPORT_DIR:?FAKE_REPORT_DIR not set}"
+
+[ -f build.tcl ] || { echo "ERROR: build.tcl not found"; exit 1; }
+[ -d "$HOME_/.fpga-bridge/lock" ] || { echo "ERROR: the build ran without holding the lock"; exit 1; }
+# Every file the script reads must have been staged at the relative path it names.
+for f in $(grep -E '^read_(verilog|vhdl|xdc)' build.tcl | grep -oE '\{[^}]+\}' | tr -d '{}'); do
+  [ -f "$f" ] || { echo "ERROR: [Common 17-69] File '$f' does not exist"; exit 1; }
+done
+
+runs="$(sed -n 's/^set fpgabridge_runs {\(.*\)}$/\1/p' build.tcl)"
+[ -n "$runs" ] || { echo "ERROR: the script doesn't name its run folders"; exit 1; }
+mkdir -p out
+while IFS= read -r line; do
+  case "$line" in
+    "fpgabridge_begin "*)
+      for run in ${line#fpgabridge_begin }; do rm -rf "${runs:?}/$run"; done ;;
+    "open_checkpoint "*)
+      file="${line#open_checkpoint }"
+      [ -f "$file" ] || { echo "ERROR: [Common 17-69] File '$file' does not exist"; exit 1; }
+      echo "fake-vivado: opened $file" ;;
+    "synth_design -top "*)
+      cp "$REPORTS/utilization.rpt" out/synth_utilization.rpt
+      echo "fake-vivado: synthesized" ;;
+    "opt_design"*)
+      if [ "${FAKE_VIVADO_MODE:-pass}" = "fail-impl" ]; then echo "ERROR: [Place 30-58] fake placement failure"; exit 1; fi ;;
+    "fpgabridge_checkpoint "*)
+      set -- $line
+      mkdir -p "$runs/$2"
+      echo "fake checkpoint" > "$runs/$2/$3.dcp"
+      cp "runs/$2.json" "$runs/$2/manifest.json" || exit 1 ;;
+    "report_timing_summary -file out/timing_summary.rpt")
+      cp "$REPORTS/timing_summary.rpt" out/ ;;
+    "report_utilization -file out/utilization.rpt")
+      cp "$REPORTS/utilization.rpt" out/ ;;
+    "write_bitstream "*)
+      echo "fake bitstream" > "${line##* }" ;;
+  esac
+done < build.tcl
+echo "fake-vivado: done"

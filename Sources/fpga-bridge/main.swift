@@ -329,14 +329,28 @@ struct PartCommand: ParsableCommand {
     }
 }
 
+extension RunKind: ExpressibleByArgument {
+    public init?(argument: String) {
+        switch argument {
+        case "synth", "synth_1", "synthesis": self = .synthesis
+        case "impl", "impl_1", "implementation": self = .implementation
+        case "bitstream", "write_bitstream": self = .bitstream
+        default: return nil
+        }
+    }
+}
+
 struct Script: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Print the Vivado Tcl script that `build` would run, including the project's settings.")
 
+    @Option(help: "Print the script for one step on its own instead: synth, impl or bitstream.") var step: RunKind?
+
     func run() throws {
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let project = try Project.load(from: root)
-        print(project.buildScript(sources: try project.resolveSources(in: root), constraints: try project.resolveConstraints(in: root)), terminator: "")
+        print(project.flowScript(steps: step.map { [$0] } ?? RunKind.flow, sources: try project.resolveSources(in: root),
+                                 constraints: try project.resolveConstraints(in: root)), terminator: "")
     }
 }
 

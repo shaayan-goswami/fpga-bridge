@@ -20,6 +20,7 @@ final class CIWorkflowTests: XCTestCase {
             "release": Remote.releaseLockCommand,
             "unlock": Remote.unlockCommand,
             "cancel": Remote.cancelCommand(token: "a1b2c3d4"),
+            "read a checkpoint's manifest": RemoteCommands(.windows).readFile(#".fpga-bridge\demo.runs\synth_1\manifest.json"#),
         ]
         for (name, command) in commands {
             XCTAssertTrue(text.contains(command), "ci.yml no longer contains the \(name) command line:\n\(command)")
@@ -48,6 +49,7 @@ final class CIWorkflowTests: XCTestCase {
             "vivado exists": linux.vivadoExists(vivado),
             "build": linux.build(vivadoPath: vivado, jobDir: ".fpga-bridge/demo", token: "a1b2c3d4"),
             "cancel": linux.cancel(token: "a1b2c3d4"),
+            "read a checkpoint's manifest": linux.readFile(".fpga-bridge/demo.runs/synth_1/manifest.json"),
         ]
         for (name, command) in commands {
             XCTAssertTrue(text.contains(command), "ci.yml no longer contains the Linux \(name) command line:\n\(command)")

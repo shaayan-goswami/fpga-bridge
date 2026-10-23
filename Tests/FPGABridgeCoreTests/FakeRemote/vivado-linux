@@ -3,7 +3,8 @@
 #   vivado -mode batch -nojournal -nolog -source <script> [-tclargs fpgabridge-<token>]
 # inside a job directory (a build) or the home directory (a one-off script).
 #
-# FAKE_VIVADO_MODE: "pass" (default), "fail", "hang" (runs until killed) or "lost" (connection drops mid-run).
+# FAKE_VIVADO_MODE: "pass" (default), "fail", "fail-impl", "hang" (runs until killed) or "lost" (connection drops
+# mid-run). A build runs FAKE_FLOW (fake-flow).
 set -u
 HOME_="${FAKE_HOME:?FAKE_HOME not set}"
 
@@ -24,14 +25,8 @@ if [ -z "$marker" ]; then
   exit 0
 fi
 
-# A full build.
-[ -f build.tcl ] || { echo "ERROR: build.tcl not found"; exit 1; }
+# A build: run build.tcl the way Vivado would.
 echo "fake-vivado: $0"
-[ -d "$HOME_/.fpga-bridge/lock" ] || { echo "ERROR: the build ran without holding the lock"; exit 1; }
-# Every file the script reads must have been staged at the relative path it names.
-for f in $(grep -E '^read_(verilog|vhdl|xdc)' build.tcl | grep -oE '\{[^}]+\}' | tr -d '{}'); do
-  [ -f "$f" ] || { echo "ERROR: [Common 17-69] File '$f' does not exist"; exit 1; }
-done
 case "${FAKE_VIVADO_MODE:-pass}" in
   fail) echo "ERROR: [Synth 8-439] module 'missing_module' not declared"; exit 1 ;;
   lost) echo "client_loop: send disconnect: Broken pipe" >&2; exit 255 ;;
@@ -41,9 +36,4 @@ case "${FAKE_VIVADO_MODE:-pass}" in
     echo $$ > "$HOME_/.pid"; : > "$HOME_/.running"; echo "fake-vivado: running"
     exec -a "fake-vivado $marker" sleep 30 ;;
 esac
-top="$(sed -n 's/^synth_design -top \([A-Za-z0-9_-]*\) .*/\1/p' build.tcl)"
-mkdir -p out
-cp "${FAKE_REPORT_DIR:?}/timing_summary.rpt" out/
-cp "${FAKE_REPORT_DIR:?}/utilization.rpt" out/
-echo "fake bitstream" > "out/${top}.bit"
-echo "fake-vivado: done"
+exec "${FAKE_FLOW:?FAKE_FLOW not set}"

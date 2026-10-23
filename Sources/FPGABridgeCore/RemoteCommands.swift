@@ -60,6 +60,14 @@ struct RemoteCommands: Sendable {
         }
     }
 
+    /// Prints a file, failing if it doesn't exist. Used for a checkpoint's manifest.
+    func readFile(_ file: String) -> String {
+        switch os {
+        case .windows: return Remote.readFileCommand(file)
+        case .linux: return wrap("cat \(file)")
+        }
+    }
+
     /// The text of a command that removes a directory tree. For tests that look for it in the SSH calls.
     func removeDirectory(_ dir: String) -> String {
         os == .windows ? "rmdir /s /q \(dir)" : "rm -rf \(dir)"

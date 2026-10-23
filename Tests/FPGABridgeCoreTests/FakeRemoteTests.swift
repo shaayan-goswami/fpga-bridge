@@ -25,7 +25,7 @@ class FakeRemoteTests: XCTestCase {
     var log: URL!
     var originalPath: String!
     let envKeys = ["FAKE_HOME", "FAKE_LOG", "FAKE_REPORT_DIR", "FAKE_VIVADO_PATH", "FAKE_VIVADO_BIN",
-                   "FAKE_SSH_FAIL", "FAKE_VIVADO_MODE", "FAKE_SCP_FAIL"]
+                   "FAKE_SSH_FAIL", "FAKE_VIVADO_MODE", "FAKE_SCP_FAIL", "FAKE_FLOW"]
 
     override func setUpWithError() throws {
         let fm = FileManager.default
@@ -51,6 +51,11 @@ class FakeRemoteTests: XCTestCase {
             try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: launcher.path)
             setenv("FAKE_VIVADO_BIN", launcher.path, 1)
         }
+        // The fake Vivado both stubs run for a build.tcl.
+        let flow = tmp.appendingPathComponent("fake-flow")
+        try fm.copyItem(at: try XCTUnwrap(Bundle.module.url(forResource: "fake-flow", withExtension: nil, subdirectory: "FakeRemote")), to: flow)
+        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: flow.path)
+        setenv("FAKE_FLOW", flow.path, 1)
         for (fixture, name) in [("timing_pass", "timing_summary.rpt"), ("utilization_7series", "utilization.rpt")] {
             let url = try XCTUnwrap(Bundle.module.url(forResource: fixture, withExtension: "rpt", subdirectory: "Fixtures"))
             try fm.copyItem(at: url, to: reports.appendingPathComponent(name))
@@ -276,6 +281,178 @@ class FakeRemoteTests: XCTestCase {
         _ = try Remote(config: keyed).build(project: project, root: root)
         XCTAssertEqual(calls.count, 6)
         XCTAssertTrue(calls.allSatisfy { $0.contains("-i /keys/id_test") }, "\(calls)")
+    }
+
+    // MARK: Separate runs
+
+    func buildFile(_ name: String, in root: URL) -> Bool {
+        FileManager.default.fileExists(atPath: root.appendingPathComponent("build/\(name)").path)
+    }
+
+    var runsFolder: String { ".fpga-bridge/demo.runs" }
+
+    func checkpointManifest(_ run: String) -> BuildManifest? {
+        (try? String(contentsOf: remoteFile("\(runsFolder)/\(run)/manifest.json"), encoding: .utf8)).flatMap(BuildManifest.parse)
+    }
+
+    func testEachStepRunsAloneFromTheCheckpointBeforeIt() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+
+        let synth = try remote.run([.synthesis], project: project, root: root, log: { _ in })
+        XCTAssertEqual(synth, Remote.StepResult(status: 0, completed: [.synthesis]))
+        XCTAssertTrue(buildFile("synth_utilization.rpt", in: root))
+        XCTAssertFalse(buildFile("timing_summary.rpt", in: root), "synthesis alone doesn't implement")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: remoteFile("\(runsFolder)/synth_1/post_synth.dcp").path))
+        XCTAssertNotNil(checkpointManifest("synth_1")?.runs?["synth_1"], "the checkpoint's manifest is kept next to it")
+
+        let impl = try remote.run([.implementation], project: project, root: root, log: { _ in })
+        XCTAssertEqual(impl, Remote.StepResult(status: 0, completed: [.implementation]))
+        let tcl = try String(contentsOf: remoteFile(".fpga-bridge/demo/build.tcl"), encoding: .utf8)
+        XCTAssertTrue(tcl.contains("open_checkpoint ../demo.runs/synth_1/post_synth.dcp"))
+        XCTAssertFalse(tcl.contains("synth_design -top"), "implementation doesn't synthesize again")
+        XCTAssertTrue(buildFile("synth_utilization.rpt", in: root), "the synthesis results stay")
+        XCTAssertTrue(buildFile("timing_summary.rpt", in: root))
+        XCTAssertFalse(buildFile("top.bit", in: root))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: remoteFile("\(runsFolder)/impl_1/post_route.dcp").path))
+
+        let bit = try remote.run([.bitstream], project: project, root: root, log: { _ in })
+        XCTAssertEqual(bit, Remote.StepResult(status: 0, completed: [.bitstream]))
+        for file in ["top.bit", "timing_summary.rpt", "synth_utilization.rpt"] { XCTAssertTrue(buildFile(file, in: root), file) }
+        let manifest = try XCTUnwrap(BuildManifest.load(from: root.appendingPathComponent("build")))
+        XCTAssertEqual(Set(manifest.runs?.keys ?? [:].keys), ["synth_1", "impl_1", "write_bitstream"])
+        XCTAssertEqual(manifest.changes(project: project, root: root), [])
+    }
+
+    func testAConstraintChangeRerunsImplementationButNotSynthesis() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        XCTAssertEqual(try remote.build(project: project, root: root), 0)
+        let synthesized = try XCTUnwrap(checkpointManifest("synth_1"))
+
+        try "# pins, moved".write(to: root.appendingPathComponent("constraints/pins.xdc"), atomically: true, encoding: .utf8)
+        let impl = try remote.run([.implementation], project: project, root: root, log: { _ in })
+        XCTAssertTrue(impl.succeeded, "the synthesized netlist doesn't depend on the constraints: \(impl)")
+        XCTAssertEqual(checkpointManifest("synth_1"), synthesized, "synthesis was not run again")
+        let tcl = try String(contentsOf: remoteFile(".fpga-bridge/demo/build.tcl"), encoding: .utf8)
+        XCTAssertTrue(tcl.contains("read_xdc {constraints/pins.xdc}"), "the new constraints are read on top of the checkpoint")
+    }
+
+    func testASourceChangeMeansSynthesisFirstAndSaysWhy() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        XCTAssertEqual(try remote.build(project: project, root: root), 0)
+        try "module top(); wire x; endmodule".write(to: root.appendingPathComponent("src/top.v"), atomically: true, encoding: .utf8)
+        let before = calls.count
+
+        let impl = try remote.run([.implementation], project: project, root: root, log: { _ in })
+        XCTAssertEqual(impl.needs?.run, .synthesis)
+        XCTAssertTrue(impl.needs?.reason.contains("src/top.v changed since the synth_1 checkpoint on buildbox was made") == true,
+                      impl.needs?.reason ?? "")
+        XCTAssertTrue(impl.completed.isEmpty)
+        XCTAssertFalse(calls.dropFirst(before).contains { $0.contains("-tclargs") }, "Vivado must not run on a stale checkpoint")
+        XCTAssertFalse(lockExists)
+    }
+
+    func testAMissingCheckpointMeansTheEarlierRunFirst() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        let impl = try remote.run([.implementation], project: project, root: root, log: { _ in })
+        XCTAssertEqual(impl.needs, Remote.CheckpointProblem(run: .synthesis, reason: "there is no synth_1 checkpoint on buildbox"))
+
+        XCTAssertTrue(try remote.run([.synthesis], project: project, root: root, log: { _ in }).succeeded)
+        let bit = try remote.run([.bitstream], project: project, root: root, log: { _ in })
+        XCTAssertEqual(bit.needs?.run, .implementation, "write_bitstream starts from impl_1's checkpoint")
+    }
+
+    func testSynthesisClearsTheImplementationResultsItMakesStale() throws {
+        let (project, root) = try makeProject()
+        let remote = Remote(config: config)
+        XCTAssertEqual(try remote.build(project: project, root: root), 0)
+        XCTAssertTrue(buildFile("top.bit", in: root))
+
+        XCTAssertTrue(try remote.run([.synthesis], project: project, root: root, log: { _ in }).succeeded)
+        XCTAssertTrue(buildFile("synth_utilization.rpt", in: root))
+        for file in ["top.bit", "timing_summary.rpt", "utilization.rpt"] { XCTAssertFalse(buildFile(file, in: root), "\(file) is from the old netlist") }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: remoteFile("\(runsFolder)/impl_1").path), "nor is its checkpoint kept")
+        XCTAssertEqual(BuildManifest.load(from: root.appendingPathComponent("build"))?.runs?.keys.sorted(), ["synth_1"])
+    }
+
+    func testAFailedImplementationSaysSoAndKeepsTheSynthesisCheckpoint() throws {
+        setenv("FAKE_VIVADO_MODE", "fail-impl", 1)
+        let (project, root) = try makeProject()
+        let result = try Remote(config: config).run(RunKind.flow, project: project, root: root, log: { _ in })
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.failed, .implementation)
+        XCTAssertNotNil(checkpointManifest("synth_1"), "synthesis finished, so implementation can start from it next time")
+        XCTAssertFalse(buildFile("synth_utilization.rpt", in: root), "nothing is fetched from a failed run")
+        XCTAssertFalse(lockExists)
+    }
+
+    func testAFailedSynthesisIsTheStepThatFailed() throws {
+        setenv("FAKE_VIVADO_MODE", "fail", 1)
+        let (project, root) = try makeProject()
+        XCTAssertEqual(try Remote(config: config).run(RunKind.flow, project: project, root: root, log: { _ in }).failed, .synthesis)
+    }
+
+    func testTheStagedManifestsGoWithTheScript() throws {
+        let (project, root) = try makeProject()
+        _ = try Remote(config: config).run([.synthesis, .implementation], project: project, root: root, log: { _ in })
+        for run in ["synth_1", "impl_1"] {
+            XCTAssertNotNil(checkpointManifest(run), run)
+        }
+        let synth = try XCTUnwrap(checkpointManifest("synth_1")), impl = try XCTUnwrap(checkpointManifest("impl_1"))
+        XCTAssertEqual(impl.runs?["synth_1"], synth.runs?["synth_1"], "impl_1's record names the netlist it started from")
+        XCTAssertNil(synth.runs?["impl_1"])
+    }
+
+    // MARK: Stop (the app's Stop button)
+
+    func testStopFromAnotherThreadKillsVivadoReleasesTheLockAndFetchesNothing() throws {
+        setenv("FAKE_VIVADO_MODE", "hang", 1)
+        let (project, root) = try makeProject()
+        let running = remoteFile(".running")
+        let job = RemoteJob()
+        let pressed = expectation(description: "Stop was pressed")
+        Thread {
+            let deadline = Date().addingTimeInterval(20)
+            while !FileManager.default.fileExists(atPath: running.path), Date() < deadline { Thread.sleep(forTimeInterval: 0.02) }
+            job.cancel()
+            pressed.fulfill()
+        }.start()
+        defer { wait(for: [pressed], timeout: 25) }
+
+        let started = Date()
+        let box = LogBox()
+        let result = try Remote(config: config).run([.synthesis], project: project, root: root, job: job) { box.append($0) }
+        XCTAssertEqual(result.status, Shell.interruptedStatus)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 20, "stopping doesn't wait for Vivado")
+        XCTAssertTrue(box.value.contains("Stopping Vivado on buildbox"), box.value)
+        XCTAssertTrue(calls.contains { $0.contains(Self.os == .windows ? "taskkill" : "pkill") }, "Vivado is killed by its marker: \(calls)")
+        if Self.os == .linux {
+            let pid = try XCTUnwrap(Int32(try String(contentsOf: remoteFile(".pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+            for _ in 0..<100 where kill(pid, 0) == 0 { Thread.sleep(forTimeInterval: 0.05) }
+            XCTAssertNotEqual(kill(pid, 0), 0, "the fake Vivado is still running")
+        }
+        XCTAssertFalse(lockExists, "the lock is released")
+        XCTAssertEqual(calls.filter { $0.hasPrefix("scp") }.count, 1, "no results fetch after stopping")
+        XCTAssertNil(checkpointManifest("synth_1"))
+    }
+
+    func testAJobStoppedBeforeItStartsDoesNothingRemote() throws {
+        let (project, root) = try makeProject()
+        let job = RemoteJob()
+        job.cancel()
+        let result = try Remote(config: config).run([.synthesis], project: project, root: root, job: job, log: { _ in })
+        XCTAssertEqual(result.status, Shell.interruptedStatus)
+        XCTAssertTrue(calls.isEmpty, "\(calls)")
+    }
+
+    func testLaunchRunsJobsBecomeVivadosThreadLimit() throws {
+        let (project, root) = try makeProject()
+        _ = try Remote(config: config).run([.synthesis], project: project, root: root, options: Project.FlowOptions(maxThreads: 6), log: { _ in })
+        let tcl = try String(contentsOf: remoteFile(".fpga-bridge/demo/build.tcl"), encoding: .utf8)
+        XCTAssertTrue(tcl.contains("\nset_param general.maxThreads 6\n"), tcl)
     }
 
     // MARK: Lock

@@ -9,8 +9,9 @@
 #   FAKE_LOG           file that every invocation is appended to
 #   FAKE_SSH_FAIL      "permission" or "refused" to simulate a failed login
 #   FAKE_VIVADO_PATH   the one vivado.bat path that "exists"
-#   FAKE_VIVADO_MODE   "pass" (default), "fail", "hang" (runs until killed) or "lost" (connection drops mid-run)
+#   FAKE_VIVADO_MODE   "pass" (default), "fail", "fail-impl", "hang" (runs until killed) or "lost" (connection drops)
 #   FAKE_REPORT_DIR    directory holding timing_summary.rpt and utilization.rpt for a passing build
+#   FAKE_FLOW          the fake Vivado that runs a build.tcl (fake-flow)
 set -u
 HOME_="${FAKE_HOME:?FAKE_HOME not set}"
 LOG="${FAKE_LOG:-/dev/null}"
@@ -84,26 +85,21 @@ if [[ "$cmd" =~ $re ]]; then
   dir="$HOME_/.fpga-bridge/$name"
   [ -d "$dir" ] || { echo "The system cannot find the path specified." >&2; exit 1; }
   cd "$dir" || exit 1
-  [ -f build.tcl ] || { echo "ERROR: build.tcl not found" ; exit 1; }
   echo "fake-vivado: $viv"
-  [ -d "$HOME_/.fpga-bridge/lock" ] || { echo "ERROR: the build ran without holding the lock"; exit 1; }
-  # Every file the script reads must have been staged at the relative path it names.
-  for f in $(grep -E '^read_(verilog|vhdl|xdc)' build.tcl | grep -oE '\{[^}]+\}' | tr -d '{}'); do
-    [ -f "$f" ] || { echo "ERROR: [Common 17-69] File '$f' does not exist"; exit 1; }
-  done
   case "${FAKE_VIVADO_MODE:-pass}" in
     fail) echo "ERROR: [Synth 8-439] module 'missing_module' not declared"; exit 1 ;;
     lost) echo "client_loop: send disconnect: Broken pipe" >&2; exit 255 ;;
     # The marker file says "Vivado is up and running", which is what a test must wait for before pressing Ctrl-C.
     hang) : > "$HOME_/.running"; echo "fake-vivado: running"; exec sleep 30 ;;
   esac
-  top="$(sed -n 's/^synth_design -top \([A-Za-z0-9_-]*\) .*/\1/p' build.tcl)"
-  mkdir -p out
-  cp "${FAKE_REPORT_DIR:?}/timing_summary.rpt" out/
-  cp "${FAKE_REPORT_DIR:?}/utilization.rpt" out/
-  echo "fake bitstream" > "out/${top}.bit"
-  echo "fake-vivado: done"
-  exit 0
+  exec "${FAKE_FLOW:?FAKE_FLOW not set}"
+fi
+
+# A checkpoint's manifest: print it, or fail as `type` does when it isn't there.
+re='^type (\.fpga-bridge\\[A-Za-z0-9_-]+\.runs\\(synth|impl)_1\\manifest\.json)$'
+if [[ "$cmd" =~ $re ]]; then
+  cat "$HOME_/${BASH_REMATCH[1]//\\//}" 2>/dev/null && exit 0
+  echo "The system cannot find the path specified." >&2; exit 1
 fi
 
 # Cancel: kill the job by marker. The marker is split in two so this command line doesn't contain it.

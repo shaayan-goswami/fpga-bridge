@@ -24,9 +24,13 @@ public struct BuildManifest: Codable, Equatable, Sendable {
     /// settings change the build.
     public var files: [String: String]
     public var git: Git?
+    /// The key of each run whose result this describes (synth_1, impl_1, write_bitstream), from `RunKeys`. A later
+    /// step compares the key of the checkpoint it would open with the key of the files as they are now. Missing in
+    /// manifests written before runs were separate.
+    public var runs: [String: String]?
 
     public init(project: String, top: String, part: String, board: String?, vivadoVersion: String?, buildMachine: String,
-                builtAt: Date, files: [String: String], git: Git?) {
+                builtAt: Date, files: [String: String], git: Git?, runs: [String: String]? = nil) {
         self.project = project
         self.top = top
         self.part = part
@@ -36,6 +40,7 @@ public struct BuildManifest: Codable, Equatable, Sendable {
         self.builtAt = builtAt
         self.files = files
         self.git = git
+        self.runs = runs
     }
 
     /// One fingerprint for the whole set of files, short enough to show.
@@ -81,7 +86,16 @@ public struct BuildManifest: Codable, Equatable, Sendable {
     }
 
     public func save(to directory: URL) throws {
-        try BuildManifest.encoder.encode(self).write(to: directory.appendingPathComponent(BuildManifest.fileName), options: .atomic)
+        try save(as: directory.appendingPathComponent(BuildManifest.fileName))
+    }
+
+    public func save(as file: URL) throws {
+        try BuildManifest.encoder.encode(self).write(to: file, options: .atomic)
+    }
+
+    /// A manifest from its JSON text, as the build machine keeps it next to a checkpoint. Nil if it isn't one.
+    public static func parse(_ text: String) -> BuildManifest? {
+        try? decoder.decode(BuildManifest.self, from: Data(text.utf8))
     }
 
     private static var encoder: JSONEncoder {
