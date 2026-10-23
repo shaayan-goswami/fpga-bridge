@@ -118,6 +118,8 @@ Model tests: markers at exact times, deltas, a layout saved and restored, a layo
 
 ## 3. Separate runs with checkpoints, Launch Runs, strategies, Stop
 
+**Done (wave 1):** everything below except Reset to Previous Step and Launch Runs' "generate scripts only". Checked on the PC: full build, a constraint change rerunning only implementation, bitstream alone, a source change and a missing checkpoint making synthesis go first, and Stop during implementation.
+
 ### Vivado
 
 `synth_1` and `impl_1` are separate runs. Each saves a checkpoint (`.dcp`), so changing a constraint reruns only

@@ -61,8 +61,8 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Item | How | Status |
 | --- | --- | --- |
 | Settings… | Mac | Done for Project Settings (General, Simulation, Elaboration, Synthesis, Implementation, Bitstream: real options that change the build script and the simulator, checked on Vivado 2025.2). Tool settings Todo |
-| Run Synthesis / Run Implementation / Generate Bitstream | Remote | Prototype (rules done; live runs still one script, see P1) |
-| Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | Todo |
+| Run Synthesis / Run Implementation / Generate Bitstream | Remote | Done: each is its own run on the build machine, one step at a time with live status, starting from the previous run's checkpoint (checked on Vivado 2025.2: a constraint change reruns only implementation, 129 s instead of 273 s for a full build; Generate Bitstream after implementation runs only write_bitstream) |
+| Launch Runs dialog (number of jobs, launch directory, generate scripts only) | Mac → Remote | Done for the number of jobs (`general.maxThreads`, 1–32); remote hosts, job submission and generate scripts only are greyed with the reason |
 | Reset Runs dialog (with "delete generated files") | Mac | Prototype (no dialog yet) |
 | Create Design Runs… (extra synth/impl runs with other strategies) | Mac → Remote | Todo |
 | Run Simulation ▸ Behavioral (Simulation tab: banner, log, Stop, Run Again, Open Waveform; Flow menu item) | Local tool | Done (Verilog and SystemVerilog, verified with Icarus Verilog 13) |
@@ -149,9 +149,9 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 | Define Module (port table: name, direction, bus, MSB, LSB) after creating a file | Mac | Done |
 | Settings ▸ Project: General, Simulation, Elaboration, Synthesis (strategy + options table), Implementation (strategy + per-step options), Bitstream (options such as -bin_file), IP | Mac → Remote | Done (the IP page is the IP Sources list) |
 | Settings ▸ Tool: Project, IP Defaults, Source File, Display, Help, Text Editor (font, colors, tabs), 3rd Party Simulators, Colors, Selection Rules, Shortcuts, Strategies, Window Behavior | Mac | Todo |
-| Launch Runs (jobs, launch directory, scripts only) | Mac | Todo |
-| "Synthesis Completed" (Run Implementation / Open Synthesized Design / View Reports / Don't show again) | Mac | Todo |
-| "Implementation Completed" (Generate Bitstream / Open Implemented Design / View Reports) | Mac | Todo |
+| Launch Runs (jobs, launch directory, scripts only) | Mac | Done (see Flow ▸ Launch Runs) |
+| "Synthesis Completed" (Run Implementation / Open Synthesized Design / View Reports / Don't show again) | Mac | Done |
+| "Implementation Completed" (Generate Bitstream / Open Implemented Design / View Reports) | Mac | Done (also Bitstream Generation Completed, and a failure dialog with Open Messages View / View Log; Generate Memory Configuration File greyed) |
 | "Bitstream Generation Completed" (Open Implemented Design / View Reports / Open Hardware Manager / Generate Memory Configuration File) | Mac | Todo |
 | "Synthesis is Out-of-date" prompt when launching implementation | Mac | Todo (currently re-runs silently) |
 | Run failure popup with link to Messages / Log | Mac | Todo |
@@ -172,7 +172,7 @@ Status values: **Done**, **Prototype** (works, not complete), **Todo**.
 
 | Behavior | How | Status |
 | --- | --- | --- |
-| Separate synth_1 and impl_1 runs with checkpoints (implementation reuses the synthesized design) | Remote | Todo **(P1, core change)** |
+| Separate synth_1 and impl_1 runs with checkpoints (implementation reuses the synthesized design) | Remote | Done: checkpoints kept on the build machine per run, each with a manifest of what it was built from; a missing or outdated checkpoint makes the earlier run go first and the console says why; Stop ends the run and Vivado on the build machine (checked on the PC) |
 | Run Implementation runs synthesis first if missing or out-of-date | Mac | Done |
 | Generate Bitstream runs whatever is needed | Mac | Done |
 | Out-of-date tracking when sources, constraints or settings change | Mac | Prototype (on add/settings; on file edit Todo) |

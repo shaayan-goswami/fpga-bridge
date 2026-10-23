@@ -63,6 +63,7 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] **Run Linter**: Vivado's RTL linter, with each finding linked to its source line
 - [x] **Timing window**: the design's timing summary and its worst setup and hold paths, saved at build time; selecting a path highlights it in the schematic. `fpga-bridge report` lists the worst failing paths
 - [x] **Package and Device views, I/O planning**: the chip's pins and banks with your ports on them, drag a port to a pin (written into your XDC, with Vivado's rule checks), and the die with where each cell was placed. `fpga-bridge part` fetches a chip's data once; it is cached on the Mac
+- [x] **Separate runs like Vivado's**: synthesis, implementation and the bitstream each run on their own from the previous run's checkpoint, so a constraint change reruns only implementation; Stop, Launch Runs and the run-completion dialogs work, and Vivado's synthesis strategies are in Settings
 - [x] **Block designs (viewing)**: open a block design made in Vivado's IP Integrator and see its diagram, each block's settings and the Address Editor, offline
 - [x] **IP Catalog**: browse Vivado's real catalog, customize an IP's settings, get its instantiation template, and have the build create, generate and synthesize it
 - [x] **Project Settings**: real Elaboration, Simulation, Synthesis, Implementation and Bitstream pages (macros, include folders, generics, directives, strategies, `.bin` output, compression, simulation options)
@@ -73,7 +74,6 @@ Vivado never runs on the Mac. Only the commands and results travel between machi
 - [x] Works without a build machine or a board: write Verilog, simulate and view waveforms on the Mac; only Vivado's steps need the build machine
 
 **Not built yet** (greyed out or missing; see the backlog for the full list)
-- [ ] Separate synthesis and implementation runs with checkpoints, Launch Runs, run strategies, and stopping a live build from the app
 - [ ] The report option dialogs (each report is run once, with Vivado's defaults, at build time)
 - [ ] Routing in the Device view, floorplanning (pblocks), and the constraints wizards. IP settings have no dropdowns of allowed values, because Vivado doesn't expose them to Tcl.
 - [ ] VHDL and post-synthesis simulation
@@ -114,15 +114,17 @@ Writing Verilog and running simulations needs only the Mac. The Windows PC is ne
 | `init` | Save the build machine's host, user, Vivado path (and SSH key). `--os windows\|linux` if it can't be worked out from the path |
 | `doctor` | Check Tailscale, SSH, Vivado, openFPGALoader, Icarus Verilog and a waveform viewer |
 | `ip` | `list`, `config`, `add`, `remove`, `show`: browse Vivado's IP catalog and add IP to the project |
-| `script` | Print the Vivado Tcl that `build` would run, with the project's settings |
+| `script` | Print the Vivado Tcl that `build` would run, with the project's settings; `--step synth\|impl\|bitstream` for one step |
 | `new` | Create `fpga-bridge.json`. `--board <id>` (see `--list-boards`) or `--part <part>`, `--top`, `--sources`, `--constraints` |
-| `build` | Copy, run Vivado, fetch results into `build/`, print timing and utilization |
+| `build` | Copy, run Vivado (synthesis, implementation, bitstream), fetch results into `build/`, print timing and utilization. `--strict` exits non-zero when timing isn't met; `--wait` waits for a busy build machine |
+| `fetch` | Collect the results of a build that finished after the connection dropped (or show the end of Vivado's log) |
 | `report` | Show the timing and utilization summary of the last build |
 | `sim` | Simulate the testbench locally. `--top`, `--timeout`, `--open` (open the waveform in Surfer) |
 | `flash` | Program the board. `--persist` writes its flash instead; `--board` overrides the project's board |
 | `boards` | Show what is plugged in; `--list` shows the supported boards |
 | `tcl` | Run a Tcl script in Vivado batch mode on the build machine |
-| `unlock` | Release the build lock after a crashed build |
+| `unlock` | Release the build lock (a lock left by a crashed build also expires by itself after 10 minutes) |
+| `part` | Fetch a chip's pins, banks and die layout from Vivado once, for the Package and Device views |
 
 More detail: [docs/setup.md](docs/setup.md), [docs/boards.md](docs/boards.md).
 

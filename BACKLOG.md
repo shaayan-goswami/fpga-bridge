@@ -45,19 +45,19 @@ The items ticked here are implemented and unit-tested locally (project file, Tcl
 - [x] Copy project files to the build machine (clean job dir per project)
 - [x] `fpga-bridge build`: run the build, stream the live log to the terminal
 - [x] Fetch results back: bitstream, timing and utilization reports, full log
-- [ ] Non-zero exit and clear message on synthesis/implementation failure
+- [x] Non-zero exit and a message naming the failed step (synth_1, impl_1, write_bitstream)
 - [x] Parse timing summary (WNS/TNS/WHS/THS, failing endpoint counts) and utilization (LUT, FF, BRAM, DSP, IO) into a short summary; `fpga-bridge report` re-prints it
 - [x] Real Vivado 2025.2 timing and utilization reports are test fixtures (the hand-written ones stay for older layouts and failures)
 - [x] Show the worst failing paths: `fpga-bridge report --paths N`, also printed after `build` when timing fails; the app's Timing window shows them offline
-- [ ] `build --strict`: exit non-zero when timing is not met
+- [x] `build --strict`: exits 2 when timing is not met or no timing report came back
 - [ ] Incremental behavior: skip copying unchanged files; optional `--clean`
 - [x] Cancel a running build cleanly: Ctrl-C kills the remote Vivado process tree (found by a per-run marker on its command line), releases the lock, exits 130
 - [x] Dropped SSH connection mid-build: keepalives, and a clear error naming the job directory and `fpga-bridge unlock`
-- [ ] Reattach after a lost connection: keep Vivado's log in a file on the build machine and add `fpga-bridge fetch` to collect results from a build that finished without us
+- [x] Vivado's log kept on the build machine, and `fpga-bridge fetch` collects a build that finished without us (live re-follow of a running build after reconnecting isn't built; whether Vivado survives a dropped SSH session on Windows is unverified)
 - [x] Build lock so two builds don't collide on the same build machine (shows the owner when busy; `fpga-bridge unlock` clears a stale one)
-- [ ] Queue instead of failing when busy (`build --wait`), and expire locks left by a crashed build
+- [x] `build --wait` / `fetch --wait` instead of failing when busy; a lock left by a crashed build expires (no Vivado with its marker running, and untouched for 10 minutes)
 - [x] Vivado version pin (`new --vivado-version`) with a warning when the build machine's configured install differs (version read from the install path)
-- [ ] Check the real version with `vivado -version` instead of trusting the path
+- [x] `doctor` reports `vivado -version`; a pinned version is checked against `version -short` in the script
 - [x] Linux build machine support: `linux/setup.sh`, Linux command lines (`bash -lc`, `pkill` cancel), the whole remote test suite runs against a real-shell Linux stand-in, and a Linux CI job. Not yet run on a real Linux machine with Vivado
 
 ## M2: Flashing
@@ -97,7 +97,7 @@ order (P1–P8) live in [docs/vivado-parity.md](docs/vivado-parity.md); this sec
       "edited" dot on the tab, and a "save changes?" prompt when closing a tab, switching projects or quitting; saving a
       design or constraint file marks finished runs out-of-date
 - [x] Near-black dark mode (window, sidebars, editor and console surfaces)
-- [ ] P1 Flow parity (separate runs with checkpoints, Launch Runs, completion popups, run settings and strategies)
+- [x] P1 Flow parity: separate synth_1/impl_1/write_bitstream runs with checkpoints, Stop, Launch Runs, completion dialogs, Vivado's eight synthesis strategies (Reset to Previous Step and generate-scripts-only still to do)
 - [x] P2 Projects and editing: Sources context menu, Save As, Archive, Write Tcl, Find/Replace in Files (go to line still to do)
 - [ ] P3 Reports and analysis
 - [x] P4 Program and debug: Hardware Manager screen, Program Device and Program Configuration Memory sheets (debug cores stay on Windows)
