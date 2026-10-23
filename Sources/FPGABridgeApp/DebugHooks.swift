@@ -123,7 +123,6 @@ extension AppModel {
             while designs[stage] == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
             if name.hasPrefix("package") { openPackage(stage) } else { openDevice(stage) }
             if let ref = DebugHooks.selectObject { select(ref) }
-        case "waveform", "waveform-zoom":
         case "waveform", "waveform-zoom", "waveform-markers":
             if DebugHooks.openPath == nil { openExampleProject() }
             runSimulation()
