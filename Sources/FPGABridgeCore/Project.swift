@@ -27,13 +27,16 @@ public struct Project: Codable, Equatable, Sendable {
     /// Files (project-relative) that stay in the project but aren't used: Vivado's Disable File. Left out by every
     /// `resolve…` call unless asked for, so builds and simulation skip them.
     public var disabled: [String]?
+    /// Files (project-relative) taken out of the project with Remove File but left on disk. A project lists source
+    /// folders, so a file in one stays out only by being named here. Never resolved, disabled or not.
+    public var excluded: [String]?
 
     public static let fileName = "fpga-bridge.json"
 
     public init(name: String, top: String, part: String, sources: [String], constraints: [String], board: String? = nil,
                 vivadoVersion: String? = nil, simulationSources: [String]? = nil, targetLanguage: String? = nil,
                 simulationTop: String? = nil, settings: ProjectSettings? = nil, ips: [ProjectIP]? = nil,
-                disabled: [String]? = nil) {
+                disabled: [String]? = nil, excluded: [String]? = nil) {
         self.name = name
         self.top = top
         self.part = part
@@ -47,6 +50,7 @@ public struct Project: Codable, Equatable, Sendable {
         self.settings = settings
         self.ips = ips
         self.disabled = disabled
+        self.excluded = excluded
     }
 
     public static func load(from directory: URL) throws -> Project {
@@ -118,7 +122,7 @@ public struct Project: Codable, Equatable, Sendable {
     static let constraintExtensions: Set<String> = ["xdc"]
 
     /// Expands entries to files relative to `root`, sorted for a stable build. Disabled files are left out unless
-    /// `includingDisabled` (the Sources window still lists them, greyed).
+    /// `includingDisabled` (the Sources window still lists them, greyed); excluded files are always left out.
     public func resolveSources(in root: URL, includingDisabled: Bool = false) throws -> [String] {
         enabled(try Project.expand(sources, extensions: Project.sourceExtensions, root: root), includingDisabled)
     }
@@ -132,9 +136,9 @@ public struct Project: Codable, Equatable, Sendable {
     }
 
     private func enabled(_ files: [String], _ includingDisabled: Bool) -> [String] {
-        guard !includingDisabled, let disabled, !disabled.isEmpty else { return files }
-        let off = Set(disabled)
-        return files.filter { !off.contains($0) }
+        var off = Set(excluded ?? [])
+        if !includingDisabled { off.formUnion(disabled ?? []) }
+        return off.isEmpty ? files : files.filter { !off.contains($0) }
     }
 
     static func expand(_ entries: [String], extensions: Set<String>, root: URL) throws -> [String] {

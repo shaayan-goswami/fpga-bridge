@@ -40,10 +40,25 @@ final class ProjectDisabledFilesTests: XCTestCase {
             .contains("old.v"))
     }
 
+    func testExcludedFilesAreLeftOutEvenWithDisabledOnesIncluded() throws {
+        var project = Project(name: "demo", top: "top", part: "xc7a35tcpg236-1", sources: ["src"], constraints: ["xdc"],
+                              simulationSources: ["tb"])
+        project.excluded = ["src/old.v", "xdc/b.xdc", "tb/tb_old.v"]
+        project.disabled = ["src/top.v"]
+        try project.save(to: root)
+        let loaded = try Project.load(from: root)
+        XCTAssertEqual(loaded.excluded, ["src/old.v", "xdc/b.xdc", "tb/tb_old.v"])
+        XCTAssertEqual(try loaded.resolveSources(in: root), [])
+        XCTAssertEqual(try loaded.resolveSources(in: root, includingDisabled: true), ["src/top.v"])
+        XCTAssertEqual(try loaded.resolveConstraints(in: root, includingDisabled: true), ["xdc/a.xdc"])
+        XCTAssertEqual(try loaded.resolveSimulationSources(in: root, includingDisabled: true), ["tb/tb.v"])
+    }
+
     func testAnEmptyListIsNotWrittenAsAnythingSpecial() throws {
         let project = Project(name: "demo", top: "top", part: "xc7a35tcpg236-1", sources: ["src"], constraints: [])
         try project.save(to: root)
         let text = try String(contentsOf: root.appendingPathComponent(Project.fileName), encoding: .utf8)
         XCTAssertFalse(text.contains("disabled"), "old versions of the app keep reading files with nothing disabled")
+        XCTAssertFalse(text.contains("excluded"))
     }
 }
